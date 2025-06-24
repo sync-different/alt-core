@@ -14,7 +14,7 @@ Welcome aboard! Follow these steps to get started.
 
 Step 1 - Familiarize yourself with the technical documentation in the companion repo <a href="https://github.com/sync-different/alt-core-docs">alt-core-docs</a>
 
-Step 2 - Clone this repo and follow steps to build below
+Step 2 - Clone this repo and follow steps to build & run alt-core (instructions below)
 
 Step 3 - Check out the discussion board to understand the roadmap and ideas WIP <a href="https://github.com/orgs/sync-different/discussions">discussions</a>
 
