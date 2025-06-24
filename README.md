@@ -3,9 +3,8 @@ alterante core base platform
 
 <h1 align="center">
   <br>
-  <img src="https://github.com/sync-different/.github/alt-logo.png" alt="Alterante Core" width="250">
+  <img src="https://github.com/sync-different/.github/blob/main/alt-logo.png" alt="Alterante Core" width="250">
 </h1>
-
 <h4 align="center">Virtual filesystem written in Java.
 </h4>
 
