@@ -47,3 +47,6 @@ alt-core
 $cd scrubber
 $./build.sh
 ```
+
+## License
+Distributed under the AGPL v3 License. See ``LICENSE.md`` for more information.
