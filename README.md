@@ -28,18 +28,18 @@ alt-core
 │   LICENSE.md
 │
 └───scrubber 
-│   │   src
+│   └───src - source files
 │   │
-│   └───config
+│   └───config - config files
 │   |   │   www-bridge.properties
 │   |   │   www-processor.properties
 │   |   │   www-rtbackup.properties
 │   |   │   www-server.properties
 │   |
-│   └───data
+│   └───data - data files
 │   
 └───web
-│   └───cass
+│   └───cass - web app files (angularJS)
 ```
 
 ## steps to build (maven)
