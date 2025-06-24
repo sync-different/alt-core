@@ -41,6 +41,10 @@ alt-core
 └───web
 │   └───cass - web app files (angularJS)
 ```
+## Requirements
+- Java JDK (v17 or later)
+- Maven (v3.9.x or later)
+- A web browser (to run the web app)
 
 ## steps to build (maven)
 ```
