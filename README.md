@@ -24,8 +24,8 @@ Step 4 - Join the discord and introduce yourself to the community <a href="https
 
 ```
 alt-core
-│   README.md
-│   LICENSE.md
+│   README.md - this file
+│   LICENSE - license file (AGPL v3)
 │
 └───scrubber 
 │   └───src - source files
