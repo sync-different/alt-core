@@ -29,7 +29,7 @@ alt-core
 │
 └───scrubber 
 │   └───src - source files
-│   │
+│   └───repo - JAR dependency files
 │   └───config - config files
 │   |   │   www-bridge.properties
 │   |   │   www-processor.properties
