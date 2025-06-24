@@ -45,11 +45,17 @@ alt-core
 ## steps to build (maven)
 ```
 $cd scrubber
-$#install JAR in local maven repo
+$#install JAR dependencies in local maven repo
 #./install.sh
 #
-#$build alt JAR
+#$build alt uber JAR
 $./build.sh
+```
+
+## steps to run (maven)
+```
+$cd target
+$java -jar my-app-1.0-SNAPSHOT.jar
 ```
 
 ## License
