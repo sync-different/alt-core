@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <title>Bootstrap, from Twitter</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="">
+    <meta name="author" content="">
+
+    <!-- Le styles -->
+    <link href="bootstrap/css/bootstrap.css" rel="stylesheet">
+    <style type="text/css">
+      body {
+        padding-top: 60px;
+        padding-bottom: 40px;
+      }
+    </style>
+    <link href="bootstrap/css/bootstrap-responsive.css" rel="stylesheet">
+
+    
+    <!-- HTML5 shim, for IE6-8 support of HTML5 elements -->
+    <!--[if lt IE 9]>
+      <script src="http://html5shim.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+
+    <!-- Fav and touch icons -->
+    <link rel="shortcut icon" href="bootstrap/ico/favicon.ico">
+    <link rel="apple-touch-icon-precomposed" sizes="144x144" href="bootstrap/ico/apple-touch-icon-144-precomposed.png">
+    <link rel="apple-touch-icon-precomposed" sizes="114x114" href="bootstrap/ico/apple-touch-icon-114-precomposed.png">
+    <link rel="apple-touch-icon-precomposed" sizes="72x72" href="bootstrap/ico/apple-touch-icon-72-precomposed.png">
+    <link rel="apple-touch-icon-precomposed" href="bootstrap/ico/apple-touch-icon-57-precomposed.png">
+  </head>
+  
+
+  <body>
+
+      <form id='frm' action="setup.htm" method="get">
+        <div class="container">
+            <div class="row">
+                <div class="span9">
+                    <section id="sec1"> 
+                        <fieldset>
+                        <legend>Synchronization Rules</legend>
+                        </fieldset>
+                    </section>      <!--Body content-->
+                    <input id="cpage" type="hidden" name="cpage" value="4">
+                    <input type="hidden" name="spage" value="5">
+                    <button type="button" class="btn" onclick="golink();">Previous</button>
+                    <button type="button" class="btn btn-primary"  onclick="validateAndSend();">Next</button>
+                    
+                    <script type="text/javascript" src="jquery.min.js"></script>
+                    <script type="text/javascript">
+                        
+    
+                        $(document).ready(function() { 
+                            
+                           //if ($('#' + "backupmode").is(":checked")) {
+                           //if ($("#backupmode").attr('checked')) {
+                           
+                           if ($("Input[class=checkbox1]").is(":checked")) {
+                           //if ($("myContent").is(":checked")) {
+                                console.log("backupmode checked");                               
+                                $("#myContent1").show(); 
+                           } else {                               
+                                $("#myContent1").hide(); 
+                           }
+                           
+                            if ($("Input[class=checkbox2]").is(":checked")) {
+                           //if ($("myContent").is(":checked")) {
+                                console.log("syncmode checked");                               
+                                $("#myContent2").show(); 
+                           } else {                               
+                                $("#myContent2").hide(); 
+                           }
+
+                        });
+                        
+						
+							function validateAndSend(){
+								var okpath=false;
+								if($('input[name="sncmode"]').prop("checked")){
+									
+									if($.trim($('Input[name="sncpath"]').val()).length >0) 
+									{
+										okpath=validPath($('Input[name="sncpath"]').val());
+										if(!okpath){
+											alert('Folder to sync directory not exist, please modify and try again');
+										}
+									}else{
+										alert('Please enter sync directory and try again');
+									}								
+								}else{
+									okpath=true;
+								}							
+								
+								if(okpath){
+									frm.submit();
+								}
+							}
+						
+						function validPath(path){
+							var result=false;
+							$.ajax({
+							  async:false,	
+							  url: "fileexist.fn?sfileexist="+path+"&random="+Math.random(),
+							  type: "GET",
+							  dataType: "text"
+							}
+							).done(function(data){
+								if(data.split(",")[0]=='N' || data.split(",")[0]=='n'){
+									result=false;
+								}else{
+									result=true;
+								}
+							  });
+							  
+							return result;
+						}
+						
+                        function golink() {
+                            window.location = "setup.htm?spage=3&isprev=true";
+                        }
+                        
+                        function toggleDiv(divId) {
+                            //alert("scantest!!!");
+                            $("#" + divId).toggle();
+                            //$("#" + divId).hide();
+                        }
+                        
+                        
+                    </script>
+                </div>
+            </div>
+        </div>
+    </form>
+      
+    <!-- Le javascript
+    ================================================== -->
+    <!-- Placed at the end of the document so the pages load faster
+    <script src="bootstrap/js/jquery.js"></script>
+    <script src="bootstrap/js/bootstrap-transition.js"></script>
+    <script src="bootstrap/js/bootstrap-alert.js"></script>
+    <script src="bootstrap/js/bootstrap-modal.js"></script>
+    <script src="bootstrap/js/bootstrap-dropdown.js"></script>
+    <script src="bootstrap/js/bootstrap-scrollspy.js"></script>
+    <script src="bootstrap/js/bootstrap-tab.js"></script>
+    <script src="bootstrap/js/bootstrap-tooltip.js"></script>
+    <script src="bootstrap/js/bootstrap-popover.js"></script>
+    <script src="bootstrap/js/bootstrap-button.js"></script>
+    <script src="bootstrap/js/bootstrap-collapse.js"></script>
+    <script src="bootstrap/js/bootstrap-carousel.js"></script>
+    <script src="bootstrap/js/bootstrap-typeahead.js"></script> -->
+
+  </body>
+</html>

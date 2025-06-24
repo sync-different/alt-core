@@ -1,0 +1,1 @@
+g['friends'] = new Array();g['family'] = new Array();g['family'].push('marcelocordini@gmail.com');g['friends'].push('mcordini@alterante.com');g['family'].push('mcordini@alterante.com');g['friends'].push('marbolso86@hotmail.com');a.push('marcelocordini@gmail.com');a.push('mcordini@alterante.com');a.push('marbolso86@hotmail.com');

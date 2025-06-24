@@ -1,0 +1,1369 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <title>Bootstrap, from Twitter</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="">
+    <meta name="author" content="">
+
+    <!-- Le styles -->
+    <style type="text/css">
+      body {
+        padding-top: 60px;
+        padding-bottom: 40px;
+      }
+	.ui-dialog-titlebar-close {
+            visibility: hidden;
+          }  
+      
+	  #popupTreeMetadata {
+		   
+		 
+		  padding: 4px 12px;
+		  margin-bottom: 0;
+		  *margin-left: .3em;
+		  font-size: 14px;
+		   
+		  color: #333333;
+		  
+		  text-shadow: 0 1px 1px rgba(255, 255, 255, 0.75);
+		  
+		 
+		  background-color: #f5f5f5;
+		  *background-color: #e6e6e6;
+		  background-image: -moz-linear-gradient(top, #ffffff, #e6e6e6);
+		  background-image: -webkit-gradient(linear, 0 0, 0 100%, from(#ffffff), to(#e6e6e6));
+		  background-image: -webkit-linear-gradient(top, #ffffff, #e6e6e6);
+		  background-image: -o-linear-gradient(top, #ffffff, #e6e6e6);
+		  background-image: linear-gradient(to bottom, #ffffff, #e6e6e6);
+		  background-repeat: repeat-x;
+		  border: 1px solid #cccccc;
+		  *border: 0;
+		  border-color: #e6e6e6 #e6e6e6 #bfbfbf;
+		  border-color: rgba(0, 0, 0, 0.1) rgba(0, 0, 0, 0.1) rgba(0, 0, 0, 0.25);
+		  border-bottom-color: #b3b3b3;
+		  -webkit-border-radius: 4px;
+			 -moz-border-radius: 4px;
+				  border-radius: 4px;
+		  filter: progid:DXImageTransform.Microsoft.gradient(startColorstr='#ffffffff', endColorstr='#ffe6e6e6', GradientType=0);
+		  filter: progid:DXImageTransform.Microsoft.gradient(enabled=false);
+		  *zoom: 1;
+		  -webkit-box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.2), 0 1px 2px rgba(0, 0, 0, 0.05);
+			 -moz-box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.2), 0 1px 2px rgba(0, 0, 0, 0.05);
+				  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.2), 0 1px 2px rgba(0, 0, 0, 0.05);
+		}
+		
+	  #popup {
+		   
+		 
+		  padding: 4px 12px;
+		  margin-bottom: 0;
+		  *margin-left: .3em;
+		  font-size: 14px;
+		   
+		  color: #333333;
+		  
+		  text-shadow: 0 1px 1px rgba(255, 255, 255, 0.75);
+		  
+		 
+		  background-color: #f5f5f5;
+		  *background-color: #e6e6e6;
+		  background-image: -moz-linear-gradient(top, #ffffff, #e6e6e6);
+		  background-image: -webkit-gradient(linear, 0 0, 0 100%, from(#ffffff), to(#e6e6e6));
+		  background-image: -webkit-linear-gradient(top, #ffffff, #e6e6e6);
+		  background-image: -o-linear-gradient(top, #ffffff, #e6e6e6);
+		  background-image: linear-gradient(to bottom, #ffffff, #e6e6e6);
+		  background-repeat: repeat-x;
+		  border: 1px solid #cccccc;
+		  *border: 0;
+		  border-color: #e6e6e6 #e6e6e6 #bfbfbf;
+		  border-color: rgba(0, 0, 0, 0.1) rgba(0, 0, 0, 0.1) rgba(0, 0, 0, 0.25);
+		  border-bottom-color: #b3b3b3;
+		  -webkit-border-radius: 4px;
+			 -moz-border-radius: 4px;
+				  border-radius: 4px;
+		  filter: progid:DXImageTransform.Microsoft.gradient(startColorstr='#ffffffff', endColorstr='#ffe6e6e6', GradientType=0);
+		  filter: progid:DXImageTransform.Microsoft.gradient(enabled=false);
+		  *zoom: 1;
+		  -webkit-box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.2), 0 1px 2px rgba(0, 0, 0, 0.05);
+			 -moz-box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.2), 0 1px 2px rgba(0, 0, 0, 0.05);
+				  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.2), 0 1px 2px rgba(0, 0, 0, 0.05);
+		}
+
+		.buttons {
+		   
+		 
+		  padding: 4px 12px;
+		  margin-bottom: 0;
+		  *margin-left: .3em;
+		  font-size: 14px;
+		   
+		  color: #333333;
+		  
+		  text-shadow: 0 1px 1px rgba(255, 255, 255, 0.75);
+		  
+		 
+		  background-color: #f5f5f5;
+		  *background-color: #e6e6e6;
+		  background-image: -moz-linear-gradient(top, #ffffff, #e6e6e6);
+		  background-image: -webkit-gradient(linear, 0 0, 0 100%, from(#ffffff), to(#e6e6e6));
+		  background-image: -webkit-linear-gradient(top, #ffffff, #e6e6e6);
+		  background-image: -o-linear-gradient(top, #ffffff, #e6e6e6);
+		  background-image: linear-gradient(to bottom, #ffffff, #e6e6e6);
+		  background-repeat: repeat-x;
+		  border: 1px solid #cccccc;
+		  *border: 0;
+		  border-color: #e6e6e6 #e6e6e6 #bfbfbf;
+		  border-color: rgba(0, 0, 0, 0.1) rgba(0, 0, 0, 0.1) rgba(0, 0, 0, 0.25);
+		  border-bottom-color: #b3b3b3;
+		  -webkit-border-radius: 4px;
+			 -moz-border-radius: 4px;
+				  border-radius: 4px;
+		  filter: progid:DXImageTransform.Microsoft.gradient(startColorstr='#ffffffff', endColorstr='#ffe6e6e6', GradientType=0);
+		  filter: progid:DXImageTransform.Microsoft.gradient(enabled=false);
+		  *zoom: 1;
+		  -webkit-box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.2), 0 1px 2px rgba(0, 0, 0, 0.05);
+			 -moz-box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.2), 0 1px 2px rgba(0, 0, 0, 0.05);
+				  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.2), 0 1px 2px rgba(0, 0, 0, 0.05);
+		}
+		#popupRecommended {
+		   
+		 
+		  padding: 4px 12px;
+		  margin-bottom: 0;
+		  *margin-left: .3em;
+		  font-size: 14px;
+		   
+		  color: #333333;
+		  
+		  text-shadow: 0 1px 1px rgba(255, 255, 255, 0.75);
+		  
+		 
+		  background-color: #f5f5f5;
+		  *background-color: #e6e6e6;
+		  background-image: -moz-linear-gradient(top, #ffffff, #e6e6e6);
+		  background-image: -webkit-gradient(linear, 0 0, 0 100%, from(#ffffff), to(#e6e6e6));
+		  background-image: -webkit-linear-gradient(top, #ffffff, #e6e6e6);
+		  background-image: -o-linear-gradient(top, #ffffff, #e6e6e6);
+		  background-image: linear-gradient(to bottom, #ffffff, #e6e6e6);
+		  background-repeat: repeat-x;
+		  border: 1px solid #cccccc;
+		  *border: 0;
+		  border-color: #e6e6e6 #e6e6e6 #bfbfbf;
+		  border-color: rgba(0, 0, 0, 0.1) rgba(0, 0, 0, 0.1) rgba(0, 0, 0, 0.25);
+		  border-bottom-color: #b3b3b3;
+		  -webkit-border-radius: 4px;
+			 -moz-border-radius: 4px;
+				  border-radius: 4px;
+		  filter: progid:DXImageTransform.Microsoft.gradient(startColorstr='#ffffffff', endColorstr='#ffe6e6e6', GradientType=0);
+		  filter: progid:DXImageTransform.Microsoft.gradient(enabled=false);
+		  *zoom: 1;
+		  -webkit-box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.2), 0 1px 2px rgba(0, 0, 0, 0.05);
+			 -moz-box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.2), 0 1px 2px rgba(0, 0, 0, 0.05);
+				  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.2), 0 1px 2px rgba(0, 0, 0, 0.05);
+		}
+
+		.ui-front {
+		    z-index:1000000 !important; /* The default is 100. !important overrides the default. */
+		}
+
+		.no-close .ui-dialog-titlebar-close {display: none }
+
+		.buttons {
+		   
+		 
+		  padding: 4px 12px;
+		  margin-bottom: 0;
+		  *margin-left: .3em;
+		  font-size: 14px;
+		   
+		  color: #333333;
+		  
+		  text-shadow: 0 1px 1px rgba(255, 255, 255, 0.75);
+		  
+		 
+		  background-color: #f5f5f5;
+		  *background-color: #e6e6e6;
+		  background-image: -moz-linear-gradient(top, #ffffff, #e6e6e6);
+		  background-image: -webkit-gradient(linear, 0 0, 0 100%, from(#ffffff), to(#e6e6e6));
+		  background-image: -webkit-linear-gradient(top, #ffffff, #e6e6e6);
+		  background-image: -o-linear-gradient(top, #ffffff, #e6e6e6);
+		  background-image: linear-gradient(to bottom, #ffffff, #e6e6e6);
+		  background-repeat: repeat-x;
+		  border: 1px solid #cccccc;
+		  *border: 0;
+		  border-color: #e6e6e6 #e6e6e6 #bfbfbf;
+		  border-color: rgba(0, 0, 0, 0.1) rgba(0, 0, 0, 0.1) rgba(0, 0, 0, 0.25);
+		  border-bottom-color: #b3b3b3;
+		  -webkit-border-radius: 4px;
+			 -moz-border-radius: 4px;
+				  border-radius: 4px;
+		  filter: progid:DXImageTransform.Microsoft.gradient(startColorstr='#ffffffff', endColorstr='#ffe6e6e6', GradientType=0);
+		  filter: progid:DXImageTransform.Microsoft.gradient(enabled=false);
+		  *zoom: 1;
+		  -webkit-box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.2), 0 1px 2px rgba(0, 0, 0, 0.05);
+			 -moz-box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.2), 0 1px 2px rgba(0, 0, 0, 0.05);
+				  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.2), 0 1px 2px rgba(0, 0, 0, 0.05);
+		}
+    </style>
+
+    <!-- HTML5 shim, for IE6-8 support of HTML5 elements -->
+    <!--[if lt IE 9]>
+      <script src="http://html5shim.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    
+    <!-- Fav and touch icons -->
+    <link rel="shortcut icon" href="bootstrap/ico/favicon.ico">
+    <link rel="apple-touch-icon-precomposed" sizes="144x144" href="bootstrap/ico/apple-touch-icon-144-precomposed.png">
+    <link rel="apple-touch-icon-precomposed" sizes="114x114" href="bootstrap/ico/apple-touch-icon-114-precomposed.png">
+    <link rel="apple-touch-icon-precomposed" sizes="72x72" href="bootstrap/ico/apple-touch-icon-72-precomposed.png">
+    <link rel="apple-touch-icon-precomposed" href="bootstrap/ico/apple-touch-icon-57-precomposed.png">
+    
+
+    <link href="/cass/jqueryFileTree/jqueryFileTree.css" rel="stylesheet" type="text/css" media="screen" />
+    <link href="bootstrap/css/bootstrap.min.css" rel="stylesheet" media="screen">    
+    <link href="bootstrap/css/bootstrap-responsive.css" rel="stylesheet">
+    <link href="css/slider.css" rel="stylesheet">
+    <link rel="stylesheet" href="/cass/ui/themes/base/jquery-ui.css" />
+	
+
+
+    <!-- scripts -->
+    <script src="bootstrap/js/bootstrap-tooltip.js"></script>
+    <script src="bootstrap/js/bootstrap.min.js"></script>
+    <script type="text/javascript" src="messages_en.js"></script>
+    <script type="text/javascript" src="jquery.min.js"></script>
+    <script src="bootstrap/js/bootstrap-tooltip.js"></script>
+    <script src="bootstrap/js/bootstrap-popover.js"></script>
+    <script src="/cass/jqueryFileTree/jqueryFileTree.js" type="text/javascript"></script>
+    <script src="/cass/ui/jquery-ui.js" type="text/javascript"></script>
+    <script src="/cass/jqueryTreeWrapAlterante.js" type="text/javascript"></script>
+    <script type="text/javascript" src="js/slider.js"></script>
+    <script type="text/javascript" src="bootstrap-slider.js"></script>
+
+
+<script type='text/javascript'>
+
+            var state = "***REPSTATE***";
+
+            var mapSyncRule = new Array();
+
+
+	***REP***
+    ***REPb***
+	***REPc***
+	***REPd***
+	***BAK***
+	***BAKb***
+	***BAKc***
+	***BAKd***
+	***SNC***
+	***SNCb***
+	***SNCc***
+	***SNCd***
+	***BL1***
+	 
+	 function leyenda(id){
+		
+		id=id.toLowerCase();
+		
+		if(id=='b1'){
+			return function leyendaXX(){
+				if(mapBackup1.length==0){
+					$('#b1').html('Please specify the directory where you would like to store backup files.');
+				}else{
+					$('#b1').html(mapBackup1.length + ' directories selected for  store backup files.');
+				}
+			};
+		}
+		
+		
+		if(id=='y1'){
+			return function leyendaXX(){
+				if(mapSync1.length==0){
+						$('#y1').html('Please specify the directory to sync files.');
+					}else{
+						$('#y1').html(decodeURIComponent(mapSync1[0]) + ' was selected for sync.');
+				}
+			};
+		}
+		
+		if(id=='b2'){
+			return function leyendaXX(){
+				if(mapBackup2.length==0){
+					$('#b2').html('Please specify the directory where you would like to store backup files.');
+				}else{
+					$('#b2').html(mapBackup2.length + ' directories selected for  store backup files.');
+				}
+			};
+		}
+		
+		if(id=='y2'){
+			return function leyendaXX(){
+				if(mapSync2.length==0){
+						$('#y2').html('Please specify the directory to sync files.');
+					}else{
+                                                $('#y2').html(decodeURIComponent(mapSync2[0]) + ' was selected for sync.');
+				}
+			};
+		}
+		
+		if(id=='b3'){
+			return function leyendaXX(){
+				if(mapBackup3.length==0){
+					$('#b3').html('Please specify the directory where you would like to store backup files.');
+				}else{
+					$('#b3').html(mapBackup3.length + ' directories selected for  store backup files.');
+				}
+			};
+		}
+		
+		if(id=='y3'){
+			return function leyendaXX(){
+				if(mapSync3.length==0){
+						$('#y3').html('Please specify the directory to sync files.');
+					}else{
+						$('#y3').html(decodeURIComponent(mapSync3[0]) + ' was selected for sync.');
+				}
+			};
+		}
+		
+		if(id=='b4'){
+			return function leyendaXX(){
+				if(mapBackup4.length==0){
+					$('#b4').html('Please specify the directory where you would like to store backup files.');
+				}else{
+					$('#b4').html(mapBackup4.length + ' directories selected for  store backup files.');
+				}
+			};
+		}
+		
+		if(id=='y4'){
+			return function leyendaXX(){
+				if(mapSync4.length==0){
+						$('#y4').html('Please specify the directory to sync files.');
+					}else{
+						$('#y4').html(decodeURIComponent(mapSync4[0]) + ' was selected for sync.');
+				}
+			};
+		}
+		
+		return function(){ console.log('ERROR: Leyenda no definida Setup2['+id+']');};
+	 }
+	 
+	
+	function cargarLeyendas(){
+		leyenda('b1')();
+		leyenda('b2')();
+		leyenda('b3')();
+		leyenda('b4')();
+		leyenda('y1')();
+		leyenda('y2')();
+		leyenda('y3')();
+		leyenda('y4')();
+	}
+		
+	 
+	function treeSync1(el){
+		clearUnselectedNodes();
+		var excludeunits=new Array();
+		var exclusiveInclude=new Array()
+		include(exclusiveInclude,mapScan1);
+		include(exclusiveInclude,mapBackup1);
+		exclude(excludeunits,mapScan2);
+		exclude(excludeunits,mapBackup2);
+		exclude(excludeunits,mapSync2); 
+		exclude(excludeunits,mapScan3);
+		exclude(excludeunits,mapBackup3);
+		exclude(excludeunits,mapSync3);
+		exclude(excludeunits,mapScan4);
+		exclude(excludeunits,mapBackup4);
+		exclude(excludeunits,mapSync4);
+		tree(el,mapSync1,excludeunits,exclusiveInclude,true,null,leyenda('y1'));
+	}
+        
+        function treeSyncRule(el,mapSync){
+		clearUnselectedNodes();
+		var excludeunits=new Array();
+		var exclusiveInclude=new Array()
+		include(exclusiveInclude,mapScan1);
+		include(exclusiveInclude,mapBackup1);
+		exclude(excludeunits,mapScan2);
+		exclude(excludeunits,mapBackup2);
+		exclude(excludeunits,mapSync2); 
+		exclude(excludeunits,mapScan3);
+		exclude(excludeunits,mapBackup3);
+		exclude(excludeunits,mapSync3);
+		exclude(excludeunits,mapScan4);
+		exclude(excludeunits,mapBackup4);
+		exclude(excludeunits,mapSync4);
+		tree(el,mapSyncRule,excludeunits,exclusiveInclude,true,null,leyenda('y1'), getPaths(mapSync));
+	}
+	
+	function treeBk1(el){
+		clearUnselectedNodes();
+		var excludeunits=new Array();
+		var exclusiveInclude=new Array()
+		include(exclusiveInclude,mapScan1);
+		include(exclusiveInclude,mapSync1);
+		exclude(excludeunits,mapScan2);
+		exclude(excludeunits,mapBackup2);
+		exclude(excludeunits,mapSync2);
+		exclude(excludeunits,mapScan3);
+		exclude(excludeunits,mapBackup3);
+		exclude(excludeunits,mapSync3);
+		exclude(excludeunits,mapScan4);
+		exclude(excludeunits,mapBackup4);
+		exclude(excludeunits,mapSync4);
+
+		tree(el,mapBackup1,excludeunits,exclusiveInclude,true,null,leyenda('b1'));
+	}
+
+
+	
+	function treeSync2(el){
+		clearUnselectedNodes();
+		var excludeunits=new Array();
+		var exclusiveInclude=new Array()
+		include(exclusiveInclude,mapScan2);
+		include(exclusiveInclude,mapBackup2);
+		exclude(excludeunits,mapScan1);
+		exclude(excludeunits,mapBackup1);
+		exclude(excludeunits,mapSync1);
+		exclude(excludeunits,mapScan3);
+		exclude(excludeunits,mapBackup3);
+		exclude(excludeunits,mapSync3);
+		exclude(excludeunits,mapScan4);
+		exclude(excludeunits,mapBackup4);
+		exclude(excludeunits,mapSync4);
+		tree(el,mapSync2,excludeunits,exclusiveInclude,true,null,leyenda('y2'));
+	}
+	
+	function treeBk2(el){
+		clearUnselectedNodes();
+		var excludeunits=new Array();
+		var exclusiveInclude=new Array()
+		include(exclusiveInclude,mapScan2);
+		include(exclusiveInclude,mapSync2);
+		exclude(excludeunits,mapScan1);
+		exclude(excludeunits,mapBackup1);
+		exclude(excludeunits,mapSync1);
+		exclude(excludeunits,mapScan3);
+		exclude(excludeunits,mapBackup3);
+		exclude(excludeunits,mapSync3);
+		exclude(excludeunits,mapScan4);
+		exclude(excludeunits,mapBackup4);
+		exclude(excludeunits,mapSync4);
+
+		tree(el,mapBackup2,excludeunits,exclusiveInclude,true,null,leyenda('b2'));
+	}
+	
+	function treeSync3(el){
+		clearUnselectedNodes();
+		var excludeunits=new Array();
+		var exclusiveInclude=new Array()
+		include(exclusiveInclude,mapScan3);
+		include(exclusiveInclude,mapBackup3);
+		exclude(excludeunits,mapScan1);
+		exclude(excludeunits,mapBackup1);
+		exclude(excludeunits,mapSync1);
+		exclude(excludeunits,mapScan2);
+		exclude(excludeunits,mapBackup2);
+		exclude(excludeunits,mapSync2);
+		exclude(excludeunits,mapScan4);
+		exclude(excludeunits,mapBackup4);
+		exclude(excludeunits,mapSync4);
+		tree(el,mapSync3,excludeunits,exclusiveInclude,true,null,leyenda('y3'));
+	}
+	
+	function treeBk3(el){
+		clearUnselectedNodes();
+		var excludeunits=new Array();
+		var exclusiveInclude=new Array()
+		include(exclusiveInclude,mapScan3);
+		include(exclusiveInclude,mapSync3);
+		exclude(excludeunits,mapScan1);
+		exclude(excludeunits,mapBackup1);
+		exclude(excludeunits,mapSync1);
+		exclude(excludeunits,mapScan2);
+		exclude(excludeunits,mapBackup2);
+		exclude(excludeunits,mapSync2);
+		exclude(excludeunits,mapScan4);
+		exclude(excludeunits,mapBackup4);
+		exclude(excludeunits,mapSync4);
+
+		tree(el,mapBackup3,excludeunits,exclusiveInclude,true,null,leyenda('b3'));
+	}
+	
+	
+	function treeSync4(el){
+		clearUnselectedNodes();
+		var excludeunits=new Array();
+		var exclusiveInclude=new Array()
+		include(exclusiveInclude,mapScan4);
+		include(exclusiveInclude,mapBackup4);
+		exclude(excludeunits,mapScan1);
+		exclude(excludeunits,mapBackup1);
+		exclude(excludeunits,mapSync1);
+		exclude(excludeunits,mapScan2);
+		exclude(excludeunits,mapBackup2);
+		exclude(excludeunits,mapSync2);
+		exclude(excludeunits,mapScan3);
+		exclude(excludeunits,mapBackup3);
+		exclude(excludeunits,mapSync3);
+		tree(el,mapSync4,excludeunits,exclusiveInclude,true,null,leyenda('y4'));
+	}
+	
+	function treeBk4(el){
+		clearUnselectedNodes();
+		var excludeunits=new Array();
+		var exclusiveInclude=new Array()
+		include(exclusiveInclude,mapScan4);
+		include(exclusiveInclude,mapSync4);
+		exclude(excludeunits,mapScan1);
+		exclude(excludeunits,mapBackup1);
+		exclude(excludeunits,mapSync1);
+		exclude(excludeunits,mapScan2);
+		exclude(excludeunits,mapBackup2);
+		exclude(excludeunits,mapSync2);
+		exclude(excludeunits,mapScan3);
+		exclude(excludeunits,mapBackup3);
+		exclude(excludeunits,mapSync3);
+
+		tree(el,mapBackup4,excludeunits,exclusiveInclude,true,null,leyenda('b4'));
+	}
+	
+	
+	
+	function clearUnselectedNodes(){
+		var node=1;
+		clearPaths(node,'',mapScan1);
+		clearPaths(node,'b',mapBackup1);
+		clearPaths(node,'c',mapSync1);
+		node++;
+		clearPaths(node,'',mapScan2);
+		clearPaths(node,'b',mapBackup2);
+		clearPaths(node,'c',mapSync2);
+		node++;
+		clearPaths(node,'',mapScan3);
+		clearPaths(node,'b',mapBackup3);
+		clearPaths(node,'c',mapSync3);
+		node++;
+		clearPaths(node,'',mapScan4);
+		clearPaths(node,'b',mapBackup4);
+		clearPaths(node,'c',mapSync4);
+	}
+	
+	function clearPaths(node,pref,mapScan){
+		if (!$("Input[class=checkbox"+node+pref+"]").is(":checked")) {	
+			mapScan.splice(0,mapScan.length)
+		}
+	}
+	
+	function include(exclusiveInclude, map1){
+		if(map1.length>0){
+			//UNIX/LINUX
+			if(decodeURIComponent(map1[0]).indexOf('/Volumes')==0 || decodeURIComponent(map1[0]).indexOf('/media')==0){
+				exclusiveInclude.push(decodeURIComponent(map1[0]).substring(0,decodeURIComponent(map1[0]).indexOf('/',9) ));
+			}else if(map1[0].indexOf('/')==0){
+				excludeunits.push("/");
+			}else{
+				exclusiveInclude.push(decodeURIComponent(map1[0]).substring(0,3));
+			}
+		}
+	}
+	
+	function exclude(excludeunits,map1){
+		if(map1.length>0){
+			//UNIX/LINUX
+			if(decodeURIComponent(map1[0]).indexOf('/Volumes')==0 || decodeURIComponent(map1[0]).indexOf('/media')==0){
+				excludeunits.push(decodeURIComponent(map1[0]).substring(0,decodeURIComponent(map1[0]).indexOf('/',9) ));
+			}else if(map1[0].indexOf('/')==0){
+				excludeunits.push("/");
+			}else{
+				excludeunits.push(decodeURIComponent(map1[0]).substring(0,1));
+			}
+		}
+	}
+					
+	function validate(){
+		var node=1;
+		var ok=true;
+		var msg="";
+		if(!cargarPaths('scan',node,'',mapScan1)){
+			msg+='Select any folder in scan disk #1\n';
+			ok=false;
+		}
+		if(!cargarPaths('backuppath',node,'b',mapBackup1)){
+			msg+='Select any folder in backup disk #1\n';
+			ok=false;
+		}
+		if(!cargarPaths('syncpath',node,'c',mapSync1)){
+			msg+='Select any folder in sync disk #1\n';
+			ok=false;
+		}
+		
+		node++;
+		if(!cargarPaths('scan',node,'',mapScan2)){
+			msg+='Select any folder in scan disk #2\n';
+			ok=false;
+		}
+		
+		if(!cargarPaths('backuppath',node,'b',mapBackup2)){
+			msg+='Select any folder in backup disk #2\n';
+			ok=false;
+		}
+
+		if(!cargarPaths('syncpath',node,'c',mapSync2)){			
+			msg+='Select any folder in sync disk #2\n';
+			ok=false;
+		}
+
+		node++;
+		if(!cargarPaths('scan',node,'',mapScan3)){
+			msg+='Select any folder in scan disk #3\n';
+			ok=false;
+		}
+
+		if(!cargarPaths('backuppath',node,'b',mapBackup3)){
+			msg+='Select any folder in backup disk #3\n';
+			ok=false;
+		}
+		if(!cargarPaths('syncpath',node,'c',mapSync3)){
+			msg+='Select any folder in sync disk #3\n';
+			ok=false;
+		}
+		node++;
+		if(!cargarPaths('scan',node,'',mapScan4)){
+			msg+='Select any folder in scan disk #4\n';
+			ok=false;
+		}
+		
+		if(!cargarPaths('backuppath',node,'b',mapBackup4)){
+			msg+='Select any folder in backup disk #4\n';
+			ok=false;
+		}		
+		
+		if(!cargarPaths('syncpath',node,'c',mapSync4)){
+			msg+='Select any folder in sync disk #4\n';
+			ok=false;
+		}
+		
+		$('#blacklist').attr('value',getPaths(mapBL1));
+		
+		if(ok){
+			$.ajax(
+			{
+				url:'/cass/initscan.fn',
+				async:true
+			}
+			).done(
+				function(){
+				}
+			);
+			return true;
+		}else{
+			alert(msg);
+		}
+                return false;
+		
+	}
+        
+        function gosave() {
+            if(validate()){
+                addrules(1);
+                addrules(2);
+                addrules(3);
+                addrules(4);
+                $("#spage").val(8);
+                frm.submit();
+            }
+        }
+        
+        function validateAndSend() {
+            if(validate()){
+                addrules(1);
+                addrules(2);
+                addrules(3);
+                addrules(4);
+                $("#spage").val(3);
+                frm.submit();
+            }
+        }
+	
+	function cargarPaths(pref,node,post,mapScan){
+		if ($("Input[class=checkbox"+node+post+"]").is(":checked")) {
+			var	paths=getPaths(mapScan);	
+			if($.trim(paths).length==0){
+				return false;
+			}else{
+				$('#'+pref+node+'').attr('value',paths);
+				return true;
+			}
+		}
+		
+		return true;
+	}
+	
+	function getPaths(map){
+			var scan1paths="";
+			var coma=false;
+			for(var i=0;i<map.length;i++){
+				if(coma) scan1paths+=';'
+				scan1paths+=map[i]
+				coma=true;
+			}
+			
+			return scan1paths;
+	}
+	 
+	function validPath(path){
+		var result=false;
+		$.ajax({
+		  async:false,	
+		  url: "fileexist.fn?sfileexist="+path+"&random="+Math.random(),
+		  type: "GET",
+		  dataType: "text"
+		}
+		).done(function(data){
+			if(data.split(",")[0]=='N' || data.split(",")[0]=='n'){
+				result=false;
+			}else{
+				result=true;
+			}
+		  });	
+	  
+		return result;
+	}
+	
+	function golink() {
+		$.ajax(
+		{
+			url:'/cass/initscan.fn',
+			async:true
+		}
+		).done(
+			function(){
+			}
+		);
+		window.location = "setup.htm?spage=2&isprev=true";
+	}
+	
+	function scanTreeModeStartStop(ck){
+		closeTree();
+		$.ajax(
+		{
+			url:'/cass/setscantreemode.f?sscantreemode='+($(ck).is(':checked')?2:0),
+			async:true
+		}
+		).done(
+			function(data){
+				scanTreeMode=$(ck).is(':checked')?2:0;
+				setSTM(scanTreeMode);
+			}
+		);
+	}
+	
+	
+	function toggleDiv(divId) {
+		closeTree();
+		$("#" + divId).toggle();                            
+	}
+        
+        
+        function addRule(disknumber, mapSyncL, mapSyncRuleL){
+            var machine = $('#nodes' + disknumber).val();
+            var extension = $('#extensions' + disknumber).val();
+            var folder = decodeURIComponent(mapSyncRuleL);
+            var text = 'Copy all files ';
+            if (!machine)
+                machine = 'any machine';            
+             if (!folder){ //root
+                folder = decodeURIComponent(mapSyncL);
+             }
+            else{
+                folder = folder.replace(decodeURIComponent(mapSyncL),'');    
+            }
+            if (extension){ //root
+                extension = '"' + extension + '"';
+             }
+            text = text + extension + ' from ' +  machine  + ' to folder '+ folder;
+            var value = '"' + $('#nodes' + disknumber).val() + '"' + ',' + '"' + $('#extensions' + disknumber).val() + '"' + ',' + '"' + folder + '"';
+            
+            if(value){
+                $('#rules' + disknumber).append($('<option>', {
+                        value: value,
+                        text: text
+                }));
+                $('#nodes' + disknumber).val('');
+                $('#extensions' + disknumber).val('');
+                hideRuleForm(disknumber);
+                $("#tableRuleList"+ disknumber).show("slow");
+            }
+        }
+
+        function removeRule(disknumber){
+//            var value = $('#rules1 option:selected').val();
+            $('#rules'+ disknumber +' option:selected').remove();
+        }
+        
+        function addrules(disknumber) {
+            var syncrulesvar="";
+            $('#rules' + disknumber + ' option').each(
+                function (){
+                        if(syncrulesvar!="") syncrulesvar+=";";
+                        syncrulesvar+= this.value;
+                }
+            );
+            $('#syncrules' + disknumber).attr('value',syncrulesvar);
+         }
+         
+         
+         function showRuleForm(disknumber){
+             $("#tableRule"+ disknumber).show("slow");
+             $("#linktosruleform"+ disknumber).hide();
+         }
+         
+          function hideRuleForm(disknumber){
+             $("#tableRule"+ disknumber).hide();
+             $("#linktosruleform"+ disknumber).show();
+         }
+	
+	$(document).ready( function(){
+            
+            
+                    
+
+                   
+                    
+            
+            var ndrives = ***REPNDRIVES***;
+            for (var i=1;i<=ndrives;i++)
+            { 
+                $("#divdrive"+i).show();
+            }
+
+            
+            if(state == "NEW"){
+                $("#nextbutton").show();
+                $("#savebutton").hide();
+            }else{
+                $("#savebutton").show();
+                $("#nextbutton").hide();
+                $("#prebutton").hide();
+            }
+	
+          $("#dialog").dialog({
+            autoOpen: false,
+            modal: true,
+          });
+          
+          $( "#popupdiv" ).dialog({
+            autoOpen: false,
+            height: '600',
+            width: '800',
+            modal: true,
+            resizable: true,
+            closeOnEscape: false,
+            open: function(event, ui) { $(".ui-dialog-titlebar-close", ui.dialog || ui).hide(); },
+            buttons: {
+                "Close": function() {
+                  closeTree();
+                }
+              }
+        });
+        
+	
+	$.ajax(
+		{
+			url:'/cass/getscanmode.fn',
+			async:false
+		}
+  	).done(
+		function(data){
+			scanTreeMode=parseInt(data);
+			if(scanTreeMode>0){
+				$('#ckstm').prop('checked',true);
+			}
+
+			setSTM(scanTreeMode);
+		}
+	);
+	
+	cargarLeyendas();
+	
+	//1
+	if ($("Input[class=checkbox1]").is(":checked")) {
+	console.log("scannode checked");                               
+		$("#myContent").show(); 
+	} else {                               
+		$("#myContent").hide(); 
+	}
+	
+	if ($("Input[class=checkbox1b]").is(":checked")) {
+	console.log("scannode checked");                               
+		$("#myContentBak1").show(); 
+	} else {                               
+		$("#myContentBak1").hide(); 
+	}
+	
+	if ($("Input[class=checkbox1c]").is(":checked")) {
+	console.log("scannode checked");                               
+		$("#myContentSnc1").show(); 
+	} else {                               
+		$("#myContentSnc1").hide(); 
+	}
+
+
+	//2
+	if ($("Input[class=checkbox2]").is(":checked")) {
+	console.log("scannode checked");                               
+		$("#myContent2").show(); 
+	} else {                               
+		$("#myContent2").hide(); 
+	}
+	
+	if ($("Input[class=checkbox2b]").is(":checked")) {
+	console.log("scannode checked");                               
+		$("#myContentBak2").show(); 
+	} else {                               
+		$("#myContentBak2").hide(); 
+	}
+	
+	if ($("Input[class=checkbox2c]").is(":checked")) {
+	console.log("scannode checked");                               
+		$("#myContentSnc2").show(); 
+	} else {                               
+		$("#myContentSnc2").hide(); 
+	}
+
+
+	//3
+	if ($("Input[class=checkbox3]").is(":checked")) {
+	console.log("scannode checked");                               
+		$("#myContent3").show(); 
+	} else {                               
+		$("#myContent3").hide(); 
+	}
+	
+	if ($("Input[class=checkbox3b]").is(":checked")) {
+	console.log("scannode checked");                               
+		$("#myContentBak3").show(); 
+	} else {                               
+		$("#myContentBak3").hide(); 
+	}
+	
+	if ($("Input[class=checkbox3c]").is(":checked")) {
+	console.log("scannode checked");                               
+		$("#myContentSnc3").show(); 
+	} else {                               
+		$("#myContentSnc3").hide(); 
+	}
+
+
+	//4
+	if ($("Input[class=checkbox4]").is(":checked")) {
+	console.log("scannode checked");                               
+		$("#myContent4").show(); 
+	} else {                               
+		$("#myContent4").hide(); 
+	}
+	
+	if ($("Input[class=checkbox4b]").is(":checked")) {
+	console.log("scannode checked");                               
+		$("#myContentBak4").show(); 
+	} else {                               
+		$("#myContentBak4").hide(); 
+	}                                               
+
+	if ($("Input[class=checkbox4c]").is(":checked")) {
+	console.log("scannode checked");                               
+		$("#myContentSnc4").show(); 
+	} else {                               
+		$("#myContentSnc4").hide(); 
+	}
+        
+        $(".donatelb").popover({
+            content: LANG.setupback.help.backcheckbox,
+            placement:"right",
+            trigger:"hover",
+			animation: false
+         }); 
+        
+        $(".synclb").popover({
+            content: LANG.setupback.help.synccheckbox,
+            placement:"right",
+            trigger:"hover",
+			animation: false
+         }); 
+         
+        $("#sliderdiv").popover({
+            content: LANG.setupback.help.slider,
+            placement:"right",
+            trigger:"hover",
+			animation: false
+        }); 
+        
+        $(".btnselbkpdir").popover({
+            content: LANG.setupback.help.backselect,
+            placement:"right",
+            trigger:"hover",
+			animation: false
+        });
+        
+        $(".btnselsyncdir").popover({
+            content: LANG.setupback.help.syncselect,
+            placement:"right",
+            trigger:"hover",
+			animation: false
+        });
+         
+        
+});
+						   
+</script>
+
+  </head>
+  
+
+
+  <body id="body_1">
+       <div id="popupdiv" title="Select Folders"></div>
+
+      <form id='frm' action="setup.htm" method="get">
+         
+              
+        <div class="container">
+            <div class="row">
+                <div class="span9">
+                    <section id="sec1"> 
+                        <fieldset>
+                        <legend>Backup & Sync</legend>
+                        
+                        <div id="sliderdiv">
+                        ***REP3***
+                        </div>
+					<br>
+
+
+                        ***REPRECOM***
+                       
+                        <div id="divdrive1" style="display: none">
+                            
+                            <h4 id='l1'>Drive #1</h4>
+                             <label class="checkbox" style="display: none"><input type="checkbox" name="scannode1" onclick="toggleDiv('myContent');" class="checkbox1" ***REP2***>Scan this drive for files</label>                        
+                             <label class="checkbox donatelb"><input type="checkbox" name="backupnode1" onclick="toggleDiv('myContentBak1');" class="checkbox1b" ***BAK2***>Donate free space for backup</label>
+                             <div id="myContentBak1">
+                                 <span class="help-block" id='b1'>Please specify the directory where you would like to store backup files.</span>
+                                 <input type='hidden' name='backuppath1' id='backuppath1' />
+                                                             <button type="button" class="btn btnselbkpdir" onclick="treeBk1(this);">Select directory</button> 
+                             </div>
+
+                             <label class="checkbox synclb"><input type="checkbox" name="sncnode1" onclick="toggleDiv('myContentSnc1');" class="checkbox1c" ***SNC2***>Enable sync for this drive.</label>
+                             <div id="myContentSnc1">
+                                <span class="help-block" id='y1'>Please specify the directory to sync files.</span>
+                                <input type='hidden' name='sncpath1' id='syncpath1' />
+                                <button type="button" class="btn btnselsyncdir" onclick="treeSync1(this);">Select directory</button>
+                                <br><br>
+                               
+                                <button type="button" class="btn" id="linktosruleform1" onclick="showRuleForm('1')">Add Sync Rule</button>
+                                
+                                <table id='tableRule1' style="display: none">
+                                    <tr valign='top'>   
+                                        <td>New Sync Rule</td>
+                                    </tr>
+                                    <tr valign='top'>
+                                        <td>From</td>
+                                        <td>with file extension</td>
+                                        <td>to folder: </td>                                                                                
+                                    </tr>
+                                    <tr valign='top'>
+                                        <td><select id="nodes1" name="nodes1">
+                                                <option value="">Any machine</option>
+                                                ***SNCNODES***
+                                            </select>
+                                        </td>
+                                        <td>
+                                            <select id="extensions1" name="extensions1">
+                                                <option value="">Any extension</option>
+                                                ***SNCFILEEXT***
+                                            </select>
+                                        </td>
+                                        <td>
+                                            <button type="button" class="btn" onclick="treeSyncRule(this,mapSync1);">...</button>  
+                                        </td>                                                                                
+                                    </tr>
+                                    <tr valign='top'>   
+                                        <td><button type="button" class="btn" onclick="addRule(1,mapSync1,mapSyncRule);mapSyncRule = new Array()">+ Add</button><button type="button" class="btn" onclick="hideRuleForm('1');">Cancel</button></td>
+                                    </tr>
+                                     <tr valign='top'>   
+                                        <td><br></td>
+                                    </tr>
+                                </table>
+                                <table id='tableRuleList1' ***SNC4***>
+                                    <tr valign='top'>   
+                                        <td>Rule list</td>
+                                    </tr>
+
+                                    <tr valign='top'>
+                                        <td colspan="2"><select id='rules1' size='5' class="span5"/>***SNC3***</select></td><td><button type="button" class="btn" onclick="removeRule('1');">Remove</button> </td> 
+                                    </tr>  
+                                </table>
+                                
+                                                             
+                    
+                             <br><br>
+                        </div>
+                        
+                       
+                       
+                       <div id="divdrive2" style="display: none">
+
+                       
+                            <h4 id='l2'>Drive #2</h4>
+                             <label class="checkbox" style="display: none"><input type="checkbox" name="scannode2" onclick="toggleDiv('myContent2');" class="checkbox2" ***REP2b***>Scan this drive for files</label>                        
+                             <label class="checkbox donatelb"><input type="checkbox" name="backupnode2" onclick="toggleDiv('myContentBak2');" class="checkbox2b" ***BAK2b***>Donate free space for backups</label>
+                             <div id="myContentBak2">
+                                 <span class="help-block" id='b2'>Please specify the directory where you would like to store backup files.</span>
+                                 <input type='hidden' name='backuppath2' id='backuppath2' />
+                                 <button type="button" class="btn btnselbkpdir" onclick="treeBk2(this);">Select directory</button> 
+                             </div>
+
+                             <label class="checkbox synclb"><input type="checkbox" name="sncnode2" onclick="toggleDiv('myContentSnc2');" class="checkbox2c" ***SNC2b***>Enable sync for this drive</label>
+                             <div id="myContentSnc2">
+                                 <span class="help-block" id='y2'>Please specify the directory to sync files.</span>
+                                 <input type='hidden' name='sncpath2' id='syncpath2' />
+                                                             <button type="button" class="btn btnselsyncdir" onclick="treeSync2(this);">Select directory</button> 
+                                                            
+                                                             
+                                <br><br>
+                                <button type="button" class="btn" id="linktosruleform2" onclick="showRuleForm('2')">Add Sync Rule</button>
+                                  
+                                                             
+                                <table id='tableRule2' style="display: none">
+                                    <tr valign='top'>   
+                                        <td>New Sync Rule</td>
+                                    </tr>
+                                    <tr valign='top'>
+                                        <td>From</td>
+                                        <td>with file extension</td>
+                                        <td>to folder: </td>                                                                                
+                                    </tr>
+                                    <tr valign='top'>
+                                        <td><select id="nodes2" name="nodes2">
+                                                <option value="">Any machine</option>
+                                                ***SNCNODES***
+                                            </select>
+                                        </td>
+                                        <td>
+                                            <select id="extensions2" name="extensions2">
+                                                <option value="">Any extension</option>
+                                                ***SNCFILEEXT***
+                                            </select>
+                                        </td>
+                                        <td>
+                                            <button type="button" class="btn" onclick="treeSyncRule(this,mapSync2);">...</button>  
+                                        </td>                                                                                
+                                    </tr>
+                                    <tr valign='top'>   
+                                        <td><button type="button" class="btn" onclick="addRule(2,mapSync2,mapSyncRule);mapSyncRule = new Array()">+ Add</button><button type="button" class="btn" onclick="hideRuleForm('2');">Cancel</button></td>
+                                    </tr>
+                                     <tr valign='top'>   
+                                        <td><br></td>
+                                    </tr>
+                                </table>
+                                <table id='tableRuleList2' ***SNC4b***>
+                                    <tr valign='top'>   
+                                        <td>Rule list</td>
+                                    </tr>
+
+                                    <tr valign='top'>
+                                        <td colspan="2"><select id='rules2' size='5' class="span5"/>***SNC3b***</select></td><td><button type="button" class="btn" onclick="removeRule('2');">Remove</button> </td> 
+                                    </tr>  
+                                </table>
+                             <br><br>
+                             </div>
+                          
+                                                        
+                        </div>
+                        <div id="divdrive3" style="display: none">
+                            <h4 id='l3'>Drive #3</h4>
+                             <label class="checkbox" style="display: none"><input type="checkbox" name="scannode3" onclick="toggleDiv('myContent3');" class="checkbox3" ***REP2c***>Scan this drive for files</label>                        
+                             <label class="checkbox donatelb"><input type="checkbox" name="backupnode3" onclick="toggleDiv('myContentBak3');" class="checkbox3b" ***BAK2c***>Donate free space for backups</label>
+                             <div id="myContentBak3">
+                                 <span class="help-block" id='b3'>Please specify the directory where you would like to store backup files.</span>
+                                <input type='hidden' name='backuppath3' id='backuppath3' />
+                                                        <button type="button" class="btn btnselbkpdir" onclick="treeBk3(this);">Select directory</button> 
+                             </div>
+
+                             <label class="checkbox synclb"><input type="checkbox" name="sncnode3" onclick="toggleDiv('myContentSnc3');" class="checkbox3c" ***SNC2c***>Enable sync for this drive</label>
+                             <div id="myContentSnc3">
+                                 <span class="help-block" id='y3'>Please specify the directory to sync files.</span>
+                                 <input type='hidden' name='sncpath3' id='syncpath3' />
+                                <button type="button" class="btn btnselsyncdir" onclick="treeSync3(this);">Select directory</button> 
+                                
+                                <br><br>
+                                            
+                                <button type="button" class="btn" id="linktosruleform3" onclick="showRuleForm('3')">Add Sync Rule</button>
+                                
+                                <table id='tableRule3' style="display: none">
+                                    <tr valign='top'>   
+                                        <td>New Sync Rule</td>
+                                    </tr>
+                                    <tr valign='top'>
+                                        <td>From</td>
+                                        <td>with file extension</td>
+                                        <td>to folder: </td>                                                                                
+                                    </tr>
+                                    <tr valign='top'>
+                                        <td><select id="nodes3" name="nodes3">
+                                                <option value="">Any machine</option>
+                                                ***SNCNODES***
+                                            </select>
+                                        </td>
+                                        <td>
+                                            <select id="extensions3" name="extensions3">
+                                                <option value="">Any extension</option>
+                                                ***SNCFILEEXT***
+                                            </select>
+                                        </td>
+                                        <td>
+                                            <button type="button" class="btn" onclick="treeSyncRule(this,mapSync3);">...</button>  
+                                        </td>                                                                                
+                                    </tr>
+                                    <tr valign='top'>   
+                                        <td><button type="button" class="btn" onclick="addRule(3,mapSync3,mapSyncRule);mapSyncRule = new Array()">+ Add</button><button type="button" class="btn" onclick="hideRuleForm('3');">Cancel</button></td>
+                                    </tr>
+                                     <tr valign='top'>   
+                                        <td><br></td>
+                                    </tr>
+                                </table>
+                                <table id='tableRuleList3' ***SNC4c***>
+                                    <tr valign='top'>   
+                                        <td>Rule list</td>
+                                    </tr>
+
+                                    <tr valign='top'>
+                                        <td colspan="2"><select id='rules3' size='5' class="span5"/>***SNC3c***</select></td><td><button type="button" class="btn" onclick="removeRule('3');">Remove</button> </td> 
+                                    </tr>  
+                                </table>
+                             <br><br>  
+                                                             
+                             </div>
+                                                                   
+                        </div>
+                        
+                        <div id="divdrive4" style="display: none">
+
+                            <h4 id='l4'>Drive #4</h4>
+                            <label class="checkbox" style="display: none"><input type="checkbox" name="scannode4" onclick="toggleDiv('myContent4');" class="checkbox4" ***REP2d***>Scan this drive for files</label>                                                    
+                            <label class="checkbox donatelb"><input type="checkbox" name="backupnode4" onclick="toggleDiv('myContentBak4');" class="checkbox4b" ***BAK2d***>Donate free space for backups</label>
+                            <div id="myContentBak4">
+                                <span class="help-block" id='b4'>Please specify the directory where you would like to store backup files.</span>
+                                <input type='hidden' name='backuppath4' id='backuppath4' />
+                                                            <button type="button" class="btn btnselbkpdir" onclick="treeBk4(this);">Select directory</button> 
+                            </div>
+
+                            <label class="checkbox synclb"><input type="checkbox" name="sncnode4" onclick="toggleDiv('myContentSnc4');" class="checkbox4c" ***SNC2d***>Enable sync for this drive</label>
+                            <div id="myContentSnc4">
+                                <span class="help-block" id='y4'>Please specify the directory to sync files.</span>
+                               <input type='hidden' name='sncpath4' id='syncpath4' />
+                               <button type="button" class="btn btnselsyncdir" onclick="treeSync4(this);">Select directory</button> 
+                               
+                                                           <br><br>
+                                <button type="button" class="btn" id="linktosruleform4" onclick="showRuleForm('4')">Add Sync Rule</button>
+                                
+                                <table id='tableRule4' style="display: none">
+                                    <tr valign='top'>   
+                                        <td>New Sync Rule</td>
+                                    </tr>
+                                    <tr valign='top'>
+                                        <td>From</td>
+                                        <td>with file extension</td>
+                                        <td>to folder: </td>                                                                                
+                                    </tr>
+                                    <tr valign='top'>
+                                        <td><select id="nodes4" name="nodes4">
+                                                <option value="">Any machine</option>
+                                                ***SNCNODES***
+                                            </select>
+                                        </td>
+                                        <td>
+                                            <select id="extensions4" name="extensions4">
+                                                <option value="">Any extension</option>
+                                                ***SNCFILEEXT***
+                                            </select>
+                                        </td>
+                                        <td>
+                                            <button type="button" class="btn" onclick="treeSyncRule(this,mapSync4);">...</button>  
+                                        </td>                                                                                
+                                    </tr>
+                                    <tr valign='top'>   
+                                        <td><button type="button" class="btn" onclick="addRule(4,mapSync4,mapSyncRule);mapSyncRule = new Array()">+ Add</button><button type="button" class="btn" onclick="hideRuleForm('4');">Cancel</button></td>
+                                    </tr>
+                                     <tr valign='top'>   
+                                        <td><br></td>
+                                    </tr>
+                                </table>
+                                <table id='tableRuleList4' ***SNC4d***>
+                                    <tr valign='top'>   
+                                        <td>Rule list</td>
+                                    </tr>
+
+                                    <tr valign='top'>
+                                        <td colspan="2"><select id='rules4' size='5' class="span5"/>***SNC3d***</select></td><td><button type="button" class="btn" onclick="removeRule('4');">Remove</button> </td> 
+                                    </tr>  
+                                </table>
+                             <br><br>
+                            </div>
+
+                            
+                        </div>
+                        
+                        <input type='hidden' name='blacklist' id='blacklist'/>
+                                                
+                        </fieldset>
+                    </section>      <!--Body content-->
+                    <input type='hidden' id='syncrules1' name='syncrules1'/>
+                    <input type='hidden' id='syncrules2' name='syncrules2'/>
+                    <input type='hidden' id='syncrules3' name='syncrules3'/>                    
+                    <input type='hidden' id='syncrules4' name='syncrules4'/>                    
+                    <input id="cpage" type="hidden" name="cpage" value="8">
+                    <input id="spage" type="hidden" name="spage" value="8">
+                    <br>
+                    <div id='buttos'>
+                            <button id="prebutton" type="button" class="btn" onclick="golink();">Previous</button>
+                            <button id="nextbutton" type="button" class="btn btn-primary" onclick="validateAndSend();">Next</button>
+                            <button id="savebutton" type="button" class="btn btn-primary" onclick="gosave();">Save</button>
+                    </div>
+			
+                  
+                </div>
+            </div>
+        </div>
+    </form>
+      
+    <!-- Le javascript
+    ================================================== -->
+    <!-- Placed at the end of the document so the pages load faster
+    <script src="bootstrap/js/jquery.js"></script>
+    <script src="bootstrap/js/bootstrap-transition.js"></script>
+    <script src="bootstrap/js/bootstrap-alert.js"></script>
+    <script src="bootstrap/js/bootstrap-modal.js"></script>
+    <script src="bootstrap/js/bootstrap-dropdown.js"></script>
+    <script src="bootstrap/js/bootstrap-scrollspy.js"></script>
+    <script src="bootstrap/js/bootstrap-tab.js"></script>
+    <script src="bootstrap/js/bootstrap-tooltip.js"></script>
+    <script src="bootstrap/js/bootstrap-popover.js"></script>
+    <script src="bootstrap/js/bootstrap-button.js"></script>
+    <script src="bootstrap/js/bootstrap-collapse.js"></script>
+    <script src="bootstrap/js/bootstrap-carousel.js"></script>
+    <script src="bootstrap/js/bootstrap-typeahead.js"></script> -->
+
+  </body>
+  <body id="body_2">
+  	<div id='dialog' title='Confirmation Required' style='z-index: 80000'></div>
+  </body>
+
+</html>

@@ -1,0 +1,7 @@
+"library/containers"
+"library/application support"
+"library/caches"
+"library/developer"
+"library/preferences"
+".trash"
+"_face"

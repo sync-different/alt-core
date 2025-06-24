@@ -1,0 +1,32 @@
+<html>
+<head>
+<script type="text/javascript">
+<!--
+function getUrlVars()
+        {
+           var vars = [], hash;
+            var hashes = window.location.href.slice(window.location.href.indexOf('?') + 1).split('&');
+            for(var i = 0; i < hashes.length; i++)
+            {
+                hash = hashes[i].split('=');
+                vars.push(hash[0]);
+                vars[hash[0]] = hash[1];
+            }
+            return vars;
+        }
+        
+
+function delayer(){
+	clusterID = getUrlVars()["cluster"];
+	if (typeof clusterID != "undefined")         
+    	window.location = "uiv2/indexv2.htm?cluster=" + clusterID;
+	else
+    	window.location = "uiv2/indexv2.htm";
+	
+}
+//-->
+</script>
+</head>
+<body onLoad="setTimeout('delayer()', 1000)">
+</body>
+</html>

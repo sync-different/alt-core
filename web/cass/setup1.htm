@@ -1,0 +1,680 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="">
+    <meta name="author" content="">
+
+    <!-- styles -->
+    <link href="bootstrap/css/bootstrap.css" rel="stylesheet">
+    <link href="bootstrap/css/bootstrap-responsive.css" rel="stylesheet">
+    
+    <style type="text/css">
+      body {
+		font-family: Helvetica;
+		font-size: 14px;
+		font-weight: normal;
+        padding-top: 60px;
+        padding-bottom: 40px;
+      }
+    </style>
+
+    <!-- HTML5 shim, for IE6-8 support of HTML5 elements -->
+    <!--[if lt IE 9]>
+      <script src="http://html5shim.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+
+    <!-- Fav and touch icons -->
+    <link rel="shortcut icon" href="bootstrap/ico/favicon.ico">
+    <link rel="apple-touch-icon-precomposed" sizes="144x144" href="bootstrap/ico/apple-touch-icon-144-precomposed.png">
+    <link rel="apple-touch-icon-precomposed" sizes="114x114" href="bootstrap/ico/apple-touch-icon-114-precomposed.png">
+    <link rel="apple-touch-icon-precomposed" sizes="72x72" href="bootstrap/ico/apple-touch-icon-72-precomposed.png">
+    <link rel="apple-touch-icon-precomposed" href="bootstrap/ico/apple-touch-icon-57-precomposed.png">
+     
+    <!-- scripts -->
+    <script src="bootstrap/js/bootstrap.min.js"></script>
+    <script type="text/javascript" src="messages_en.js"></script>
+    <script type="text/javascript" src="jquery.min.js"></script>
+    <script src="bootstrap/js/bootstrap-tooltip.js"></script>
+    <script src="bootstrap/js/bootstrap-popover.js"></script>
+	<script src="bootstrap/js/bootstrap-modal.js"></script>
+    
+    <script>
+            var servers = [];
+            var serversignature = "***REP3***";
+            var state = "***REP4***";
+            var computername = "***REP5***"
+            var clientOnLoad = false;
+            var checkPw = false;
+            var userPass = {};
+			var userEmail = {};
+            ***REP8B***
+            
+
+                        function loadAlteranteServers(){
+                            $("#nextbutton").attr('disabled','disabled');
+                            $("#expressbutton").attr('disabled','disabled');
+                            $("#spansignature").html("Connect to Server: <img src='ajax-loader.gif'/><i> Looking for Alterante servers in your network...</i>");
+                            $.ajax(
+                            {
+                                    url:'/cass/getalteranteservers.fn',
+                                    async:true,
+                                    data: { retries: "6"}
+                            }
+                            ).done(
+                                    function(data){
+                                        if($("#mode1").val()=="client"){
+                                            $("#nextbutton").removeAttr('disabled');
+                                            $("#expressbutton").removeAttr('disabled');
+                                            servers = [];
+                                            eval(data);
+                                            completeAlteranteServers();
+                                        }
+                                    }
+                                ); 
+                       }
+					   
+					   
+
+					   
+						function share(){
+							$('#myModal').modal('hide');
+							
+							var sList = "";
+							if ($('input[name=optionsRadios]:checked').val() == "option2"){
+								$('input.groupuser').each(function () {
+									if(this.checked){
+										if(sList!="") sList+=";";
+										sList += $(this).val();
+									}
+								});
+								if(!sList){
+									alert("Selected at least one user");
+									return;
+								}								
+							}
+							
+                            $.ajax(
+								{
+                                    url:'/cass/doshare.fn?sharetype=CLUSTER&shareusers=' + sList,
+                                    async:true
+								}
+                            ).done(
+                                    function(data){
+										$('#sharelinkModal').remove();
+										$(data).modal();
+                                    }
+									
+                                ); 
+						}
+						
+						function doneinvitationmodal(){
+							if ($('input.sendbymail').is(':checked')) {
+								var sList = "";
+								if ($('input[name=optionsRadios]:checked').val() == "option2"){
+									$("input.groupuser").each(function () {
+										if(this.checked){
+											if(sList!="") sList+=";";
+											sList += $(this).val();
+										}
+									});					
+								}
+								$.ajax(
+								{
+                                    url:'/cass/invitation.fn?shareusers='+ sList + '&sharetype=CLUSTER',
+                                    async:true
+								}
+								).done(
+										function(data){
+											//alert("ok");
+										}
+									);
+								
+							}
+							$('#sharelinkModal').hide();
+						}
+					   
+						var htmlmodal = false;
+						function getmodal(){
+								//alert('get modal');
+								 $.ajax(
+								{
+                                    url:'/cass/getsharesettingsmodal.fn?sharetype=CLUSTER&sharehtml=' + htmlmodal,
+                                    async:true
+								}
+								).done(
+                                    function(data){
+										//alert(data);
+										if(htmlmodal){
+											$('#myModal').html(data);
+											$('#myModal').modal('show');
+										}else{
+											htmlmodal = true;
+											//alert(htmlmodal);
+											$(data).modal();
+										}
+                                    }
+                                );
+
+						}
+					   
+                       
+                    
+                        function completeAlteranteServers(){
+                               $("#mode1").val("client");
+                               $("#spansignature").html("Connect to Server: <select id='signature' name='signature'></select>&nbsp;<a id='refresh' href='#' onclick='loadAlteranteServers();return false;'>Refresh</a>");
+                                var listItems= "";
+                                if(servers.length>0){                                            
+                                    $.each(servers, function(){
+                                     listItems += '<option value="'+this+'">'+this+'</option>';
+                                    });
+
+                                }else{
+                                    listItems += '<option value="">No servers found</option>';
+                                }
+                                $("#signature").html(listItems);
+                        }
+            
+                        function loadAlteranteServersOnStart(){
+                            
+                            $("#nextbutton").attr('disabled','disabled');
+                            $("#expressbutton").attr('disabled','disabled');
+
+                            $("#serverfound").html("<img src='ajax-loader.gif'/><i> Looking for others Alterante servers in your network...</i> ");
+                           $.ajax(
+                            {
+                                    url:'/cass/getalteranteservers.fn',
+                                    async:true,
+                                    data: { retries: "6"}
+                            }
+                            ).done(
+                                    function(data){
+                                        if($("#mode1").val()=="server"){
+                                        
+                                            $("#nextbutton").removeAttr('disabled');
+                                            $("#expressbutton").removeAttr('disabled');
+                                            servers = [];
+                                            //alert(data);
+                                            eval(data);
+                                            $("#serverfound").hide();
+                                            if(servers.length>0){
+    //                                            alert("An Alterante server has been found over the network");
+                                               var hasFound = "<i class='icon-exclamation-sign'/>\n\
+                                                        Other Alterante servers have been detected in your network.";
+
+                                                if(state == "NEW"){
+                                                    hasFound = hasFound + "Do you wish to connect to an existing server?.\n\
+                                                            <button type='button' class='btn' onclick='completeAlteranteServers();return false;'>Yes</button>\n\
+                                                            <button type='button' class='btn' onclick='hidedivserverfound();return false;'>No</button>"
+                                                }
+                                                $("#serverfound").html(hasFound);
+                                                $("#serverfound").show("slow");
+
+                                            }
+                                        }
+                                    }
+                                );
+                       }
+                        function hidedivserverfound(){
+                            $("#serverfound").hide("slow");
+                        }
+                        
+                   
+                        
+                    function checkAndSumbit() {
+                        var sign = $('#signature').val();
+                        if(!sign && sign==''){
+                            alert('Please complete the server name');
+                        }else{
+                           if(($("#mode1").val()=="server") && ($.inArray(sign, servers)> -1)){
+                                alert('The server name already exist in your network. Please choose a different one');   
+                           }else if($("#adminuser").val()==""){
+                               alert('Please complete the adminitrator name');   
+                           }else if(checkPw){
+                               if($("#adminpw1").val()=="" ){
+                                   alert('Please complete the adminitrator password');   
+                                }else if($("#adminpw2").val()==""){
+                                   alert('Please confirm the adminitrator password');  
+                                }else if($("#adminpw1").val()!=$("#adminpw2").val()){
+                                   alert("The administrator passwords don't match");   
+                               }else{
+                                   return true;
+                                }
+                           } else {
+                               return true;
+                           }
+                        }
+                        return false;
+                    }
+                    
+                     function gonext() {
+                        if(checkAndSumbit()){
+                            addusers();
+                            $("#spage").val(2);
+                            $('#frm1').submit();
+                        }
+                    }
+                    
+                    
+                    function gosave() {
+                        if(checkAndSumbit()){
+                            addusers();
+                            $("#expresssetup").val(false);
+                            $("#spage").val(1);
+                            $('#frm1').submit();
+                        }
+                    }
+                    
+                     function addusers() {
+                        var accounts="";
+                        $('#accounts option').each(
+                            function (){
+                                    if(accounts!="") accounts+=";";
+                                    accounts+= this.value;
+                                    var value = userPass[this.value];
+                                    accounts+=","+value;
+									value = userEmail[this.value];
+                                    accounts+=","+value;
+                            }
+                        );
+                        $('#useraccounts').attr('value',accounts);
+                     }
+                    
+                    function changeServer(){                        
+                        $("#spansignature").html("Please choose a name for this Alterante server: <input type='text' name='signature' id='signature'/><div id='serverfound'/>");
+                        if(clientOnLoad){
+                            $("#signature").val(computername);
+                        }else{
+                            $("#signature").val(serversignature);    
+                        }
+                        
+                        loadAlteranteServersOnStart();                    
+                    }
+                    
+                                            
+                       function showPassword() {
+                           $("#linktoshowpw").hide();
+                           $("#passdiv").show("slow");
+                           $('#adminpw1').val("");
+                           $('#adminpw2').val("");
+                           checkPw = true;
+                       }
+                       
+                                              
+                      function hidePassword() {
+                           $("#linktoshowpw").show();
+                           $("#passdiv").hide();
+                           $('#adminpw1').val("");
+                           $('#adminpw2').val("");
+                           checkPw = false;
+                       }
+					   
+                    
+                       function showUsername() {
+                           $("#adminuser").show("slow");
+                           $("#linktoshowuser").hide();
+                           $("#adminuserlabel").hide();
+                           
+                           
+//                           $('#pw1').val("");
+//                           checkPw = true;
+                       }
+                       
+//                                              
+//                      function hideUsername() {
+//                           $("#linktoshowpw").show();
+//                           $("#passdiv").hide();
+//                           $('#pw1').val("");
+//                           checkPw = false;
+//                       }
+
+
+                    function addAccount(){
+						if($('#newusername').val() && $('#newuserpassword').val() && $('#newuseremail').val()){
+							var value = $('#newusername').val();
+							var duplicate = false;
+							if(value!=''){
+									$('#accounts option').each(
+											function (){
+													if(value == this.value){
+														duplicate = true;
+														return;
+													}
+											}
+									);
+								if(!duplicate && value != $("#adminuser").val()){
+									$('#accounts').append($('<option>', {
+											value: value,
+											text: value
+									}));
+									userPass[value] = $('#newuserpassword').val();
+									userEmail[value] = $('#newuseremail').val();
+									$('#newusername').val('');
+									$('#newuserpassword').val('');
+									$('#newuseremail').val('');
+								}else{
+									alert("username already exists"); 
+							   }
+							}
+						}else{
+							alert("Please complete all fields to add a new user");
+						}
+					}
+
+                    function removeAccount(){
+                        var value = $('#accounts option:selected').val();
+                        delete userPass[value];
+                        $('#accounts option:selected').remove();
+                    }
+                       
+                    $(document).ready(function() {
+                       
+
+                        
+                        if(state == "NEW"){
+                            $("#savebutton").hide();
+                            checkPw = true;
+                        }else{
+                            $("#nextbutton").hide();
+                        }
+
+
+
+                        if($("#mode1").val()=="client"){
+                            clientOnLoad = true;
+                            $("#spansignature").html("Connected to server: ***REP3*** &nbsp;<a id='refresh' href='#' onclick='loadAlteranteServers();return false;'>Connect to other server</a><input type='hidden' name='signature' id='signature'/>");                                 
+                        }else{
+                            var servername = 'Server name: ***REP3*** &nbsp;<a id="refreshservers" href="#" onclick="changeServer();return false;">Change name</a><input type="hidden" name="signature" id="signature"/>';
+                            if(state == "NEW"){
+                                $("#spansignature").html(servername + "<div id='serverfound'/>");
+                                loadAlteranteServersOnStart();
+                            }else{
+                                $("#spansignature").html(servername);                                 
+                            }
+                        }
+                        $("#signature").val(serversignature);
+                            
+                            
+                            
+                        $("#mode1").change(function(){
+                            if($(this).val()=="client"){
+                                loadAlteranteServers();
+                            }else{                                
+                                changeServer();
+                            }
+                        });
+                        
+                        
+                        var allowotherusers = ***REP7***;
+                        
+                        if(allowotherusers){
+                            $("#allowotherusers").val("true");
+                        } else {
+                            $("#allowotherusers").val("false");
+                            $("#tableUsers").hide();
+                        }
+                        
+                        $("#allowotherusers").change(function(){
+                            if($(this).val()=="true"){
+                                $("#tableUsers").show("slow");
+                            }else{                                
+                                $("#tableUsers").hide("slow");
+                            }
+                        });
+						
+						$("#allowremote").change(function(){
+                            if($(this).val()=="true"){
+                                $('#privacypolicymodal').modal('show');
+                            }
+                        });
+
+	                     $("#allowremote").popover({
+                            content: LANG.setupnetwork.help.allowremote,
+                            placement:"right",
+							trigger:"hover",
+							animation: false
+                        });
+                        
+                        $("#mode1").popover({
+                            content: LANG.setupnetwork.help.mode1,
+                            placement:"right",
+                            trigger:"hover",
+							animation: false
+                        });
+                        $("#linktoshowuser").popover({
+                            content: LANG.setupnetwork.help.changeadminpass,
+                            placement:"right",
+                            trigger:"hover",
+							animation: false
+                        });
+                        $("#linktoshowpw").popover({
+                            content: LANG.setupnetwork.help.changeadminpass,
+                            placement:"bottom",
+                            trigger:"hover",
+							animation: false
+                        });
+                        $("#refreshservers").popover({
+                            content: LANG.setupnetwork.help.changeserver,
+                            placement:"right",
+                            trigger:"hover",
+							animation: false
+                        });
+                        $("#allowpeer").popover({
+                            content: LANG.setupnetwork.help.allowpeer,
+                            placement:"right",
+                            trigger:"hover",
+							animation: false
+                        });
+                         $("#allowotherusers").popover({
+                            content: LANG.setupnetwork.help.allowotherusers,
+                            placement:"right",
+                            trigger:"hover",
+							animation: false
+                        });                        
+                    });
+						
+						function openadduserModal(){
+							$('#myModal').modal('hide');
+							$('#newusermodal').modal('show');	
+						}
+						
+						function closeadduserModal(){
+							$('#newusermodal').modal('hide');	
+							$('#myModal').modal('show');
+						}
+						
+					function adduser(){
+						if($('#addnewusername').val() && $('#addnewpassword').val() && $('#addnewuseremail')){
+							$.ajax(
+								{
+									url:'/cass/adduser.fn?boxuser='+ $('#addnewusername').val() +'&boxpass=' + $('#addnewpassword').val() + '&newuseremail=' + $('#addnewuseremail').val(),
+									async:true
+								}
+							).done(
+									function(data){
+										$('#allowotherusers').val("true");
+										$('#allowotherusers').change();
+										var htmltoappend = "<div class=\"checkbox\">" +
+												"<label>" +
+													"<input class=\"group1\" type=\"checkbox\" value=\"" + $('#addnewusername').val() +"\">" +
+													$('#addnewusername').val() +
+												"</label>" +
+											"</div>";
+										$('#checkboxes').append(htmltoappend);
+										$('#accounts').append($("<option></option>").attr("value",$('#addnewusername').val()).text($('#addnewusername').val()));
+										userPass[$('#addnewusername').val()] = "";
+										
+										$('#newusermodal').modal('hide');	
+										$('#myModal').modal('show');
+										
+										
+										
+										
+										
+									}
+								); 
+						}else{
+							alert("Please complete all fields to add a new user");
+						}
+					}
+
+                        
+                        
+                        
+
+                 </script>   
+                    
+  </head>
+
+  <body>
+
+      <form id="frm1" action="setup.htm" method="get">
+        <div class="container">
+            <div class="row">
+                <div class="span9">                        
+                        
+                    <section id="sec1"> 
+                        <fieldset>
+                        <legend>Network</legend>
+                        <span class="help-block">Do you wish to install your own Alterante server or connect to an existing one? If this is your first install, choose Server</span>
+                        <select id="mode1" name="mode1" class='span5'>
+                          <option value="server" ***REP1A***>I wish to install my own Alterante Server (Server)</option>
+                          <option value="client" ***REP1B***>Connect to an existing Alterante Server (Client)</option>
+                        </select>
+
+                        
+                        <br><br>
+
+                        <span id="spansignature" class="help-block"></span>
+                        <br>
+                        Allow access to this Alterante from other devices?
+                        <select id="allowpeer" name="allowpeer" class="span2">
+                            <option value="true" ***REP2A***>Yes</option>
+                            <option value="false" ***REP2B***>No</option>
+                          <!--<option value="ask" ***REP2C***>Ask me first</option>-->
+                        </select>
+                            <br>
+                            <br>
+						
+						<legend>Remote Access</legend>
+
+
+                        Allow remote access to this Alterante from devices outside your network?
+                        <select id="allowremote" name="allowremote" class="span2">
+                            <option value="true" ***REP9A***>Yes</option>
+                            <option value="false" ***REP9B***>No</option>
+                        </select>
+						***REP10***
+						
+						<div class="modal hide" id="privacypolicymodal" tabindex="-1" role="dialog" aria-labelledby="privacypolicyLabel" aria-hidden="true" data-backdrop="static" data-keyboard="false">
+                            <div class="modal-header">
+                                    <h3 id="myModalLabel">Privacy Policy</h3>
+							</div>
+							<div class="modal-body">
+								<label class="the-fix">
+									<div>***REPEULA***</div>                            
+								 </label>
+							</div>
+							<div class="modal-footer">
+								<button class="btn" data-dismiss="modal" aria-hidden="true" onclick="$('#allowremote').val('false');">Decline</button>
+								<button type="button" class="btn btn-primary" data-dismiss="modal" aria-hidden="true" onclick="">Accept</button>
+						   </div>
+						</div>
+						
+						<div class="modal hide" id="newusermodal" tabindex="-1" role="dialog" aria-labelledby="newusermodalLabel" aria-hidden="true">
+                            <div class="modal-header">
+                                    <h3 id="myModalLabel">New user</h3>
+							</div>
+							<div class="modal-body">
+								<input id="addnewusername" type="text" class="form-control" placeholder="Username">
+								<input id="addnewpassword" type="password" class="form-control" placeholder="Password">
+								<input id="addnewuseremail" type="text" class="form-control" placeholder="Email">
+							
+							</div>
+							<div class="modal-footer">
+								<input type='hidden' id='shareusers' name='shareusers'/>
+								<button class="btn" data-dismiss="modal" aria-hidden="true" onclick="closeadduserModal();">Cancel</button>
+								<button id="adduserbutton" type="button" class="btn btn-primary" onclick="adduser();">Add</button>
+						   </div>
+						</div>
+						<script>
+							$('#newusermodal').on('hidden', function(){
+								$('#addnewusername').val("");
+								$('#addnewpassword').val("");
+								$('#addnewuseremail').val("");
+							});
+						</script>	
+						
+						
+                            <br>
+						
+							<br>
+                            <br>
+                                  <legend>Users</legend>        
+                            <span class="help-block">Admintrator username & password</span>
+                                ***REP6A***                           
+                        <br><br>
+                        
+                        <span>Allow other users to access this Alterante?</span>
+
+                        <select id="allowotherusers" name="allowotherusers" class="span2">
+                            <option value="false">No</option>
+                            <option value="true">Yes</option>                            
+                          <!--<option value="ask" ***REP2C***>Ask me first</option>-->
+                        </select>
+                                                <br>                        <br>
+                        
+                        <table id='tableUsers'>
+                            <tr valign='top'>   
+                                <td>New user</td>
+                            </tr>
+                            
+                            <tr valign='top'><td><input id='newusername' placeholder="username" type='text'></td><td><input id='newuserpassword' placeholder="password" type='password'></td>
+                            </tr>
+							<tr valign='top'>
+							<td><input id='newuseremail' placeholder="email" type='email'></td><td><button type="button" class="btn" onclick="addAccount();">+ Add</button></td>
+                            </tr>
+                            <tr valign='top'>   
+                                <td>User list</td>
+                            </tr>
+                            
+                            <tr valign='top'>
+                                <td><select id='accounts' size='5'/>***REP8A***</select></td><td><button type="button" class="btn" onclick="removeAccount();">Remove</button> </td> 
+                            </tr>  
+                        </table>
+                     
+                        
+                        </fieldset>
+                        
+                        <input type='hidden' id='useraccounts' name='useraccounts'/>
+                        <input id="cpage" type="hidden" name="cpage" value="1">
+                        <input id="spage" type="hidden" name="spage" value="2">
+                    </section>      <!--Body content-->
+                        <br>
+                        <button id="nextbutton" type="button" class="btn btn-primary" onclick="gonext();">Next</button>
+                        <button id="savebutton" type="button" class="btn btn-primary" onclick="gosave();">Save</button>
+                </div>
+            </div>
+        </div>
+    </form>
+      
+    <!-- Le javascript
+    ================================================== -->
+    <!-- Placed at the end of the document so the pages load faster
+    <script src="bootstrap/js/jquery.js"></script>
+    <script src="bootstrap/js/bootstrap-transition.js"></script>
+    <script src="bootstrap/js/bootstrap-alert.js"></script>
+    <script src="bootstrap/js/bootstrap-modal.js"></script>
+    <script src="bootstrap/js/bootstrap-dropdown.js"></script>
+    <script src="bootstrap/js/bootstrap-scrollspy.js"></script>
+    <script src="bootstrap/js/bootstrap-tab.js"></script>
+    <script src="bootstrap/js/bootstrap-tooltip.js"></script>
+    <script src="bootstrap/js/bootstrap-popover.js"></script>
+    <script src="bootstrap/js/bootstrap-button.js"></script>
+    <script src="bootstrap/js/bootstrap-collapse.js"></script>
+    <script src="bootstrap/js/bootstrap-carousel.js"></script>
+    <script src="bootstrap/js/bootstrap-typeahead.js"></script> -->
+
+  </body>
+</html>

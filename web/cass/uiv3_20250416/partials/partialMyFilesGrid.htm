@@ -1,0 +1,45 @@
+<div style="padding-left: 126px; margin-top: 100px;" id="listContent">
+    <div class="row">
+        <div ng-repeat="r in list" class="col-lg-2 col-md-3 col-sm-4 col-6 position-relative mb-4" style="border: 1px solid #ddd; border-radius: 8px; padding: 10px; background-color: #f9f9f9; display: flex; flex-direction: column; justify-content: space-between; height: 250px;" ng-mouseover="r.showMore=true" ng-mouseleave="r.showMore=false; r.showCommands=false;">
+            <i class="fas fa-ellipsis-v" ng-click="r.showCommands=!r.showCommands" style="cursor: pointer; position: absolute; top: 10px; right: 5px;" ng-show="r.showMore || r.fileSelected"></i>
+            <div style="position: absolute; top: 15px; right: 10px; z-index: 9999;" tag="commands">
+                <table class="table table-striped" style="background-color: rgb(240, 242, 246);" ng-show="r.showCommands">
+                    <tr ng-show="!isCluster || (isCluster && !(r.file_ext=='mp3' || r.file_ext=='m4a' || r.file_ext=='wav' || r.file_ext=='wma'))">
+                        <td><a href="{{r.file_path_webapp + '&uuid=' + getCookie('uuid')}}" download="{{r.file_name}}" target="idownload">Download</a></td>
+                    </tr>
+                    <tr ng-show="!isCluster">
+                        <td><a href="{{r.file_remote_webapp}}" target="idownload">Open</a></td>
+                    </tr>
+                    <tr ng-show="!isCluster">
+                        <td><a href="{{r.file_folder_webapp}}" target="idownload">Folder</a></td>
+                    </tr>
+                </table>
+            </div>
+            <i class="far fa-square" tag="optcheck" ng-click="fileSelect(r.nickname); r.fileSelected=!r.fileSelected" sel="false" md5="{{r.nickname}}" ng-show="r.showMore || r.fileSelected" style="cursor: pointer; position: absolute; top: 10px; left: 5px;"></i>
+
+            <div class="d-flex justify-content-center align-items-center flex-grow-1">
+                <span ng-click="play(r)" class="img d-block" ng-show="r.file_thumbnail!=null" style="cursor: pointer; background-image: url('data:image/{{r.file_ext}};base64,{{r.file_thumbnail}}'); width: 100%; height: 100%; background-size: cover; border-radius: 8px;"></span>
+
+                <i ng-click="play(r)" class="fas fa-video" style="cursor: pointer; font-size: 75px;" ng-show="r.file_thumbnail==null && (r.file_ext=='mp4' || r.file_ext=='mov')"></i>
+                <i ng-click="play(r)" class="fas fa-music" style="cursor: pointer; font-size: 75px;" ng-show="r.file_thumbnail==null && (r.file_ext=='mp3' || r.file_ext=='m4a' || r.file_ext=='wav' || r.file_ext=='wma')"></i>
+                <i ng-click="play(r)" class="fas fa-file-word" style="cursor: pointer; font-size: 75px;" ng-show="r.file_thumbnail==null && (r.file_ext=='doc' || r.file_ext=='docx')"></i>
+                <i ng-click="play(r)" class="fas fa-file-powerpoint" style="cursor: pointer; font-size: 75px;" ng-show="r.file_thumbnail==null && (r.file_ext=='ppt' || r.file_ext=='pptx')"></i>
+                <i ng-click="play(r)" class="fas fa-file-excel" style="cursor: pointer; font-size: 75px;" ng-show="r.file_thumbnail==null && (r.file_ext=='xls' || r.file_ext=='xlsx')"></i>
+                <i ng-click="play(r)" class="fas fa-file-pdf" style="cursor: pointer; font-size: 75px;" ng-show="r.file_thumbnail==null && (r.file_ext=='pdf')"></i>
+            </div>
+
+            <table tag="label" class="w-100 text-center mt-2" style="font-size: 14px; background-color: rgb(232, 232, 232); border-radius: 8px; padding: 5px;">
+                <tr>
+                    <td>
+                        <label style="word-wrap: break-word;">{{r.name}}</label>
+                        <label ng-show="r.song_title!=undefined">{{dec(r.song_title)}}</label>
+                        <br/>
+                        <label ng-show="r.song_artist!=undefined" style="word-wrap: break-word; font-weight: bold;">{{dec(r.song_artist)}}</label>
+                    </td>
+                </tr>
+            </table>
+        </div>
+    </div>
+</div>
+
+<div id="modals"></div>

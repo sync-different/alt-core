@@ -1,0 +1,70 @@
+<div style="padding-left:135px;margin-top: 100px;">
+Query - MultiCluster
+<table width="100%" >
+<tr>
+	<td align="right" style="padding-right:8px;">
+		<input type="text" style="width: 300px;" placeholder="Enter the alterante URL shared with you" ng-model="preClusterURL"/>&nbsp;&nbsp;&nbsp;<button class="btn btn-primary" ng-click="addCluster()">Add Cluster</button>
+	</td>
+</tr>
+</table>
+<div class="row" ng-repeat="cluster in clusters" style="padding-right:20px;" >
+	{{cluster.name}} - {{clustersResult[cluster.cluster].fighters.length}} files in result
+	<i class="glyphicon glyphicon-pencil" style="cursor:pointer;" ng-click="editCluster(cluster)"></i> 
+	<i class="glyphicon glyphicon-trash" ng-click="removeCluster(cluster)" style="cursor:pointer;"></i>
+	<i class="glyphicon glyphicon-minus" style="cursor:pointer;" ng-show="clustersDisabeled[cluster.cluster].nocollapse==undefined || clustersDisabeled[cluster.cluster].nocollapse==false" ng-click="clustersDisabeled[cluster.cluster]={nocollapse:true}"></i>
+	<i class="glyphicon glyphicon-plus"  style="cursor:pointer;" ng-show="clustersDisabeled[cluster.cluster].nocollapse==true" ng-click="clustersDisabeled[cluster.cluster]={nocollapse:false}"></i>
+	<img src="img/loading_spinner.gif" id="spinner{{cluster.cluster}}" style="display:none;" width="50px" />
+	<div id="table{{cluster.cluster}}" class="row" style="max-height:400px;overflow-y:scroll;padding-bottom:20px;" ng-show="clustersDisabeled[cluster.cluster].nocollapse==undefined ||(clustersDisabeled[cluster.cluster].nocollapse==false)">
+		<label ng-show="clustersResult[cluster.cluster].disabeled!=undefined && !clustersResult[cluster.cluster].disabeled">Unreachable!!</label>
+		<label ng-show="clustersResult[cluster.cluster].userinvalid!=undefined && clustersResult[cluster.cluster].userinvalid" style="font-style:bold;">&nbsp;&nbsp;&nbsp;User or password invalid!!</label>
+		<table ng-show="!(clustersResult[cluster.cluster].disabeled!=undefined && !clustersResult[cluster.cluster].disabeled)" class="table table-striped tablefiles table-responsive">
+			<tr>
+				<td>
+					&nbsp;
+				</td>
+				<td>
+					&nbsp;
+				</td>
+				<td>
+					Name
+				</td>
+				<td>
+					Date Created
+				</td>
+				<td>
+					File Size
+				</td>
+			</tr>
+			<tr ng-repeat="r in clustersResult[cluster.cluster].fighters">
+				<td>
+					
+				</td>
+				<td ng-click="play(r,cluster)" style="cursor:pointer">
+					<img ng-show="r.file_thumbnail!=null || r.file_ext=='jpg' || r.file_ext=='jpeg' || r.file_ext=='png' || r.file_ext=='gif'" src="data:image/{{r.file_ext}};base64,{{r.file_thumbnail}}" width="75px"/>
+					<i style="font-size:75px;" class="glyphicon glyphicon-facetime-video" ng-show="r.file_thumbnail==null && ( r.file_ext=='mp4' || r.file_ext=='mov')"></i>
+					<i style="font-size:75px;" class="glyphicon glyphicon-music" ng-show="r.file_thumbnail==null && (r.file_ext=='mp3' || r.file_ext=='m4a' || r.file_ext=='wav'|| r.file_ext=='wma')" style="width:75px;height:75px;"></i>
+					<i style="font-size:75px;" class="glyphicons glyphicons-file" ng-show="r.file_thumbnail==null && (r.file_ext=='doc' || r.file_ext=='docx')" style="width:75px;height:75px;"></i>
+					<i style="font-size:75px;" class="glyphicons glyphicons-pie-chart" ng-show="r.file_thumbnail==null && (r.file_ext=='ppt' || r.file_ext=='pptx')" style="width:75px;height:75px;"></i>
+					<i style="font-size:75px;" class="glyphicons glyphicons-charts" ng-show="r.file_thumbnail==null && (r.file_ext=='xls' || r.file_ext=='xlsx')" style="width:75px;height:75px;"></i>
+					<i style="font-size:75px;" class="glyphicon glyphicon-briefcase" ng-show="r.file_thumbnail==null && (r.file_ext=='pdf')" style="width:75px;height:75px;"></i>
+					
+				</td>			
+				<td ng-click="play(r,cluster)" style="cursor:pointer" valign="center">
+					{{r.name}}
+				</td>
+				<td  ng-click="play(r,cluster)" style="cursor:pointer" valign="center">
+					{{r.file_date_long | date:'MMM d, y h:mm:ss a'}} <!--yyyy/MM/dd -->
+				</td>
+				<td ng-click="play(r,cluster)" style="cursor:pointer" valign="center">
+					{{(r.file_size/1024/1024).toFixed(2)}} MB
+				</td>
+				<td style="vertical-align: middle;">
+					<input type="text" tag="tags" md5="{{r.nickname}}" cluster="{{cluster.cluster}}" value="{{r.file_tags}}"  data-role="tagsinput" />
+				</td>
+			</tr>
+		</table>
+	</div>
+ </div>
+ </div>
+
+<div id="modals"></div>

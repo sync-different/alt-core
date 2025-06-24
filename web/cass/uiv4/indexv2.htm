@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" type="text/css" href="bootstrap-4.6.2/css/bootstrap.min.css">
+    <link rel="stylesheet" type="text/css" href="css/template.css">
+    <script src="jquery-3.7.1/jquery.min.js"></script>
+    <script src="bootstrap-4.6.2/js/bootstrap.min.js"></script>
+    <title>Login</title>
+</head>
+<body class="grad d-flex justify-content-center" style="background-color: #004080; height: 100vh;">
+
+    <div class="text-center mt-5">
+        <div class="mb-4">
+            <img src="img/logo_molecula-02.png" alt="Logo" width="130" class="d-block mx-auto">
+            <img src="img/logo_alterante-03.png" alt="Alternate Logo" width="130" class="d-block mx-auto mt-2">
+        </div>
+
+        <div class="card shadow-sm mx-auto" style="width: 380px; border-radius: 10px;">
+            <div class="card-body">
+                <div class="alert alert-danger d-none" id="msg">User or password invalid!</div>
+                <div class="alert alert-success d-none" id="loading">Loading...</div>
+
+                <form>
+                    <div class="form-group">
+                        <input type="text" id="email" class="form-control" placeholder="Email">
+                    </div>
+                    <div class="form-group">
+                        <input type="password" id="pass" class="form-control" placeholder="Password">
+                    </div>
+                    <div class="form-group d-flex justify-content-between align-items-center">
+                        <div>
+                            <input type="checkbox" id="remember"> Remember password
+                        </div>
+                        <a href="#">Forgot password?</a>
+                    </div>
+                    <button type="button" id="send" class="btn btn-primary btn-block">Sign In</button>
+                </form>
+            </div>
+            <div class="card-footer text-center">
+                <small>&#169; and &#8482; 2013-2025 Alterante Inc. All rights reserved.</small>
+            </div>
+        </div>
+    </div>
+
+<script type="text/javascript">
+	$.ajaxSetup({
+		xhrFields: {
+		withCredentials: true
+		}
+	});
+	function login(){
+			$("#msg").hide();
+			$("#send").attr("value","Loading..");
+			$.ajax(
+			{
+					url:'/cass/login.fn'+(QueryString.cluster!=undefined?"?cluster="+QueryString.cluster:""),
+					async:true,
+					data: { boxuser: $('#email').val(), boxpass: $('#pass').val() }
+			}
+			).done(function(data) {
+				var tempDiv = $('<div>').html(data);
+				var errorMessage = tempDiv.find("span").text();
+
+				if (errorMessage.includes("Invalid Username or Password")) {
+					$("#msg").removeClass("d-none").text("User or password invalid!").show();
+				} else {
+					if ($('#remember').is(":checked")) {
+						localStorage.mail = $('#email').val();
+						localStorage.pass = $('#pass').val();
+					}
+					document.location.href = "home.htm" + (QueryString.cluster != undefined ? "?cluster=" + QueryString.cluster : "");
+				}
+				$("#send").attr("value", "Sign In");
+			});
+                
+	}
+
+	$(function() {
+		$("#loading").hide();
+		$("#msg").hide();
+		$("#send").click(login);
+		if (localStorage.mail != null && localStorage.mail != undefined && localStorage.mail != "") {
+			$('#email').val(localStorage.mail);
+			$('#pass').val(localStorage.pass);
+			$("#remember").click();
+		}
+
+		$('#pass').keyup(function(e) {
+			if (e.keyCode == 13) {
+				login();
+			}
+		});
+	});
+	
+	var QueryString = function () {
+			// This function is anonymous, is executed immediately and 
+			// the return value is assigned to QueryString!
+			var query_string = {};
+			var query = window.location.search.substring(1);
+			var vars = query.split("&");
+			for (var i=0;i<vars.length;i++) {
+			var pair = vars[i].split("=");
+				// If first entry with this name
+			if (typeof query_string[pair[0]] === "undefined") {
+				query_string[pair[0]] = decodeURIComponent(pair[1]);
+				// If second entry with this name
+			} else if (typeof query_string[pair[0]] === "string") {
+				var arr = [ query_string[pair[0]],decodeURIComponent(pair[1]) ];
+				query_string[pair[0]] = arr;
+				// If third or later entry with this name
+			} else {
+				query_string[pair[0]].push(decodeURIComponent(pair[1]));
+			}
+			} 
+			return query_string;
+		}();
+</script>
+
+</body>
+</html>
+

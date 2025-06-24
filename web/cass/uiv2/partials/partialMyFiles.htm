@@ -1,0 +1,78 @@
+ <div style="margin-left:108px;margin-top: 90px;">
+		<table width="100%">
+		<tr>
+			<td align="center">
+				<table class="table table-striped tablefiles table-responsive"  id="grid">
+					<tr>
+						<td>
+							&nbsp;
+						</td>
+						<td>
+							&nbsp;
+						</td>
+						<td  ng-click="sDate=false;sSize=false;sName=true;nameReverse=!nameReverse;sortColumn('name', nameReverse);" style="cursor:pointer;">
+							<label ng-class="{sortUp:sName && !nameReverse, sortDown:sName && nameReverse}" style="cursor:pointer;">Name</label>
+							<i class="glyphicon glyphicon-arrow-down" style="font-size: 11px" ng-show="sName && !nameReverse"></i>
+							<i class="glyphicon glyphicon-arrow-up" style="font-size: 11px" ng-show="sName && nameReverse"></i>
+						</td>
+						<td    ng-click="sDate=true;sSize=false;sName=false;dateReverse=!dateReverse;sortColumn('file_date_long', dateReverse);" style="cursor:pointer;">
+							<label ng-class="{sortUp:sDate && !dateReverse, sortDown:sDate && dateReverse}" style="cursor:pointer;">Date Created</label>
+							<i class="glyphicon glyphicon-arrow-down" style="font-size: 11px"  ng-show="sDate && !dateReverse"></i>
+							<i class="glyphicon glyphicon-arrow-up" style="font-size: 11px" ng-show="sDate && dateReverse"></i>
+						</td>
+						<td  ng-click="sDate=false;sSize=true;sName=false;sizeReverse=!sizeReverse;sortColumn('file_size', sizeReverse);" style="cursor:pointer;width: 100px;">
+							<label ng-class="{sortUp:sSize && !sizeReverse, sortDown:sSize && sizeReverse}" style="cursor:pointer;">File Size</label>
+							<i class="glyphicon glyphicon-arrow-down" style="font-size: 11px" ng-show="sSize && !sizeReverse"></i>
+							<i class="glyphicon glyphicon-arrow-up" style="font-size: 11px" ng-show="sSize && sizeReverse"></i>
+						</td>
+						<td>
+							Tags
+						</td>
+						<td width="100px;">
+							&nbsp;
+						</td>
+					</tr>
+					<tr ng-repeat="r in list" valign="center" class="linefiles" ng-mouseenter="r.show=true" ng-mouseleave="r.show=false">
+						<td style="vertical-align: middle;">
+							<div class="radio">
+							  <label><input type="checkbox" md5="{{r.nickname}}" tag="optcheck" ng-model="s"  ng-change="selOpCheck(r.nickname)"  name="optcheck"></label>
+							</div>
+						</td>
+						<td ng-click="play(r)" style="cursor:pointer;vertical-align: middle;">
+							<img ng-show="r.file_thumbnail!=null || r.file_ext=='jpg' || r.file_ext=='jpeg' || r.file_ext=='png' || r.file_ext=='gif'" src="data:image/{{r.file_ext}};base64,{{r.file_thumbnail}}" width="75px"/>
+							<i style="font-size:75px;" class="glyphicon glyphicon-facetime-video" ng-show="r.file_thumbnail==null && ( r.file_ext=='mp4' || r.file_ext=='mov')"></i>
+							<i style="font-size:75px;" class="glyphicon glyphicon-music" ng-show="r.file_thumbnail==null && (r.file_ext=='mp3' || r.file_ext=='m4a' || r.file_ext=='wav'|| r.file_ext=='wma')" style="width:75px;height:75px;"></i>
+							<i style="font-size:75px;" class="glyphicons glyphicons-file" ng-show="r.file_thumbnail==null && (r.file_ext=='doc' || r.file_ext=='docx')" style="width:75px;height:75px;"></i>
+							<i style="font-size:75px;" class="glyphicons glyphicons-pie-chart" ng-show="r.file_thumbnail==null && (r.file_ext=='ppt' || r.file_ext=='pptx')" style="width:75px;height:75px;"></i>
+							<i style="font-size:75px;" class="glyphicons glyphicons-charts" ng-show="r.file_thumbnail==null && (r.file_ext=='xls' || r.file_ext=='xlsx')" style="width:75px;height:75px;"></i>
+							<i style="font-size:75px;" class="glyphicon glyphicon-briefcase" ng-show="r.file_thumbnail==null && (r.file_ext=='pdf')" style="width:75px;height:75px;"></i>
+							
+						</td>			
+						<td  ng-click="play(r)" style="cursor:pointer;vertical-align: middle;">
+							{{r.name}}
+						</td>
+						<td  ng-click="play(r)" style="cursor:pointer;vertical-align: middle;">
+							{{r.file_date_long | date:'MMM d, y h:mm:ss a'}} <!--yyyy/MM/dd -->
+						</td>
+						<td  ng-click="play(r)" style="cursor:pointer;vertical-align: middle;">
+							{{(r.file_size/1024/1024).toFixed(2)}} MB
+						</td>
+						<td style="vertical-align: middle;">
+							<input type="text" tag="tags" md5="{{r.nickname}}"  value="{{r.file_tags}}"  data-role="tagsinput" />
+						</td>
+						<td  style="vertical-align: middle;">
+							<div class="row center-block" ng-show="r.show">
+								<i class="glyphicon glyphicon-play" style="cursor:pointer;" ng-show="!isCluster && r.show" ng-click="remote(r)"/>&nbsp;&nbsp;&nbsp;<a download="{{r.name}}" ng-show="! isCluster || ( isCluster && !(r.file_ext=='mp3' || r.file_ext=='m4a' || r.file_ext=='wav'|| r.file_ext=='wma'))" class="glyphicons glyphicons-download" href="{{r.file_path_webapp+'&uuid='+getCookie('uuid')}}" style="text-decoration: none;color:black;" id="d{{r.nickname}}"></a> &nbsp;&nbsp;&nbsp;<i class="glyphicon glyphicon-folder-open" ng-show="!isCluster && r.show" ng-click="folder(r)" style="font-size:14px;cursor:pointer;"/>
+							<div>
+						</td>
+					</tr>
+				</table>
+			</td>
+		</table>		
+	</div>	
+</div>
+
+<div id="modals"></div>
+
+
+

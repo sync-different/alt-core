@@ -1,0 +1,600 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <title>Bootstrap, from Twitter</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="">
+    <meta name="author" content="">
+
+    <!-- Le styles -->
+    <style type="text/css">
+      body {
+        padding-top: 60px;
+        padding-bottom: 40px;
+      }
+    </style>
+    <link href="bootstrap/css/bootstrap.min.css" rel="stylesheet" media="screen">    
+    <link href="bootstrap/css/bootstrap-responsive.css" rel="stylesheet">
+
+    
+    <!-- HTML5 shim, for IE6-8 support of HTML5 elements -->
+    <!--[if lt IE 9]>
+      <script src="http://html5shim.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+
+    <!-- Fav and touch icons -->
+    <link rel="shortcut icon" href="bootstrap/ico/favicon.ico">
+    <link rel="apple-touch-icon-precomposed" sizes="144x144" href="bootstrap/ico/apple-touch-icon-144-precomposed.png">
+    <link rel="apple-touch-icon-precomposed" sizes="114x114" href="bootstrap/ico/apple-touch-icon-114-precomposed.png">
+    <link rel="apple-touch-icon-precomposed" sizes="72x72" href="bootstrap/ico/apple-touch-icon-72-precomposed.png">
+    <link rel="apple-touch-icon-precomposed" href="bootstrap/ico/apple-touch-icon-57-precomposed.png">
+	
+    <script src="bootstrap/js/bootstrap-tooltip.js"></script>
+    <script src="bootstrap/js/bootstrap.min.js"></script>
+    <script type="text/javascript" src="messages_en.js"></script>
+    <script type="text/javascript" src="jquery.min.js"></script>
+    <script src="bootstrap/js/bootstrap-tooltip.js"></script>
+    <script src="bootstrap/js/bootstrap-popover.js"></script>
+	<script src="bootstrap/js/bootstrap-modal.js"></script>
+
+        <script type="text/javascript">
+                       
+    
+                        $(document).ready(function() { 
+						
+
+                            
+                            var state = "***REPSTATE***";
+                            if(state == "NEW"){
+                                $("#nextbutton").show();
+                                $("#savebutton").hide();
+                            }else{
+                                $("#savebutton").show();
+                                $("#nextbutton").hide();
+                                $("#prebutton").hide();
+                            }
+                        
+                            toggleQueryAccounts();
+                            toggleSendAccounts();                    
+                            toggleEmailContent();
+
+                            
+        
+                            $('input[name=pop3user]').change(function(){
+                                
+                                    ***REPED***
+                                else {
+                                    var host = $(this).val().substring($(this).val().indexOf("@") + 1);
+                                    $('input[name=pop3host]').val("pop." + host);
+                                    $('input[name=pop3prt]').val("995");
+                                    $('input[name=smtphost]').val("smtp." + host);
+                                    $('input[name=smtpprt]').val("25");
+                                    if(i % 2 == 0){
+                                        toggleAdvancedsettings();
+                                    }
+                                }
+                            });
+                            
+                                $('#btnSave').click(function() {
+                                    addCheckbox($('#txtName'));
+                                });
+                                
+                                
+                                if($('#pw1').val() != ""){
+                                    checkPw = false;
+                                }
+                                
+                            $("#allowmaillb").popover({
+                                content: LANG.setupmail.help.allowmail,
+                                placement:"right",
+                                trigger:"hover",
+								animation: false
+                            });
+                            
+                                    
+                            $("#sharelb").popover({
+                                content: LANG.setupmail.help.share,
+                                placement:"right",
+                                trigger:"hover",
+								animation: false
+                            });        
+                            
+                            $("#indexlb").popover({
+                                content: LANG.setupmail.help.index,
+                                placement:"right",
+                                trigger:"hover",
+								animation: false
+                            });
+
+                            $("#notifylb").popover({
+                                content: LANG.setupmail.help.notify,
+                                placement:"right",
+                                trigger:"hover",
+								animation: false
+                            });							
+    
+                            $("#testemail").popover({
+                                content: LANG.setupmail.help.testemail,
+                                placement:"right",
+                                trigger:"hover",
+								animation: false
+                            });
+							
+							
+							var openmodal = ***REPOPENMODAL***;
+							var optionchosen = $('#sharetype').val();
+							var selectedkey = $("#sharekey" ).val();
+							
+							if(optionchosen && selectedkey){
+								$("#allowdiv" ).hide();
+								$("#sharediv" ).hide();
+								$("#indexdiv" ).hide();
+								$("#savebutton" ).hide();
+									if(openmodal){											
+										
+										$.ajax(
+											{
+												url:'/cass/getinvitationmodal.fn?sharekey=' + selectedkey,
+												async:true
+											}
+										).done(
+												function(data){
+													$(data).modal();
+												}
+												
+											); 										
+											
+										
+										
+								}
+							}else{
+								$("#saveandsendbutton" ).hide();
+							}
+                        });
+						
+						function doneinvitationmodal(){
+							if ($('input.sendbymail').is(':checked')) {
+								var selectedkey = $("#sharekey" ).val();
+								var optionchosen = $('#sharetype').val();
+								
+								$.ajax(
+								{
+                                    url:'/cass/invitation.fn?&sharekey=' + selectedkey + '&sharetype='+ optionchosen,
+                                    async:true
+								}
+								).done(
+										function(data){
+											//alert("ok");
+										}
+									);
+								
+							}
+							$('#sharelinkModal').hide();
+						}
+                        
+                        var checkPw = true;
+                        var a = {};
+                        ***REPG***
+                        
+                        function toggleEmailContent() {
+                            if (mailActivated())
+                            {
+                                $("#myContent1").show("slow"); 
+                            } else {                               
+                                $("#myContent1").hide(); 
+                            }
+                        }
+
+                        function toggleQueryAccounts() {
+                            if ($("Input[class=checkbox1]").is(":checked"))
+                            {
+                                $("#tableQueryAccounts").show("slow"); 
+                            } else {                               
+                                $("#tableQueryAccounts").hide(); 
+                            }
+                        }
+                        
+                        function toggleSendAccounts() {
+                            if ($("Input[class=checkbox2]").is(":checked"))
+                            {
+                                $("#tableSendAccounts").show("slow"); 
+                            } else {                               
+                                $("#tableSendAccounts").hide(); 
+                            }
+                        }
+                        
+                        
+                        
+                       function showPassword() {
+                           $("#linktoshowpw").hide();
+                           $("#passdiv").show("slow");
+                           $('#pw1').val("");
+                           checkPw = true;
+                       }
+                       
+                      function hidePassword() {
+                           $("#linktoshowpw").show();
+                           $("#passdiv").hide();
+                           $('#pw1').val("");
+                           checkPw = false;
+                       }
+                       
+                       
+                       
+                    //to reveal password   
+                    function toggleDisplayPassword(){
+                        if($('#pw1').get(0).type == 'password'){
+                            $('#pw1').get(0).type = 'text';
+                            $("#linktodispw").text("Hide");
+                        }else{
+                            $('#pw1').get(0).type = 'password';
+                            $("#linktodispw").text("Display");
+                        }                        
+                    }
+                           
+
+                       
+                       
+                       var i = 0;
+                       function toggleAdvancedsettings() {
+                            $("#advancedsettings").toggle("slow");
+                            if(i % 2 == 0){
+                                $("#linktoshowadvanced").text("Hide advanced settings");
+                            }else{
+                                $("#linktoshowadvanced").text("Show advanced settings");
+                                
+                            }
+                            i++;
+                       }
+                       
+
+                       function mailActivated(){
+                               return $("Input[class=checkbox1]").is(":checked") ||
+                                       $("Input[class=checkbox2]").is(":checked") ||
+                                       $("Input[class=checkbox3]").is(":checked") ||
+                                       $("Input[class=checkbox4]").is(":checked");
+                       }
+                       
+                       
+                       function testEmail(){
+                           
+                           $.ajax(
+                            {
+                                    url:'/cass/testemail.fn',
+                                    beforeSend: function() {
+                                        document.body.style.cursor = 'wait';
+                                        $("#testemail").text("Please wait...");
+                                         $("#testemail").attr("disabled", "disabled");
+                                         $("#testemail").popover('hide');
+                                    },
+                                    data: { 
+                                        pop3user: $('[name=pop3user]').val(),
+                                        pop3pass: $('[name=pop3pass]').val(),
+                                        pop3host: $('[name=pop3host]').val(),
+                                        pop3prt: $('[name=pop3prt]').val(),
+                                        smtphost: $('[name=smtphost]').val(),
+                                        smtpprt: $('[name=smtpprt]').val()
+                                        },
+                                    async:true
+                            }
+                            ).done(
+                                    function(data){
+                                        document.body.style.cursor = 'default';
+                                        $("#testemail").text("Test Configuration"); 
+                                        $("#testemail").removeAttr("disabled");
+                                        alert(data);
+                                    }
+                                ); 
+                       }
+						
+                        function golink() {
+                            window.location = "setup.htm?spage=3&isprev=true";
+                        }
+
+                        function validate() {
+                            var accounts="";
+                            var coma=false;
+                            $('#accounts option').each(
+                                    function (){
+                                            if(coma) accounts+=";";
+                                            coma=true;
+                                            accounts+= this.value;
+                                    }
+                            );
+                            if($("Input[class=checkbox1]").is(":checked") && !accounts){
+                                alert("Please add allowed emails to do queries.");
+                            }else{
+                                
+                                $('#qaccounts').attr('value',accounts.substring(0)=='='? accounts.substring(1):accounts);
+
+                                accounts="";
+                                coma=false;
+                                $('#sendaccounts option').each(
+                                        function (){
+                                                if(coma) accounts+=";";
+                                                coma=true;
+                                                accounts+= this.value;
+                                                var arr = a[this.value];
+                                                if(arr!=null){
+                                                    $.each(arr, function(index,value) {
+                                                        accounts+=","+value;
+                                                    });
+                                                }
+                                        }       
+                                );
+                                if($("Input[class=checkbox2]").is(":checked") && !accounts){
+                                    alert("Please add emails to share your files.");
+                                }else{
+                                    $('#sdaccounts').attr('value',accounts.substring(0)=='='? accounts.substring(1):accounts);                  
+
+
+                                    var groups = "";
+                                    coma=false;
+                                    $('input[name=groupcheckbox]').each(function () {
+                                       if(coma) groups+=";";
+                                                    coma=true;
+                                                    groups+= this.value;
+                                    });
+                                    console.log (groups);
+                                    $('#mailgroups').attr('value',groups.substring(0)=='='? groups.substring(1):groups);
+
+                                    if (mailActivated()){                                    
+                                            if (!isValidEmailAddress($('[name=pop3user]').val())){
+                                                    alert("Please enter a vaild email username");                                
+                                                    console.log("invalid username");
+                                            }else{
+                                                if ($('#pw1').val() == "" && checkPw){
+                                                     alert("Please enter your email password");                                
+                                                     console.log("pw empty");
+                                                } else{                                                    
+                                                    return true;                                                    
+                                                }
+                                            }
+                                    }else{  
+                                            return true;
+                                    }
+                                    
+                                }
+                            }
+                           return false; 
+                       }
+                       
+                       function gopw() {
+                            if(validate()){
+                                $('#frm1').submit();
+                            }
+                       }
+                       
+                        function gosave() {
+                            if(validate()){
+                                $("#spage").val("5");
+                                $('#frm1').submit();
+                            }
+                       }
+					   
+					   function gosaveandsend() {
+							if($("Input[class=checkbox4]").is(":checked")){
+								if(validate()){
+									$("#shareopenmodal").val("true");
+									$("#spage").val("5");
+									$('#frm1').submit();
+								}
+							}
+                       }
+
+                       function isValidEmailAddress(emailAddress) {
+                            var pattern = new RegExp(/^((([a-z]|\d|[!#\$%&'\*\+\-\/=\?\^_`{\|}~]|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])+(\.([a-z]|\d|[!#\$%&'\*\+\-\/=\?\^_`{\|}~]|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])+)*)|((\x22)((((\x20|\x09)*(\x0d\x0a))?(\x20|\x09)+)?(([\x01-\x08\x0b\x0c\x0e-\x1f\x7f]|\x21|[\x23-\x5b]|[\x5d-\x7e]|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])|(\\([\x01-\x09\x0b\x0c\x0d-\x7f]|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF]))))*(((\x20|\x09)*(\x0d\x0a))?(\x20|\x09)+)?(\x22)))@((([a-z]|\d|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])|(([a-z]|\d|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])([a-z]|\d|-|\.|_|~|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])*([a-z]|\d|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])))\.)+(([a-z]|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])|(([a-z]|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])([a-z]|\d|-|\.|_|~|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])*([a-z]|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])))\.?$/i);
+                            return pattern.test(emailAddress);
+                        };
+                                            
+    
+                        function addAccount(){
+                            if($('#account').val()!=''){
+                                    if(isValidEmailAddress($('#account').val())){
+                                            $('#accounts').append($('<option>', {
+                                                    value: $('#account').val(),
+                                                    text: $('#account').val()
+                                            }));
+                                            $('#account').attr('value','');
+                                            $('#account').empty();
+                                            $('#account').val('');
+                                    }else{
+                                            alert('The enter email is invalid, please try again');
+                                    }
+                            }
+                        }
+
+                        function removeAccount(){
+                                $('#accounts option:selected').remove();
+                        }
+                        
+                        function addSendAccount(){
+                            if($('#sendaccount').val()!=''){
+                                    if(isValidEmailAddress($('#sendaccount').val())){
+                                            $('#sendaccounts').append($('<option>', {
+                                                    value: $('#sendaccount').val(),
+                                                    text: $('#sendaccount').val()
+                                            }));
+                                            $('#sendaccount').attr('value','');
+                                            $('#sendaccount').empty();
+                                            $('#sendaccount').val('');
+                                    }else{
+                                            alert('The enter email is invalid, please try again');
+                                    }
+                            }
+                        }
+
+                        function removeSendAccount(){
+                                $('#sendaccounts option:selected').remove();
+                        }
+                        
+                        function addCheckbox(textbx) {
+                            var name = textbx.val();
+                            var container=  $('#groupcheckboxes');
+                            //var inputs = container.find('input');
+                            //var id = inputs.length+1;
+                            
+                            container.append('<label class="checkbox"><input type="checkbox" name="groupcheckbox" value="'+name+'" disabled="true"/>'+name+'</label>');
+                            textbx.val("");
+                            
+                           
+                            $( "input[name=groupcheckbox]" ).on( "click", function() {
+                                $("select option:selected").each(function () {
+
+                                   var mail = $(this).text();
+                                   a[mail] = new Array();
+                                   $('input[name=groupcheckbox]:checked').each(function () {
+                                      a[mail].push($(this).val());
+                                   });
+                                  });
+                            });
+                           
+                         }
+                        
+                        
+                        
+                    </script>
+	
+  </head>
+  
+
+  <body>
+
+      <form id="frm1" action="setup.htm" method="get">
+        <div class="container">
+            <div class="row">
+                <div class="span7">
+                    <section id="sec1"> 
+                        <fieldset>
+                        <legend>Email configuration</legend>
+						<div id="allowdiv">
+							<label id="allowmaillb" class="checkbox"><input type="checkbox" name="allowmail" onclick="toggleQueryAccounts();toggleEmailContent();" class="checkbox1" ***REPA***>Queries via email for this machine</label>
+							<table id='tableQueryAccounts'>
+								<tr valign='top'><td><input id='account' type='text'></td><td><button type="button" class="btn" onclick="addAccount();">+ Add</button></td>
+								</tr>
+								<tr valign='top'>   
+									<td><select id='accounts' size='5'/>***REPA1***</select></td><td><button type="button" class="btn" onclick="removeAccount();">Remove</button> </td> 
+								</tr>  
+							</table>
+							<hr>
+						</div>
+						
+						<div id="sharediv">
+							<label id="sharelb" class="checkbox"><input type="checkbox" name="sendmail" onclick="toggleSendAccounts();toggleEmailContent();" class="checkbox2" ***REPB***>Share files via email</label>
+							<table id='tableSendAccounts'>
+								<tr valign='top'><td><input id='sendaccount' type='text'></td><td><button type="button" class="btn" onclick="addSendAccount();">+ Add</button></td>
+									<td width="40"></td><td><span id='text_selectedemail' class="help-block">Email groups:</span></td>
+								</tr>
+								<tr valign='top'>   
+									<td><select id='sendaccounts' size='5'/>***REPB1***</select></td><td><button type="button" class="btn" onclick="removeSendAccount();">Remove</button> </td> 
+									<td width="40"></td>
+									<td>
+										<div id="groupcheckboxes" disabled="true">
+											***REPB2***
+										</div>
+										<script>
+											//$("input:checkbox[value=friends]").attr("checked", true);
+											$('input[name=groupcheckbox]').attr('disabled', true);
+											
+											$("#sendaccounts").change(function () {
+												$('input[name=groupcheckbox]').attr('disabled', false);
+												$("#sendaccounts option:selected").each(function () {
+													$('input[name=groupcheckbox]').attr('checked', false);
+													var arr = a[$(this).text()];    
+													console.log(arr);
+													
+													$("#text_selectedemail").text("Choose "+ $(this).text()+" groups");
+											   
+													$.each(arr, function(index,value) {
+														console.log(value);
+														$("input:checkbox[value='"+value+"']").prop("checked", true);
+
+													});
+												 });
+											  });
+											  
+											  $( "input[name=groupcheckbox]" ).on( "click", function() {
+												  $("select option:selected").each(function () {
+													  
+													 var mail = $(this).text();
+													 a[mail] = new Array();
+													 $('input[name=groupcheckbox]:checked').each(function () {
+														a[mail].push($(this).val());
+													 });
+													});
+										 
+											});
+											  
+											  
+									</script>
+										<input type="text" id="txtName" />
+										<button class="btn" type="button" value="Add" id="btnSave">+ Add Group</button>
+									</td>
+							   </tr>  
+							</table>
+							<hr>
+						</div>
+						
+						<div id="indexdiv">
+							<label id="indexlb" class="checkbox"><input type="checkbox" name="scanmail" onclick="toggleEmailContent();" class="checkbox3"***REPC***>Index all your email attachments</label>	                
+							<hr>
+						</div>
+						
+						<label id="notifylb" class="checkbox"><input type="checkbox" name="notifymail" onclick="toggleEmailContent();" class="checkbox4"***REPD***>Notify shares to users via email</label>	                
+                        <hr>
+                        
+                        <div id="myContent1">    
+                            
+                            <span class="help-block">
+                                <script type="text/javascript">document.write(LANG.setupmail.text.email);</script>
+                            </span>
+                           
+                            <table>
+                                ***REP***                                
+                            </table>
+                         <br>
+                         <button id="testemail" type="button" class="btn" onclick="testEmail();">Test Configuration</button><p id="pleasewaitlabel" style="display: none">Please wait...</p>
+                        </div>
+                        </fieldset>
+                    </section>      <!--Body content-->
+                    <br>
+                    <input type='hidden' id='qaccounts' name='qaccounts'/>
+                    <input type='hidden' id='sdaccounts' name='sdaccounts'/>
+                    <input type='hidden' id='mailgroups' name='mailgroups'/>
+					<input type='hidden' id='shareopenmodal' name='shareopenmodal' value='***REPOPENMODAL***'/>
+					<input type='hidden' id='sharetype' name='sharetype' value='***REPTYPE***'/>
+					<input type='hidden' id='sharekey' name='sharekey' value='***REPKEY***'/>
+                    
+                    <input id="cpage" type="hidden" name="cpage" value="5">
+                    <input id="spage" type="hidden" name="spage" value="6">
+                    <button id="prebutton" type="button" class="btn" onclick="golink();">Previous</button>
+                    <button id="nextbutton" type="button" class="btn btn-primary" onclick="gopw();">Next</button>
+                    <button id="savebutton" type="button" class="btn btn-primary" onclick="gosave();">Save</button>
+					<button id="saveandsendbutton" type="button" class="btn btn-primary" onclick="gosaveandsend();">Save</button>
+                    
+ 
+                </div>
+            </div>
+        </div>
+    </form>
+      
+    <!-- Le javascript
+    ================================================== -->
+    <!-- Placed at the end of the document so the pages load faster
+    <script src="bootstrap/js/jquery.js"></script>
+    <script src="bootstrap/js/bootstrap-transition.js"></script>
+    <script src="bootstrap/js/bootstrap-alert.js"></script>
+    <script src="bootstrap/js/bootstrap-modal.js"></script>
+    <script src="bootstrap/js/bootstrap-dropdown.js"></script>
+    <script src="bootstrap/js/bootstrap-scrollspy.js"></script>
+    <script src="bootstrap/js/bootstrap-tab.js"></script>
+    <script src="bootstrap/js/bootstrap-tooltip.js"></script>
+    <script src="bootstrap/js/bootstrap-popover.js"></script>
+    <script src="bootstrap/js/bootstrap-button.js"></script>
+    <script src="bootstrap/js/bootstrap-collapse.js"></script>
+    <script src="bootstrap/js/bootstrap-carousel.js"></script>
+    <script src="bootstrap/js/bootstrap-typeahead.js"></script> -->
+
+  </body>
+</html>

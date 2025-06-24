@@ -1,0 +1,39 @@
+ <div style="padding-left:126px;margin-top: 100px;" id="listContent">
+		<div ng-repeat="r in list"  style="border-style: groove;" ng-mouseover="r.showMore=true" ng-mouseleave="r.showMore=false;r.showCommands=false;"  valign="center" class="col-md-1 linefiles crop" ng-mouseenter="r.show=true" ng-mouseleave="r.show=false">
+				<!--<img ng-show="r.file_thumbnail!=null || r.file_ext=='jpg' || r.file_ext=='jpeg' || r.file_ext=='png' || r.file_ext=='gif'" src="data:image/{{r.file_ext}};base64,{{r.file_thumbnail}}" width="75px"/>-->
+				<i class="glyphicon glyphicon-option-vertical" ng-click="r.showCommands=!r.showCommands" style="cursor:pointer;position: absolute;top: 10px;right: 5px;" ng-show="r.showMore || r.fileSelected"></i>
+				<div style="position: absolute;top: 15px;right: 10px;z-index:9999;" tag="commands">
+					<table class="table table-striped" style="background-color:rgb(240,242,246);" ng-show="r.showCommands">
+						<tr ng-show="! isCluster || ( isCluster && !(r.file_ext=='mp3' || r.file_ext=='m4a' || r.file_ext=='wav'|| r.file_ext=='wma'))"> <td  ><a href="{{r.file_path_webapp+'&uuid='+getCookie('uuid')}}" download="{{r.file_name}}" target="idownload" >Download</a></td></tr>
+						<tr ng-show="!isCluster"> <td><a href="{{r.file_remote_webapp}}"  target="idownload" >Open</a></td></tr>	
+						<tr ng-show="!isCluster"><td><a href="{{r.file_folder_webapp}}"   target="idownload">Folder</a></td></tr>	
+					</table>	
+				</div>
+				<i class="glyphicon glyphicon-unchecked" tag="optcheck" ng-click="fileSelect(r.nickname);r.fileSelected=!r.fileSelected" sel="false" md5="{{r.nickname}}" ng-show="r.showMore || r.fileSelected" style="cursor:pointer;position: absolute;top: 10px;left: 5px;"></i>
+				
+				<span  ng-click="play(r)" class="img" ng-show="r.file_thumbnail!=null || r.file_ext=='jpg' || r.file_ext=='jpeg' || r.file_ext=='png' || r.file_ext=='gif'"  style="cursor:pointer;background-image:url('data:image/{{r.file_ext}};base64,{{r.file_thumbnail}}');"></span>
+				 
+				<i ng-click="play(r)" style="cursor:pointer;font-size:75px;padding-left: 40px;padding-top: 50px;" class="glyphicon glyphicon-facetime-video" ng-show="r.file_thumbnail==null && ( r.file_ext=='mp4' || r.file_ext=='mov')" style="width:75px;height:75px;"></i>
+				<i  ng-click="play(r)" style="cursor:pointer;font-size:75px;padding-left: 40px;padding-top: 50px;" class="glyphicon glyphicon-music" ng-show="r.file_thumbnail==null && (r.file_ext=='mp3' || r.file_ext=='m4a' || r.file_ext=='wav'|| r.file_ext=='wma')" style="width:75px;height:75px;"></i>
+				<i   ng-click="play(r)"  style="cursor:pointer;font-size:75px;padding-left: 40px;padding-top: 50px;" class="glyphicons glyphicons-file" ng-show="r.file_thumbnail==null && (r.file_ext=='doc' || r.file_ext=='docx')" style="width:75px;height:75px;"></i>
+				<i   ng-click="play(r)"  style="cursor:pointer;font-size:75px;padding-left: 40px;padding-top: 50px;" class="glyphicons glyphicons-pie-chart" ng-show="r.file_thumbnail==null && (r.file_ext=='ppt' || r.file_ext=='pptx')" style="width:75px;height:75px;"></i>
+				<i   ng-click="play(r)"  style="cursor:pointer;font-size:75px;padding-left: 40px;padding-top: 50px;" class="glyphicons glyphicons-charts" ng-show="r.file_thumbnail==null && (r.file_ext=='xls' || r.file_ext=='xlsx')" style="width:75px;height:75px;"></i>
+				<i   ng-click="play(r)"  style="cursor:pointer;font-size:75px;padding-left: 40px;padding-top: 50px;" class="glyphicon glyphicon-briefcase" ng-show="r.file_thumbnail==null && (r.file_ext=='pdf')" style="width:75px;height:75px;"></i>
+				<table tag="label" style="font-size:10;position: absolute;bottom: -5px;left: 0px;width: 200px;padding-left: 3px;padding-right:3px;background-color: rgb(232,232,232);">
+				<tr>
+				<td align="center">
+					<label ng-show="r.song_title==undefined &&(r.file_ext=='mp4' || r.file_ext=='mov' || r.file_ext=='mp3' || r.file_ext=='m4a' || r.file_ext=='wav'|| r.file_ext=='wma'||r.file_ext=='doc' || r.file_ext=='docx' || r.file_ext=='pdf' || r.file_ext=='ppt' || r.file_ext=='pptx' || r.file_ext=='xls' || r.file_ext=='xlsx')" style="word-wrap: break-word;">{{r.name}}</label>
+					<label ng-show="r.song_title!=undefined" >{{dec(r.song_title)}}</label>
+					<br/>
+					<label ng-show="r.song_artist!=undefined " style="word-wrap: break-word;font-family:bold;"><b>{{dec(r.song_artist)}}</b></label>
+				</td>	
+				</tr>
+				</table>
+		</div>
+	</div>
+</div>
+
+<div id="modals"></div>
+
+
+

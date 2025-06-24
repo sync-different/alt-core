@@ -1,0 +1,95 @@
+<div style="padding-left:110px;">
+    <div class="row justify-content-center" style="margin-top:30px;">
+        <label style="font-size:35px; font-weight:bold;">My Devices</label>
+    </div>
+    <div class="row justify-content-center">
+		<div class="col-md-4 d-flex flex-column align-items-center text-center" ng-repeat="device in devices" style="margin-top:30px;">
+	
+            <i class="fas fa-cloud" ng-show="device.node_type!='server' && device.node_type!='client'" style="font-size:120px;"></i>
+            <i class="fas fa-server" ng-show="device.node_type=='server'" style="font-size:120px;"></i>
+            <i class="fas fa-hdd" ng-show="device.node_type=='client'" style="font-size:120px;"></i>
+            <br>
+            <label style="font-size:20px; font-weight:bold;">{{up(device.node_type)}}:{{device.node_machine}}</label>
+            <i ng-show="device.node_type=='server'" style="cursor:pointer; font-size:19px;" ng-click="openSettings()" class="fas fa-cog"></i>
+            <br>
+            <label ng-show="device.node_lastping_long!=undefined && device.node_lastping_long!=null">{{seen(device.node_lastping_long)}}</label>
+            <br ng-show="!(device.node_lastping_long!=undefined && device.node_lastping_long!=null)"/>
+            <div class="machineBox" style="width:330px; display:inline-block;">
+                <div style="margin-top:30px;">
+                    <table>
+                        <tr>
+                            <td valign="center">
+                                <label>Index</label>
+                            </td>
+                            <td style="width:200px; text-align:center; vertical-align:center;">
+                                <div class="progress" style="width:200px; position:relative; top:7px;" ng-show="device.node_idx_percent!=undefined && device.node_idx_percent!=null">
+                                    <div class="progress-bar bg-success" role="progressbar" aria-valuenow="{{dec(device.node_idx_percent)}}" aria-valuemin="0" aria-valuemax="100" style="width:{{widthPercentage(device.node_idx_percent)}}%;">
+                                    </div>
+                                </div>
+                                <label ng-show="!(device.node_idx_percent!=undefined && device.node_idx_percent!=null)">Off<br/></label>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>&nbsp;</td>
+                            <td valign="top" style="text-align:center;">
+                                <label style="display:block;" ng-show="device.node_idx_percent!=undefined && device.node_idx_percent!=null">{{dec(device.node_idx_percent)}}% Completed</label>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td valign="center"><label>Backup</label></td>
+                            <td style="width:200px; text-align:center; vertical-align:center;">
+                                <div class="progress" style="width:200px; position:relative; top:5px;" ng-show="device.node_backup_percent!=undefined && device.node_backup_percent!=null">
+                                    <div class="progress-bar" role="progressbar" aria-valuenow="{{dec(device.node_backup_percent)}}" aria-valuemin="0" aria-valuemax="100" style="width:{{widthPercentage(device.node_backup_percent)}}%;">
+                                    </div>
+                                </div>
+                                <label ng-show="!(device.node_backup_percent!=undefined && device.node_backup_percent!=null)">Off</label>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>&nbsp;</td>
+                            <td valign="top" style="text-align:center;">
+                                <label style="display:block;" ng-show="device.node_backup_percent!=undefined && device.node_backup_percent!=null">{{dec(device.node_backup_percent)}}% Completed</label>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td valign="center"><label>Usage</label></td>
+                            <td style="width:200px; text-align:center; vertical-align:center;">
+                                <div class="progress" style="width:200px; position:relative; top:5px;">
+                                    <div class="progress-bar bg-info" role="progressbar" aria-valuenow="70" aria-valuemin="0" aria-valuemax="100" style="width:70%;">
+                                    </div>
+                                </div>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>&nbsp;</td>
+                            <td valign="top" style="text-align:center;">
+                                <label style="display:block;">XX% Complete</label>
+                            </td>
+                        </tr>
+                        <tr style="height:5px;">
+                            <td colspan="2">&nbsp;</td>
+                        </tr>
+                        <tr>
+                            <td colspan="2">
+                                <table ng-show="device.showMore">
+                                    <tr><td colspan="2" style="text-align:left;"><label ng-show="device.node_id!=undefined && device.node_id!=null">UUID:<label style="font-size:10px;">{{device.node_id}}</label></label></td></tr>
+                                    <tr><td colspan="2" style="text-align:left;"><label ng-show="device.node_ip!=undefined && device.node_ip!=null">IP Address:{{device.node_ip}}</label></td></tr>
+                                    <tr><td colspan="2" style="text-align:left;"><label ng-show="device.node_port!=null && device.node_port!=undefined">IP Port:{{device.node_port}}</label></td></tr>
+                                </table>
+                            </td>
+                        </tr>
+                    </table>
+                    <table style="width:100%;">
+                        <tr>
+                            <td style="border-top:1px solid rgb(199,199,204); background-color:rgb(247,247,247);" class="text-center">
+                                <label style="cursor:pointer;" ng-click="device.showMore=!device.showMore" ng-show="!device.showMore">See more</label>
+                                <label style="cursor:pointer;" ng-click="device.showMore=!device.showMore" ng-show="device.showMore">Show less</label>
+                                <i ng-show="device.node_type=='server'" style="cursor:pointer; position:relative; right:-4px; top:3px;" ng-click="openSettings()" class="fas fa-cog"></i>
+                            </td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

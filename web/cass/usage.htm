@@ -1,0 +1,108 @@
+<html>
+	<head>
+		<link href="bootstrap/css/bootstrap.min.css" rel="stylesheet">
+		<title>Doughnut Chart</title>
+		<script src="Chart.js"></script>
+	    <script src="jquery.min.js"></script>
+	    
+		<style>
+			body{
+				padding: 0;
+				margin: 0;
+			}
+			#canvas-holder{
+				width:25%;
+			}
+			
+			canvas {
+  				margin-bottom: 22px;
+			}
+			.half {
+			  width: 50%;
+			  float: left;
+			}
+			.styled-select { 
+				overflow: hidden;
+			}
+			.styled-select select { 
+				font-size: 10px; 
+			}
+			
+		</style>
+	</head>
+	
+	<body>
+	
+		<h2>Usage</h2>
+
+		<p style="fontsize:14px">Here's how each of your devices is used. <b>Please choose a drive</b><br></p>
+
+		<div class="styled-select">
+			<select id="depper" name="dep" onchange="doselect(this.value);"></select>
+		</div>
+		
+		<div class="canvas-holder half" align="center">
+			<b>Gigabytes(GB)</b>
+			<br><br>
+			<canvas id="chart-area" width="409" height="204"/>
+		</div>
+		
+		<div class="canvas-holder half" align="center">
+			<b>File Count</b>
+			<br><br>
+			<canvas id="chart-area2" width="409" height="204"/>
+		</div>
+		
+		
+
+	<script src="data2.js"></script>
+	<script src="render.js"></script>
+	
+	<script>
+	
+			function gosave() {
+				//alert(myDoughnut.segments.length);
+
+				for (i=0;i<myDoughnut.segments.length;i++) {
+					myDoughnut.removeData(i);
+				}
+
+				//alert(doughnutData2.length);
+
+				for (i=0;i<doughnutData2.length;i++) {
+					myDoughnut.addData(doughnutData2[i]);
+				}
+				
+				myDoughnut.update();
+			}
+			
+			function gosave2() {
+				window.myDoughnut = new Chart(ctx).Doughnut(doughnutData2, 
+					{
+						responsive : true, 
+						percentageInnerCutout: 40
+				    }
+				);
+			}
+			
+			function addoption(name) {
+				var x = document.getElementById("depper");
+				var option = document.createElement("option");
+				option.text = name;
+				x.add(option);
+			}
+			
+			var ctx = document.getElementById("chart-area").getContext("2d");
+			var ctx2 = document.getElementById("chart-area2").getContext("2d");
+			window.onload = function(){
+				//window.myDoughnut = new Chart(ctx).Doughnut(doughnutData_eaec3f9d_28d9_4b67_b08b_005594b4140, 
+				//	{
+				//		responsive : true, 
+				//		percentageInnerCutout: 40
+				//   }
+				//);
+				dopopulate();			
+			};
+	</script>
+	</body>
+</html>

@@ -1,0 +1,1052 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <title>Bootstrap, from Twitter</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="">
+    <meta name="author" content="">
+
+    <!-- Le styles -->
+    <style type="text/css">
+      body {
+        padding-top: 60px;
+        padding-bottom: 40px;
+      }
+	.ui-dialog-titlebar-close {
+            visibility: hidden;
+          }  
+      
+	  #popupTreeMetadata {
+		   
+		 
+		  padding: 4px 12px;
+		  margin-bottom: 0;
+		  *margin-left: .3em;
+		  font-size: 14px;
+		   
+		  color: #333333;
+		  
+		  text-shadow: 0 1px 1px rgba(255, 255, 255, 0.75);
+		  
+		 
+		  background-color: #f5f5f5;
+		  *background-color: #e6e6e6;
+		  background-image: -moz-linear-gradient(top, #ffffff, #e6e6e6);
+		  background-image: -webkit-gradient(linear, 0 0, 0 100%, from(#ffffff), to(#e6e6e6));
+		  background-image: -webkit-linear-gradient(top, #ffffff, #e6e6e6);
+		  background-image: -o-linear-gradient(top, #ffffff, #e6e6e6);
+		  background-image: linear-gradient(to bottom, #ffffff, #e6e6e6);
+		  background-repeat: repeat-x;
+		  border: 1px solid #cccccc;
+		  *border: 0;
+		  border-color: #e6e6e6 #e6e6e6 #bfbfbf;
+		  border-color: rgba(0, 0, 0, 0.1) rgba(0, 0, 0, 0.1) rgba(0, 0, 0, 0.25);
+		  border-bottom-color: #b3b3b3;
+		  -webkit-border-radius: 4px;
+			 -moz-border-radius: 4px;
+				  border-radius: 4px;
+		  filter: progid:DXImageTransform.Microsoft.gradient(startColorstr='#ffffffff', endColorstr='#ffe6e6e6', GradientType=0);
+		  filter: progid:DXImageTransform.Microsoft.gradient(enabled=false);
+		  *zoom: 1;
+		  -webkit-box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.2), 0 1px 2px rgba(0, 0, 0, 0.05);
+			 -moz-box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.2), 0 1px 2px rgba(0, 0, 0, 0.05);
+				  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.2), 0 1px 2px rgba(0, 0, 0, 0.05);
+		}
+		
+	  #popup {
+		   
+		 
+		  padding: 4px 12px;
+		  margin-bottom: 0;
+		  *margin-left: .3em;
+		  font-size: 14px;
+		   
+		  color: #333333;
+		  
+		  text-shadow: 0 1px 1px rgba(255, 255, 255, 0.75);
+		  
+		 
+		  background-color: #f5f5f5;
+		  *background-color: #e6e6e6;
+		  background-image: -moz-linear-gradient(top, #ffffff, #e6e6e6);
+		  background-image: -webkit-gradient(linear, 0 0, 0 100%, from(#ffffff), to(#e6e6e6));
+		  background-image: -webkit-linear-gradient(top, #ffffff, #e6e6e6);
+		  background-image: -o-linear-gradient(top, #ffffff, #e6e6e6);
+		  background-image: linear-gradient(to bottom, #ffffff, #e6e6e6);
+		  background-repeat: repeat-x;
+		  border: 1px solid #cccccc;
+		  *border: 0;
+		  border-color: #e6e6e6 #e6e6e6 #bfbfbf;
+		  border-color: rgba(0, 0, 0, 0.1) rgba(0, 0, 0, 0.1) rgba(0, 0, 0, 0.25);
+		  border-bottom-color: #b3b3b3;
+		  -webkit-border-radius: 4px;
+			 -moz-border-radius: 4px;
+				  border-radius: 4px;
+		  filter: progid:DXImageTransform.Microsoft.gradient(startColorstr='#ffffffff', endColorstr='#ffe6e6e6', GradientType=0);
+		  filter: progid:DXImageTransform.Microsoft.gradient(enabled=false);
+		  *zoom: 1;
+		  -webkit-box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.2), 0 1px 2px rgba(0, 0, 0, 0.05);
+			 -moz-box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.2), 0 1px 2px rgba(0, 0, 0, 0.05);
+				  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.2), 0 1px 2px rgba(0, 0, 0, 0.05);
+		}
+
+		.buttons {
+		   
+		 
+		  padding: 4px 12px;
+		  margin-bottom: 0;
+		  *margin-left: .3em;
+		  font-size: 14px;
+		   
+		  color: #333333;
+		  
+		  text-shadow: 0 1px 1px rgba(255, 255, 255, 0.75);
+		  
+		 
+		  background-color: #f5f5f5;
+		  *background-color: #e6e6e6;
+		  background-image: -moz-linear-gradient(top, #ffffff, #e6e6e6);
+		  background-image: -webkit-gradient(linear, 0 0, 0 100%, from(#ffffff), to(#e6e6e6));
+		  background-image: -webkit-linear-gradient(top, #ffffff, #e6e6e6);
+		  background-image: -o-linear-gradient(top, #ffffff, #e6e6e6);
+		  background-image: linear-gradient(to bottom, #ffffff, #e6e6e6);
+		  background-repeat: repeat-x;
+		  border: 1px solid #cccccc;
+		  *border: 0;
+		  border-color: #e6e6e6 #e6e6e6 #bfbfbf;
+		  border-color: rgba(0, 0, 0, 0.1) rgba(0, 0, 0, 0.1) rgba(0, 0, 0, 0.25);
+		  border-bottom-color: #b3b3b3;
+		  -webkit-border-radius: 4px;
+			 -moz-border-radius: 4px;
+				  border-radius: 4px;
+		  filter: progid:DXImageTransform.Microsoft.gradient(startColorstr='#ffffffff', endColorstr='#ffe6e6e6', GradientType=0);
+		  filter: progid:DXImageTransform.Microsoft.gradient(enabled=false);
+		  *zoom: 1;
+		  -webkit-box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.2), 0 1px 2px rgba(0, 0, 0, 0.05);
+			 -moz-box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.2), 0 1px 2px rgba(0, 0, 0, 0.05);
+				  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.2), 0 1px 2px rgba(0, 0, 0, 0.05);
+		}
+		#popupRecommended {
+		   
+		 
+		  padding: 4px 12px;
+		  margin-bottom: 0;
+		  *margin-left: .3em;
+		  font-size: 14px;
+		   
+		  color: #333333;
+		  
+		  text-shadow: 0 1px 1px rgba(255, 255, 255, 0.75);
+		  
+		 
+		  background-color: #f5f5f5;
+		  *background-color: #e6e6e6;
+		  background-image: -moz-linear-gradient(top, #ffffff, #e6e6e6);
+		  background-image: -webkit-gradient(linear, 0 0, 0 100%, from(#ffffff), to(#e6e6e6));
+		  background-image: -webkit-linear-gradient(top, #ffffff, #e6e6e6);
+		  background-image: -o-linear-gradient(top, #ffffff, #e6e6e6);
+		  background-image: linear-gradient(to bottom, #ffffff, #e6e6e6);
+		  background-repeat: repeat-x;
+		  border: 1px solid #cccccc;
+		  *border: 0;
+		  border-color: #e6e6e6 #e6e6e6 #bfbfbf;
+		  border-color: rgba(0, 0, 0, 0.1) rgba(0, 0, 0, 0.1) rgba(0, 0, 0, 0.25);
+		  border-bottom-color: #b3b3b3;
+		  -webkit-border-radius: 4px;
+			 -moz-border-radius: 4px;
+				  border-radius: 4px;
+		  filter: progid:DXImageTransform.Microsoft.gradient(startColorstr='#ffffffff', endColorstr='#ffe6e6e6', GradientType=0);
+		  filter: progid:DXImageTransform.Microsoft.gradient(enabled=false);
+		  *zoom: 1;
+		  -webkit-box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.2), 0 1px 2px rgba(0, 0, 0, 0.05);
+			 -moz-box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.2), 0 1px 2px rgba(0, 0, 0, 0.05);
+				  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.2), 0 1px 2px rgba(0, 0, 0, 0.05);
+		}
+
+		.ui-front {
+		    z-index:1000000 !important; /* The default is 100. !important overrides the default. */
+		}
+
+		.no-close .ui-dialog-titlebar-close {display: none }
+
+		.buttons {
+		   
+		 
+		  padding: 4px 12px;
+		  margin-bottom: 0;
+		  *margin-left: .3em;
+		  font-size: 14px;
+		   
+		  color: #333333;
+		  
+		  text-shadow: 0 1px 1px rgba(255, 255, 255, 0.75);
+		  
+		 
+		  background-color: #f5f5f5;
+		  *background-color: #e6e6e6;
+		  background-image: -moz-linear-gradient(top, #ffffff, #e6e6e6);
+		  background-image: -webkit-gradient(linear, 0 0, 0 100%, from(#ffffff), to(#e6e6e6));
+		  background-image: -webkit-linear-gradient(top, #ffffff, #e6e6e6);
+		  background-image: -o-linear-gradient(top, #ffffff, #e6e6e6);
+		  background-image: linear-gradient(to bottom, #ffffff, #e6e6e6);
+		  background-repeat: repeat-x;
+		  border: 1px solid #cccccc;
+		  *border: 0;
+		  border-color: #e6e6e6 #e6e6e6 #bfbfbf;
+		  border-color: rgba(0, 0, 0, 0.1) rgba(0, 0, 0, 0.1) rgba(0, 0, 0, 0.25);
+		  border-bottom-color: #b3b3b3;
+		  -webkit-border-radius: 4px;
+			 -moz-border-radius: 4px;
+				  border-radius: 4px;
+		  filter: progid:DXImageTransform.Microsoft.gradient(startColorstr='#ffffffff', endColorstr='#ffe6e6e6', GradientType=0);
+		  filter: progid:DXImageTransform.Microsoft.gradient(enabled=false);
+		  *zoom: 1;
+		  -webkit-box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.2), 0 1px 2px rgba(0, 0, 0, 0.05);
+			 -moz-box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.2), 0 1px 2px rgba(0, 0, 0, 0.05);
+				  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.2), 0 1px 2px rgba(0, 0, 0, 0.05);
+		}
+    </style>
+    
+    <!-- HTML5 shim, for IE6-8 support of HTML5 elements -->
+    <!--[if lt IE 9]>
+      <script src="http://html5shim.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    
+    <!-- Fav and touch icons -->
+    <link rel="shortcut icon" href="bootstrap/ico/favicon.ico">
+    <link rel="apple-touch-icon-precomposed" sizes="144x144" href="bootstrap/ico/apple-touch-icon-144-precomposed.png">
+    <link rel="apple-touch-icon-precomposed" sizes="114x114" href="bootstrap/ico/apple-touch-icon-114-precomposed.png">
+    <link rel="apple-touch-icon-precomposed" sizes="72x72" href="bootstrap/ico/apple-touch-icon-72-precomposed.png">
+    <link rel="apple-touch-icon-precomposed" href="bootstrap/ico/apple-touch-icon-57-precomposed.png">
+    
+
+<link href="/cass/jqueryFileTree/jqueryFileTree.css" rel="stylesheet" type="text/css" media="screen" />
+<link href="bootstrap/css/bootstrap.min.css" rel="stylesheet" media="screen">
+<link href="bootstrap/css/bootstrap-responsive.css" rel="stylesheet">
+<link href="css/slider.css" rel="stylesheet">
+<link rel="stylesheet" href="/cass/ui/themes/base/jquery-ui.css" />
+	
+
+
+    <!-- scripts -->
+    <script src="bootstrap/js/bootstrap-tooltip.js"></script>
+    <script src="bootstrap/js/bootstrap.min.js"></script>
+    <script type="text/javascript" src="messages_en.js"></script>
+    <script type="text/javascript" src="jquery.min.js"></script>
+    <script src="bootstrap/js/bootstrap-tooltip.js"></script>
+    <script src="bootstrap/js/bootstrap-popover.js"></script>
+    <script src="/cass/jqueryFileTree/jqueryFileTree.js" type="text/javascript"></script>
+    <script src="/cass/ui/jquery-ui.js" type="text/javascript"></script>
+    <script src="/cass/jqueryTreeWrapAlterante.js" type="text/javascript"></script>
+    <script type="text/javascript" src="js/slider.js"></script>
+    <script type="text/javascript" src="bootstrap-slider.js"></script>
+    
+<script type="text/javascript" src="messages_en.js"></script>
+<script type='text/javascript'>
+
+            var state = "***REPSTATE***";
+
+
+	***REP***
+    ***REPb***
+	***REPc***
+	***REPd***
+	***BAK***
+	***BAKb***
+	***BAKc***
+	***BAKd***
+	***SNC***
+	***SNCb***
+	***SNCc***
+	***SNCd***
+	***BL1***
+	 
+	 function leyenda(id){
+		
+		id=id.toLowerCase();
+		
+		if(id=='s1'){
+			return function leyendaXX(){
+					if(mapScan1.length==0){
+						$('#s1').html('Please choose directory to scan for files.');
+					}else{
+						$('#s1').html(mapScan1.length + ' directories selected for scan.');
+					}
+				};
+		}
+		
+		if(id=='s2'){
+			return function leyendaXX(){
+					if(mapScan2.length==0){
+						$('#s2').html('Please choose directory to scan for files.');
+					}else{
+						$('#s2').html(mapScan2.length + ' directories selected for scan.');
+					}
+				};
+		}
+		
+		if(id=='s3'){
+			return function leyendaXX(){
+					if(mapScan3.length==0){
+						$('#s3').html('Please choose directory to scan for files.');
+					}else{
+						$('#s3').html(mapScan3.length + ' directories selected for scan.');
+					}
+				};
+		}
+		
+		if(id=='s4'){
+			return function leyendaXX(){
+					if(mapScan4.length==0){
+						$('#s4').html('Please choose directory to scan for files.');
+					}else{
+						$('#s4').html(mapScan4.length + ' directories selected for scan.');
+					}
+				};
+		}
+		
+		return function(){ console.log('ERROR: Leyenda no definida Setup2['+id+']');};
+	 }
+	 
+	
+	function cargarLeyendas(){
+		leyenda('s1')();
+		leyenda('s2')();
+		leyenda('s3')();
+		leyenda('S4')();
+	}
+		
+	 
+	function treeSync1(el){
+		clearUnselectedNodes();
+		var excludeunits=new Array();
+		var exclusiveInclude=new Array()
+		include(exclusiveInclude,mapScan1);
+		include(exclusiveInclude,mapBackup1);
+		exclude(excludeunits,mapScan2);
+		exclude(excludeunits,mapBackup2);
+		exclude(excludeunits,mapSync2);
+		exclude(excludeunits,mapScan3);
+		exclude(excludeunits,mapBackup3);
+		exclude(excludeunits,mapSync3);
+		exclude(excludeunits,mapScan4);
+		exclude(excludeunits,mapBackup4);
+		exclude(excludeunits,mapSync4);
+		tree(el,mapSync1,excludeunits,exclusiveInclude,true,null,leyenda('y1'));
+	}
+	
+	function treeBk1(el){
+		clearUnselectedNodes();
+		var excludeunits=new Array();
+		var exclusiveInclude=new Array()
+		include(exclusiveInclude,mapScan1);
+		include(exclusiveInclude,mapSync1);
+		exclude(excludeunits,mapScan2);
+		exclude(excludeunits,mapBackup2);
+		exclude(excludeunits,mapSync2);
+		exclude(excludeunits,mapScan3);
+		exclude(excludeunits,mapBackup3);
+		exclude(excludeunits,mapSync3);
+		exclude(excludeunits,mapScan4);
+		exclude(excludeunits,mapBackup4);
+		exclude(excludeunits,mapSync4);
+
+		tree(el,mapBackup1,excludeunits,exclusiveInclude,true,null,leyenda('b1'));
+	}
+	
+
+	function treeScan1(el){
+		clearUnselectedNodes();
+		var excludeunits=new Array();
+		var exclusiveInclude=new Array()
+		include(exclusiveInclude,mapBackup1);
+		include(exclusiveInclude,mapSync1);
+		exclude(excludeunits,mapScan2);
+		exclude(excludeunits,mapBackup2);
+		exclude(excludeunits,mapSync2);
+		exclude(excludeunits,mapScan3);
+		exclude(excludeunits,mapBackup3);
+		exclude(excludeunits,mapSync3);
+		exclude(excludeunits,mapScan4);
+		exclude(excludeunits,mapBackup4);
+		exclude(excludeunits,mapSync4);
+		tree(el,mapScan1,excludeunits,exclusiveInclude,false,mapBL1,leyenda('s1'));
+	}
+	
+	 
+	
+	function treeSync2(el){
+		clearUnselectedNodes();
+		var excludeunits=new Array();
+		var exclusiveInclude=new Array()
+		include(exclusiveInclude,mapScan2);
+		include(exclusiveInclude,mapBackup2);
+		exclude(excludeunits,mapScan1);
+		exclude(excludeunits,mapBackup1);
+		exclude(excludeunits,mapSync1);
+		exclude(excludeunits,mapScan3);
+		exclude(excludeunits,mapBackup3);
+		exclude(excludeunits,mapSync3);
+		exclude(excludeunits,mapScan4);
+		exclude(excludeunits,mapBackup4);
+		exclude(excludeunits,mapSync4);
+		tree(el,mapSync2,excludeunits,exclusiveInclude,true,null,leyenda('y2'));
+	}
+	
+	function treeBk2(el){
+		clearUnselectedNodes();
+		var excludeunits=new Array();
+		var exclusiveInclude=new Array()
+		include(exclusiveInclude,mapScan2);
+		include(exclusiveInclude,mapSync2);
+		exclude(excludeunits,mapScan1);
+		exclude(excludeunits,mapBackup1);
+		exclude(excludeunits,mapSync1);
+		exclude(excludeunits,mapScan3);
+		exclude(excludeunits,mapBackup3);
+		exclude(excludeunits,mapSync3);
+		exclude(excludeunits,mapScan4);
+		exclude(excludeunits,mapBackup4);
+		exclude(excludeunits,mapSync4);
+
+		tree(el,mapBackup2,excludeunits,exclusiveInclude,true,null,leyenda('b2'));
+	}
+	
+	function treeScan2(el){
+		clearUnselectedNodes();
+		var excludeunits=new Array();
+		var exclusiveInclude=new Array()
+		include(exclusiveInclude,mapBackup2);
+		include(exclusiveInclude,mapSync2);
+		exclude(excludeunits,mapScan1);
+		exclude(excludeunits,mapBackup1);
+		exclude(excludeunits,mapSync1);
+		exclude(excludeunits,mapScan3);
+		exclude(excludeunits,mapBackup3);
+		exclude(excludeunits,mapSync3);
+		exclude(excludeunits,mapScan4);
+		exclude(excludeunits,mapBackup4);
+		exclude(excludeunits,mapSync4);
+		tree(el,mapScan2,excludeunits,exclusiveInclude,false,mapBL1,leyenda('s2'));
+		 
+	}
+	
+	function treeSync3(el){
+		clearUnselectedNodes();
+		var excludeunits=new Array();
+		var exclusiveInclude=new Array()
+		include(exclusiveInclude,mapScan3);
+		include(exclusiveInclude,mapBackup3);
+		exclude(excludeunits,mapScan1);
+		exclude(excludeunits,mapBackup1);
+		exclude(excludeunits,mapSync1);
+		exclude(excludeunits,mapScan2);
+		exclude(excludeunits,mapBackup2);
+		exclude(excludeunits,mapSync2);
+		exclude(excludeunits,mapScan4);
+		exclude(excludeunits,mapBackup4);
+		exclude(excludeunits,mapSync4);
+		tree(el,mapSync3,excludeunits,exclusiveInclude,true,null,leyenda('y3'));
+	}
+	
+	function treeBk3(el){
+		clearUnselectedNodes();
+		var excludeunits=new Array();
+		var exclusiveInclude=new Array()
+		include(exclusiveInclude,mapScan3);
+		include(exclusiveInclude,mapSync3);
+		exclude(excludeunits,mapScan1);
+		exclude(excludeunits,mapBackup1);
+		exclude(excludeunits,mapSync1);
+		exclude(excludeunits,mapScan2);
+		exclude(excludeunits,mapBackup2);
+		exclude(excludeunits,mapSync2);
+		exclude(excludeunits,mapScan4);
+		exclude(excludeunits,mapBackup4);
+		exclude(excludeunits,mapSync4);
+
+		tree(el,mapBackup3,excludeunits,exclusiveInclude,true,null,leyenda('b3'));
+	}
+	
+	function treeScan3(el){
+		clearUnselectedNodes();
+		var excludeunits=new Array();
+		var exclusiveInclude=new Array()
+		include(exclusiveInclude,mapBackup3);
+		include(exclusiveInclude,mapSync3);
+		exclude(excludeunits,mapScan1);
+		exclude(excludeunits,mapBackup1);
+		exclude(excludeunits,mapSync1);
+		exclude(excludeunits,mapScan2);
+		exclude(excludeunits,mapBackup2);
+		exclude(excludeunits,mapSync2);
+		exclude(excludeunits,mapScan4);
+		exclude(excludeunits,mapBackup4);
+		exclude(excludeunits,mapSync4);
+		tree(el,mapScan3,excludeunits,exclusiveInclude,false,mapBL1,leyenda('s3'));
+	}
+	
+	function treeSync4(el){
+		clearUnselectedNodes();
+		var excludeunits=new Array();
+		var exclusiveInclude=new Array()
+		include(exclusiveInclude,mapScan4);
+		include(exclusiveInclude,mapBackup4);
+		exclude(excludeunits,mapScan1);
+		exclude(excludeunits,mapBackup1);
+		exclude(excludeunits,mapSync1);
+		exclude(excludeunits,mapScan2);
+		exclude(excludeunits,mapBackup2);
+		exclude(excludeunits,mapSync2);
+		exclude(excludeunits,mapScan3);
+		exclude(excludeunits,mapBackup3);
+		exclude(excludeunits,mapSync3);
+		tree(el,mapSync4,excludeunits,exclusiveInclude,true,null,leyenda('y4'));
+	}
+	
+	function treeBk4(el){
+		clearUnselectedNodes();
+		var excludeunits=new Array();
+		var exclusiveInclude=new Array()
+		include(exclusiveInclude,mapScan4);
+		include(exclusiveInclude,mapSync4);
+		exclude(excludeunits,mapScan1);
+		exclude(excludeunits,mapBackup1);
+		exclude(excludeunits,mapSync1);
+		exclude(excludeunits,mapScan2);
+		exclude(excludeunits,mapBackup2);
+		exclude(excludeunits,mapSync2);
+		exclude(excludeunits,mapScan3);
+		exclude(excludeunits,mapBackup3);
+		exclude(excludeunits,mapSync3);
+
+		tree(el,mapBackup4,excludeunits,exclusiveInclude,true,null,leyenda('b4'));
+	}
+	
+	function treeScan4(el){
+		clearUnselectedNodes();
+		var excludeunits=new Array();
+		var exclusiveInclude=new Array()
+		include(exclusiveInclude,mapBackup4);
+		include(exclusiveInclude,mapSync4);
+		exclude(excludeunits,mapScan1);
+		exclude(excludeunits,mapBackup1);
+		exclude(excludeunits,mapSync1);
+		exclude(excludeunits,mapScan2);
+		exclude(excludeunits,mapBackup2);
+		exclude(excludeunits,mapSync2);
+		exclude(excludeunits,mapScan3);
+		exclude(excludeunits,mapBackup3);
+		exclude(excludeunits,mapSync3);
+		tree(el,mapScan4,excludeunits,exclusiveInclude,false,mapBL1,leyenda('s4'));
+	}
+	
+	
+	function clearUnselectedNodes(){
+		var node=1;
+		clearPaths(node,'',mapScan1);
+		clearPaths(node,'b',mapBackup1);
+		clearPaths(node,'c',mapSync1);
+		node++;
+		clearPaths(node,'',mapScan2);
+		clearPaths(node,'b',mapBackup2);
+		clearPaths(node,'c',mapSync2);
+		node++;
+		clearPaths(node,'',mapScan3);
+		clearPaths(node,'b',mapBackup3);
+		clearPaths(node,'c',mapSync3);
+		node++;
+		clearPaths(node,'',mapScan4);
+		clearPaths(node,'b',mapBackup4);
+		clearPaths(node,'c',mapSync4);
+	}
+	
+	function clearPaths(node,pref,mapScan){
+		if (!$("Input[class=checkbox"+node+pref+"]").is(":checked")) {	
+			mapScan.splice(0,mapScan.length)
+		}
+	}
+	
+	function include(exclusiveInclude, map1){
+		if(map1.length>0){
+			//UNIX/LINUX
+			if(decodeURIComponent(map1[0]).indexOf('/Volumes')==0 || decodeURIComponent(map1[0]).indexOf('/media')==0){
+				exclusiveInclude.push(decodeURIComponent(map1[0]).substring(0,decodeURIComponent(map1[0]).indexOf('/',9) ));
+			}else if(map1[0].indexOf('/')==0){
+				excludeunits.push("/");
+			}else{
+				exclusiveInclude.push(decodeURIComponent(map1[0]).substring(0,3));
+			}
+		}
+	}
+	
+	function exclude(excludeunits,map1){
+		if(map1.length>0){
+			//UNIX/LINUX
+			if(decodeURIComponent(map1[0]).indexOf('/Volumes')==0 || decodeURIComponent(map1[0]).indexOf('/media')==0){
+				excludeunits.push(decodeURIComponent(map1[0]).substring(0,decodeURIComponent(map1[0]).indexOf('/',9) ));
+			}else if(map1[0].indexOf('/')==0){
+				excludeunits.push("/");
+			}else{
+				excludeunits.push(decodeURIComponent(map1[0]).substring(0,1));
+			}
+		}
+	}
+					
+	function validate(){
+		var node=1;
+		var ok=true;
+		var msg="";
+		if(!cargarPaths('scan',node,'',mapScan1)){
+			msg+='Select any folder in scan disk #1\n';
+			ok=false;
+		}
+		if(!cargarPaths('backuppath',node,'b',mapBackup1)){
+			msg+='Select any folder in backup disk #1\n';
+			ok=false;
+		}
+		if(!cargarPaths('syncpath',node,'c',mapSync1)){
+			msg+='Select any folder in sync disk #1\n';
+			ok=false;
+		}
+		
+		node++;
+		if(!cargarPaths('scan',node,'',mapScan2)){
+			msg+='Select any folder in scan disk #2\n';
+			ok=false;
+		}
+		
+		if(!cargarPaths('backuppath',node,'b',mapBackup2)){
+			msg+='Select any folder in backup disk #2\n';
+			ok=false;
+		}
+
+		if(!cargarPaths('syncpath',node,'c',mapSync2)){			
+			msg+='Select any folder in sync disk #2\n';
+			ok=false;
+		}
+
+		node++;
+		if(!cargarPaths('scan',node,'',mapScan3)){
+			msg+='Select any folder in scan disk #3\n';
+			ok=false;
+		}
+
+		if(!cargarPaths('backuppath',node,'b',mapBackup3)){
+			msg+='Select any folder in backup disk #3\n';
+			ok=false;
+		}
+		if(!cargarPaths('syncpath',node,'c',mapSync3)){
+			msg+='Select any folder in sync disk #3\n';
+			ok=false;
+		}
+		node++;
+		if(!cargarPaths('scan',node,'',mapScan4)){
+			msg+='Select any folder in scan disk #4\n';
+			ok=false;
+		}
+		
+		if(!cargarPaths('backuppath',node,'b',mapBackup4)){
+			msg+='Select any folder in backup disk #4\n';
+			ok=false;
+		}		
+		
+		if(!cargarPaths('syncpath',node,'c',mapSync4)){
+			msg+='Select any folder in sync disk #4\n';
+			ok=false;
+		}
+		
+		$('#blacklist').attr('value',getPaths(mapBL1));
+		
+		if(ok){
+			$.ajax(
+			{
+				url:'/cass/initscan.fn',
+				async:true
+			}
+			).done(
+				function(){
+				}
+			);
+			return true;
+		}else{
+			alert(msg);
+		}
+                return false;
+		
+	}
+        
+        function gosave() {
+            if(validate()){
+                $("#spage").val(2);
+                frm.submit();
+            }
+        }
+        
+        function validateAndSend() {
+            if(validate()){
+                $("#spage").val(8);
+                frm.submit();
+            }
+        }
+	
+	function cargarPaths(pref,node,post,mapScan){
+		if ($("Input[class=checkbox"+node+post+"]").is(":checked")) {
+			var	paths=getPaths(mapScan);	
+			if($.trim(paths).length==0){
+				return false;
+			}else{
+				$('#'+pref+node+'').attr('value',paths);
+				return true;
+			}
+		}
+		
+		return true;
+	}
+	
+	function getPaths(map){
+			var scan1paths="";
+			var coma=false;
+			for(var i=0;i<map.length;i++){
+				if(coma) scan1paths+=';'
+				scan1paths+=map[i]
+				coma=true;
+			}
+			
+			return scan1paths;
+	}
+	 
+	function validPath(path){
+		var result=false;
+		$.ajax({
+		  async:false,	
+		  url: "fileexist.fn?sfileexist="+path+"&random="+Math.random(),
+		  type: "GET",
+		  dataType: "text"
+		}
+		).done(function(data){
+			if(data.split(",")[0]=='N' || data.split(",")[0]=='n'){
+				result=false;
+			}else{
+				result=true;
+			}
+		  });
+		  
+		return result;
+	}
+	
+	function golink() {
+		$.ajax(
+		{
+			url:'/cass/initscan.fn',
+			async:true
+		}
+		).done(
+			function(){
+			}
+		);
+		window.location = "setup.htm?spage=1&isprev=true";
+	}
+	
+	function scanTreeModeStartStop(ck){
+		closeTree();
+		$.ajax(
+		{
+			url:'/cass/setscantreemode.f?sscantreemode='+($(ck).is(':checked')?2:0),
+			async:true
+		}
+		).done(
+			function(data){
+				scanTreeMode=$(ck).is(':checked')?2:0;
+				setSTM(scanTreeMode);
+			}
+		);
+	}
+	
+	
+	function toggleDiv(divId) {
+		closeTree();
+		$("#" + divId).toggle();                            
+	}
+	
+	$(document).ready( function(){
+            $(".scanlb").popover({
+                content: LANG.setupscan.help.scandrive,
+                placement:"right",
+                trigger:"hover",
+				animation: false
+            });
+            
+             $(".btnseldir").popover({
+                content: LANG.setupscan.help.select,
+                placement:"right",
+                trigger:"hover",
+				animation: false
+            });
+            
+            var ndrives = ***REPNDRIVES***;
+            for (var i=1;i<=ndrives;i++)
+            { 
+                $("#divdrive"+i).show();
+            }
+
+            
+            if(state == "NEW"){
+                $("#nextbutton").show();
+                $("#savebutton").hide();
+            }else{
+                $("#savebutton").show();
+                $("#nextbutton").hide();
+                $("#prebutton").hide();
+            }
+	
+          $("#dialog").dialog({
+            autoOpen: false,
+            modal: true,
+          });
+          
+          $( "#popupdiv" ).dialog({
+            autoOpen: false,
+            height: '600',
+            width: '800',
+            modal: true,
+            resizable: true,
+            closeOnEscape: false,
+            open: function(event, ui) { $(".ui-dialog-titlebar-close", ui.dialog || ui).hide(); },
+
+            buttons: {
+                "Close": function() {
+                  closeTree();
+                }
+              }
+        });
+        
+	
+	$.ajax(
+		{
+			url:'/cass/getscanmode.fn',
+			async:false
+		}
+  	).done(
+		function(data){
+			scanTreeMode=parseInt(data);
+			if(scanTreeMode>0){
+				$('#ckstm').prop('checked',true);
+			}
+
+			setSTM(scanTreeMode);
+		}
+	);
+	
+	cargarLeyendas();
+	
+	//1
+	if ($("Input[class=checkbox1]").is(":checked")) {
+	console.log("scannode checked");                               
+		$("#myContent").show(); 
+	} else {                               
+		$("#myContent").hide(); 
+	}
+	
+	if ($("Input[class=checkbox1b]").is(":checked")) {
+	console.log("scannode checked");                               
+		$("#myContentBak1").show(); 
+	} else {                               
+		$("#myContentBak1").hide(); 
+	}
+	
+	if ($("Input[class=checkbox1c]").is(":checked")) {
+	console.log("scannode checked");                               
+		$("#myContentSnc1").show(); 
+	} else {                               
+		$("#myContentSnc1").hide(); 
+	}
+
+
+	//2
+	if ($("Input[class=checkbox2]").is(":checked")) {
+	console.log("scannode checked");                               
+		$("#myContent2").show(); 
+	} else {                               
+		$("#myContent2").hide(); 
+	}
+	
+	if ($("Input[class=checkbox2b]").is(":checked")) {
+	console.log("scannode checked");                               
+		$("#myContentBak2").show(); 
+	} else {                               
+		$("#myContentBak2").hide(); 
+	}
+	
+	if ($("Input[class=checkbox2c]").is(":checked")) {
+	console.log("scannode checked");                               
+		$("#myContentSnc2").show(); 
+	} else {                               
+		$("#myContentSnc2").hide(); 
+	}
+
+
+	//3
+	if ($("Input[class=checkbox3]").is(":checked")) {
+	console.log("scannode checked");                               
+		$("#myContent3").show(); 
+	} else {                               
+		$("#myContent3").hide(); 
+	}
+	
+	if ($("Input[class=checkbox3b]").is(":checked")) {
+	console.log("scannode checked");                               
+		$("#myContentBak3").show(); 
+	} else {                               
+		$("#myContentBak3").hide(); 
+	}
+	
+	if ($("Input[class=checkbox3c]").is(":checked")) {
+	console.log("scannode checked");                               
+		$("#myContentSnc3").show(); 
+	} else {                               
+		$("#myContentSnc3").hide(); 
+	}
+
+
+	//4
+	if ($("Input[class=checkbox4]").is(":checked")) {
+	console.log("scannode checked");                               
+		$("#myContent4").show(); 
+	} else {                               
+		$("#myContent4").hide(); 
+	}
+	
+	if ($("Input[class=checkbox4b]").is(":checked")) {
+	console.log("scannode checked");                               
+		$("#myContentBak4").show(); 
+	} else {                               
+		$("#myContentBak4").hide(); 
+	}                                               
+
+	if ($("Input[class=checkbox4c]").is(":checked")) {
+	console.log("scannode checked");                               
+		$("#myContentSnc4").show(); 
+	} else {                               
+		$("#myContentSnc4").hide(); 
+	}
+        
+        
+                        
+});
+						   
+</script>
+
+  </head>
+  
+
+
+  <body id="body_1">
+       <div id="popupdiv" title="Select Folders"></div>
+
+      <form id='frm' action="setup.htm" method="get">
+         
+              
+        <div class="container">
+            <div class="row">
+                <div class="span3">
+                    <section id="sec1"> 
+                        <fieldset>
+                        <legend>Scan Files & Folders</legend>
+
+                       <br>
+                                            
+                        ***REPRECOM***
+                       
+                        <div id="divdrive1" style="display: none">
+                            
+                            <h4 id='l1'>Drive #1</h4>
+                             <label class="checkbox scanlb"><input type="checkbox" name="scannode1" onclick="toggleDiv('myContent');" class="checkbox1" ***REP2***>Scan this drive for files</label>                        
+                             <div id="myContent">
+                                <span class="help-block" id='s1'> </span>
+                                                         <button type="button" class="btn btnseldir" onclick="treeScan1(this);">Select directories</button> 
+                                                             <input type='hidden' name='scan1' id='scan1' />
+                             </div>
+                    
+                             <br><br>
+                        </div>
+                        
+                       
+                       
+                       <div id="divdrive2" style="display: none">
+
+                       
+                            <h4 id='l2'>Drive #2</h4>
+                             <label class="checkbox scanlb"><input type="checkbox" name="scannode2" onclick="toggleDiv('myContent2');" class="checkbox2" ***REP2b***>Scan this drive for files</label>                        
+                             <div id="myContent2">
+                                <span class="help-block" id='s2'>Please choose directory to scan for files. </span>
+                                <button type="button" class="btn btnseldir" onclick="treeScan2(this);">Select directories</button>         
+                                                             <input type='hidden' name='scan2' id='scan2' />						   
+                             </div>
+                            <br><br>
+                        </div>
+                        <div id="divdrive3" style="display: none">
+                            <h4 id='l3'>Drive #3</h4>
+                             <label class="checkbox scanlb"><input type="checkbox" name="scannode3" onclick="toggleDiv('myContent3');" class="checkbox3" ***REP2c***>Scan this drive for files</label>                        
+                             <div id="myContent3">
+                                <span class="help-block" id='s3'>Please choose directory to scan for files. </span>
+                                  <button type="button" class="btn btnseldir" onclick="treeScan3(this);">Select directories</button>   
+                                                             <input type='hidden' name='scan3' id='scan3' />								 
+                             </div>
+                                                     <br><br>
+                        </div>
+                        
+                        <div id="divdrive4" style="display: none">
+
+                            <h4 id='l4'>Drive #4</h4>
+                            <label class="checkbox scanlb"><input type="checkbox" name="scannode4" onclick="toggleDiv('myContent4');" class="checkbox4" ***REP2d***>Scan this drive for files</label>                        
+                            <div id="myContent4">
+                               <span class="help-block" id='s4'>Please choose directory to scan for files. </span>
+                               <button type="button" class="btn btnseldir" onclick="treeScan4(this);">Select directories</button>   
+                                                       <input type='hidden' name='scan4' id='scan4' />							   
+                            </div>
+                        </div>
+                        
+                        <input type='hidden' name='blacklist' id='blacklist'/>
+                                                
+                        </fieldset>
+                    </section>      <!--Body content-->
+                    <input id="cpage" type="hidden" name="cpage" value="2">
+                    <input id="spage" type="hidden" name="spage" value="8">
+                    <br>
+                    <div id='buttos'>
+                            <button id="prebutton" type="button" class="btn" onclick="golink();">Previous</button>
+                            <button id="nextbutton" type="button" class="btn btn-primary" onclick="validateAndSend();">Next</button>
+                            <button id="savebutton" type="button" class="btn btn-primary" onclick="gosave();">Save</button>
+                    </div>
+			
+                  
+                </div>
+            </div>
+        </div>
+    </form>
+      
+    <!-- Le javascript
+    ================================================== -->
+    <!-- Placed at the end of the document so the pages load faster
+    <script src="bootstrap/js/jquery.js"></script>
+    <script src="bootstrap/js/bootstrap-transition.js"></script>
+    <script src="bootstrap/js/bootstrap-alert.js"></script>
+    <script src="bootstrap/js/bootstrap-modal.js"></script>
+    <script src="bootstrap/js/bootstrap-dropdown.js"></script>
+    <script src="bootstrap/js/bootstrap-scrollspy.js"></script>
+    <script src="bootstrap/js/bootstrap-tab.js"></script>
+    <script src="bootstrap/js/bootstrap-tooltip.js"></script>
+    <script src="bootstrap/js/bootstrap-popover.js"></script>
+    <script src="bootstrap/js/bootstrap-button.js"></script>
+    <script src="bootstrap/js/bootstrap-collapse.js"></script>
+    <script src="bootstrap/js/bootstrap-carousel.js"></script>
+    <script src="bootstrap/js/bootstrap-typeahead.js"></script> -->
+
+  </body>
+  <body id="body_2">
+  	<div id='dialog' title='Confirmation Required' style='z-index: 80000'></div>
+  </body>
+
+</html>

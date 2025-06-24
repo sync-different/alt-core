@@ -1,0 +1,1 @@
+<INPUT TYPE=button value="valencia (3)"  onclick="search_query(&#39;valencia&#39;);" style="color:#000;background-color:#FCF0AD;margin-bottom: 0.2em;display:block;max-width:90%;word-wrap:break-word;font-size:100%"/>

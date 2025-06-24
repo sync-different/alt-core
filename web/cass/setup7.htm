@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <title>Bootstrap, from Twitter</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="">
+    <meta name="author" content="">
+
+    <!-- Le styles -->
+    <link href="bootstrap/css/bootstrap.css" rel="stylesheet">
+    <style type="text/css">
+      body {
+        padding-top: 60px;
+        padding-bottom: 40px;
+      }
+    </style>
+    <link href="bootstrap/css/bootstrap-responsive.css" rel="stylesheet">
+
+    <!-- HTML5 shim, for IE6-8 support of HTML5 elements -->
+    <!--[if lt IE 9]>
+      <script src="http://html5shim.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+
+    <!-- Fav and touch icons -->
+    <link rel="shortcut icon" href="bootstrap/ico/favicon.ico">
+    <link rel="apple-touch-icon-precomposed" sizes="144x144" href="bootstrap/ico/apple-touch-icon-144-precomposed.png">
+    <link rel="apple-touch-icon-precomposed" sizes="114x114" href="bootstrap/ico/apple-touch-icon-114-precomposed.png">
+    <link rel="apple-touch-icon-precomposed" sizes="72x72" href="bootstrap/ico/apple-touch-icon-72-precomposed.png">
+    <link rel="apple-touch-icon-precomposed" href="bootstrap/ico/apple-touch-icon-57-precomposed.png">
+    
+    
+        <script type="text/javascript" src="jquery.min.js"></script>
+        <script>
+           
+           
+                function checkForSumbit() {
+                        var sign = $('#signature').val();
+                        if(!sign && sign==''){
+                            alert('Please complete the server name');
+                        }else{
+                           if(($("#mode1").val()=="server") && ($.inArray(sign, servers)> -1)){
+                                alert('The server name already exist in your network. Please choose a different one');   
+                           }else if($("#adminuser").val()==""){
+                               alert('Please complete the adminitrator name');   
+                           }else{
+                               if($("#adminpw1").val()=="" ){
+                                   alert('Please complete the adminitrator password');   
+                                }else if($("#adminpw2").val()==""){
+                                   alert('Please confirm the adminitrator password');  
+                                }else if($("#adminpw1").val()!=$("#adminpw2").val()){
+                                   alert("The administrator passwords don't match");   
+                               }else{
+                                   return true;
+                                }
+                           }
+                        }
+                        return false;
+                    }
+                    
+                     function gonext() {
+                        if($('input[name=radiosetup]:checked').val() == 'advanced' || checkForSumbit()){
+                            $('#frm1').submit();   
+                        }
+                     }
+                     
+                     
+                     $(document).ready(function() {
+                        $("#nextbutton").attr('disabled','disabled');
+                        $("input[name=radiosetup]").on( "click", function() {
+                            $("#nextbutton").removeAttr('disabled');
+                            if($('input[name=radiosetup]:checked').val() == 'express'){
+                                $("#expresssetup").val(true);
+                                $("#spage").val(6);
+                                $("#admindiv").show("slow");
+                             }else{
+                                $("#expresssetup").val(false);
+                                $("#spage").val(1);
+                                $("#admindiv").hide("slow");
+                             }
+                        });
+                     });
+
+                 </script>   
+                    
+  </head>
+
+  <body>
+
+      <form id="frm1" action="setup.htm" method="get">
+        <div class="container">
+            <div class="row">
+                <div class="span9">
+                    <section id="sec1"> 
+                        <fieldset>
+                            
+                        <legend>Choose Setup</legend>
+                             <div class="radio">
+                              <label style="font-size: 40">
+                                <input type="radio" name="radiosetup" id="radioexpress" value="express" >
+                                Express Setup
+                              </label>
+                                 <span class="help-block">Choose Express Setup to start using Alterante right away, with all the default settings. Your folders (My Documents, My Pictures, My Videos) will be scanned by Alterante automatically.</span>
+                            </div>
+                            <div class="radio">
+                              <label>
+                                <input type="radio" name="radiosetup" id="radioadvanced" value="advanced">
+                                Advanced Setup
+                              </label>
+                                <span class="help-block">The Advanced Setup wizard will run you through all the settings in detail. This includes Network, User, Backup, and Emai settings, as well as letting you select specific folders in each drive for Alterante to scan, index, and backup.</span>
+                            </div>       
+                        <br><br>
+                        <div id="admindiv" class="radio" style="display:none">                            
+                            <span class="help-block">Administrator username & password</span>
+                                ***REP6A***  
+                        </div>
+         
+                                
+                        <input id="cpage" type="hidden" name="cpage" value="7">
+                        <input id="spage" type="hidden" name="spage" value="1">
+                        <input id="expresssetup" type="hidden" name="expresssetup" value="false">
+                    </section>      <!--Body content-->
+                        <br>
+                        <button id="nextbutton" type="button" class="btn btn-primary" onclick="gonext();">Next</button>
+                </div>
+            </div>
+        </div>
+    </form>
+      
+    <!-- Le javascript
+    ================================================== -->
+    <!-- Placed at the end of the document so the pages load faster
+    <script src="bootstrap/js/jquery.js"></script>
+    <script src="bootstrap/js/bootstrap-transition.js"></script>
+    <script src="bootstrap/js/bootstrap-alert.js"></script>
+    <script src="bootstrap/js/bootstrap-modal.js"></script>
+    <script src="bootstrap/js/bootstrap-dropdown.js"></script>
+    <script src="bootstrap/js/bootstrap-scrollspy.js"></script>
+    <script src="bootstrap/js/bootstrap-tab.js"></script>
+    <script src="bootstrap/js/bootstrap-tooltip.js"></script>
+    <script src="bootstrap/js/bootstrap-popover.js"></script>
+    <script src="bootstrap/js/bootstrap-button.js"></script>
+    <script src="bootstrap/js/bootstrap-collapse.js"></script>
+    <script src="bootstrap/js/bootstrap-carousel.js"></script>
+    <script src="bootstrap/js/bootstrap-typeahead.js"></script> -->
+
+  </body>
+</html>

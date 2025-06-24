@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Scrubber Project Sequence Diagram</title>
+    <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: white;
+        }
+        .diagram-container {
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 30px;
+        }
+        #diagram {
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <div class="diagram-container">
+        <h1>Scrubber Project - Sequence Diagram</h1>
+        <div id="diagram">
+            <div class="mermaid">
+sequenceDiagram
+    participant User as User/System
+    participant SS as ScrubberService
+    participant Main as Main Class
+    participant DB as Database (records.db)
+    participant FS as File System (/Users/)
+    participant RT as RTServer (localhost:8081)
+    participant Incoming as Incoming Directory
+    participant Config as Configuration
+    participant CB as CloudBackup
+    participant Thumb as Thumbnailator
+    participant Audio as JAudioTagger
+    participant PDF as PDFRenderer
+
+    User->>SS: Initialize ScrubberService
+    SS->>SS: Create new Thread("scrubber")
+    SS->>SS: Start thread execution
+    
+    loop Continuous Processing (while !terminated)
+        SS->>Main: Create Main instance
+        SS->>Main: Call main() with args
+        Note over SS,Main: Args: ["data/records.db", "localhost", "8081", "/Users/", "../rtserver/incoming", "macprd", "config/www-rtbackup.properties"]
+        
+        Main->>Config: Load www-rtbackup.properties
+        Config-->>Main: Configuration loaded
+        
+        Main->>DB: Connect to records.db
+        DB-->>Main: Database connection established
+        
+        Main->>RT: Connect to RTServer (localhost:8081)
+        RT-->>Main: Server connection established
+        
+        Main->>FS: Scan /Users/ directory
+        FS-->>Main: File list returned
+        
+        loop For each file found
+            Main->>Main: Process file based on type
+            
+            alt Audio File
+                Main->>Audio: Extract metadata with JAudioTagger
+                Audio-->>Main: Audio metadata
+            else PDF File
+                Main->>PDF: Render/process with PDFRenderer
+                PDF-->>Main: PDF processed
+            else Image File
+                Main->>Thumb: Generate thumbnail with Thumbnailator
+                Thumb-->>Main: Thumbnail created
+            end
+            
+            Main->>DB: Store file metadata/record
+            DB-->>Main: Record stored
+            
+            Main->>Incoming: Move/copy file to incoming directory
+            Incoming-->>Main: File transferred
+            
+            Main->>CB: Backup to cloud storage
+            CB-->>Main: Backup completed
+            
+            Main->>RT: Notify RTServer of new file
+            RT-->>Main: Notification acknowledged
+        end
+        
+        Main->>Config: Apply processor settings
+        Note over Main,Config: minsubstr=4, maxstrlen=50, autocomplete=true, etc.
+        
+        Main->>DB: Commit changes (based on commit_timer/commit_puts)
+        DB-->>Main: Changes committed
+        
+        Main-->>SS: Processing cycle complete
+        
+        alt Exception occurs
+            Main->>SS: Throw exception
+            SS->>SS: Print stack trace
+            SS->>SS: Continue loop (restart processing)
+        end
+    end
+    
+    User->>SS: Terminate service
+    SS->>SS: Set mTerminated = true
+    SS->>SS: Exit run loop
+            </div>
+        </div>
+    </div>
+
+    <script>
+        mermaid.initialize({ 
+            startOnLoad: true,
+            theme: 'default',
+            sequence: {
+                diagramMarginX: 50,
+                diagramMarginY: 10,
+                actorMargin: 50,
+                width: 150,
+                height: 65,
+                boxMargin: 10,
+                boxTextMargin: 5,
+                noteMargin: 10,
+                messageMargin: 35,
+                mirrorActors: true,
+                bottomMarginAdj: 1,
+                useMaxWidth: true,
+                rightAngles: false,
+                showSequenceNumbers: false
+            }
+        });
+    </script>
+</body>
+</html>

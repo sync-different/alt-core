@@ -1,0 +1,69 @@
+<div style="margin-left:133px;">
+    <table width="100%">
+        <tr>
+            <td align="center">
+                <table class="table table-striped tablefiles table-responsive" id="grid" style="font-size: 16px;">
+                    <tr>
+                        <td>&nbsp;</td>
+                        <td>&nbsp;</td>
+                        <td ng-click="sDate=false;sSize=false;sName=true;nameReverse=!nameReverse;sortColumn('name', nameReverse);" style="cursor:pointer;">
+                            <label ng-class="{sortUp:sName && !nameReverse, sortDown:sName && nameReverse}" style="cursor:pointer;">Name</label>
+                            <i class="fas fa-arrow-down" style="font-size: 11px" ng-show="sName && !nameReverse"></i>
+                            <i class="fas fa-arrow-up" style="font-size: 11px" ng-show="sName && nameReverse"></i>
+                        </td>
+                        <td ng-click="sDate=true;sSize=false;sName=false;dateReverse=!dateReverse;sortColumn('file_date_long', dateReverse);" style="cursor:pointer;">
+                            <label ng-class="{sortUp:sDate && !dateReverse, sortDown:sDate && dateReverse}" style="cursor:pointer;">Date Created</label>
+                            <i class="fas fa-arrow-down" style="font-size: 11px" ng-show="sDate && !dateReverse"></i>
+                            <i class="fas fa-arrow-up" style="font-size: 11px" ng-show="sDate && dateReverse"></i>
+                        </td>
+                        <td ng-click="sDate=false;sSize=true;sName=false;sizeReverse=!sizeReverse;sortColumn('file_size', sizeReverse);" style="cursor:pointer;width: 100px;">
+                            <label ng-class="{sortUp:sSize && !sizeReverse, sortDown:sSize && sizeReverse}" style="cursor:pointer;">File Size</label>
+                            <i class="fas fa-arrow-down" style="font-size: 11px" ng-show="sSize && !sizeReverse"></i>
+                            <i class="fas fa-arrow-up" style="font-size: 11px" ng-show="sSize && sizeReverse"></i>
+                        </td>
+                        <td>Tags</td>
+                        <td width="100px;">&nbsp;</td>
+                    </tr>
+                    <tr ng-repeat="r in list" valign="center" class="linefiles" ng-mouseenter="r.show=true" ng-mouseleave="r.show=false">
+                        <td style="vertical-align: middle;" width="100" align="center">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" md5="{{r.nickname}}" tag="optcheck" ng-model="s" ng-change="selOpCheck(r.nickname)"  style="transform: scale(1.3);">
+                            </div>
+                        </td>
+                        <td ng-click="play(r)" style="cursor:pointer;vertical-align: middle;">
+                            <img ng-show="r.file_thumbnail!=null || r.file_ext=='jpg' || r.file_ext=='jpeg' || r.file_ext=='png' || r.file_ext=='gif'" src="data:image/{{r.file_ext}};base64,{{r.file_thumbnail}}" width="75px" />
+                            <i class="fas fa-video" style="font-size:75px;" ng-show="r.file_thumbnail==null && (r.file_ext=='mp4' || r.file_ext=='mov')"></i>
+                            <i class="fas fa-music" style="font-size:75px;" ng-show="r.file_thumbnail==null && (r.file_ext=='mp3' || r.file_ext=='m4a' || r.file_ext=='wav' || r.file_ext=='wma')"></i>
+                            <i class="fas fa-file-word" style="font-size:75px;" ng-show="r.file_thumbnail==null && (r.file_ext=='doc' || r.file_ext=='docx')"></i>
+                            <i class="fas fa-file-powerpoint" style="font-size:75px;" ng-show="r.file_thumbnail==null && (r.file_ext=='ppt' || r.file_ext=='pptx')"></i>
+                            <i class="fas fa-file-excel" style="font-size:75px;" ng-show="r.file_thumbnail==null && (r.file_ext=='xls' || r.file_ext=='xlsx')"></i>
+                            <i class="fas fa-file-pdf" style="font-size:75px;" ng-show="r.file_thumbnail==null && (r.file_ext=='pdf')"></i>
+                        </td>
+                        <td ng-click="play(r)" style="cursor:pointer;vertical-align: middle;">{{r.name}}</td>
+                        <td ng-click="play(r)" style="cursor:pointer;vertical-align: middle;">{{r.file_date_long | date:'MMM d, y h:mm:ss a'}}</td>
+                        <td ng-click="play(r)" style="cursor:pointer;vertical-align: middle;">{{(r.file_size/1024/1024).toFixed(2)}} MB</td>
+                        <td style="vertical-align: middle;">
+                            <input type="text" tag="tags" md5="{{r.nickname}}" value="{{r.file_tags}}" data-role="tagsinput" />
+                        </td>
+                        <td style="vertical-align: middle; white-space: nowrap;">
+                            <div style="display: inline-block; text-align: center;" ng-show="r.show">
+                                <i class="fas fa-play" style="cursor: pointer; font-size: 18px; vertical-align: middle;" ng-show="!isCluster && r.show" ng-click="remote(r)"></i>
+                                &nbsp;&nbsp;&nbsp;
+                                <!--<a download="{{r.name}}" ng-show="!isCluster || (isCluster && !(r.file_ext=='mp3' || r.file_ext=='m4a' || r.file_ext=='wav' || r.file_ext=='wma'))" class="fas fa-download" href="{{r.file_path_webapp+'&uuid='+getCookie('uuid')}}" style="text-decoration: none; color: black; font-size: 18px; vertical-align: middle;" id="d{{r.nickname}}"></a>-->
+                                <i class="fas fa-download"
+                                    ng-show="!isCluster || (isCluster && !(r.file_ext=='mp3' || r.file_ext=='m4a' || r.file_ext=='wav' || r.file_ext=='wma'))"
+                                    style="text-decoration: none; color: black; font-size: 18px; vertical-align: middle; cursor: pointer;"
+                                    ng-click="downloadFile(r)">
+                                </i>
+                                &nbsp;&nbsp;&nbsp;
+                                <i class="fas fa-folder-open" ng-show="!isCluster && r.show" ng-click="folder(r)" style="cursor: pointer; font-size: 18px; vertical-align: middle; margin-right: 20px;"></i>
+                            </div>
+                        </td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+    </table>
+</div>
+
+<div id="modals"></div>

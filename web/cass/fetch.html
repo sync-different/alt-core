@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+  <head>
+    <meta charset="utf-8">
+    <meta name="color-scheme" content="dark light">
+    <title>Piping a fetch response to StreamSaver</title>
+  </head>
+  <body>
+    <script>
+		function loadURL() {
+			const queryString = window.location.search
+			console.log(queryString)
+			const urlParams = new URLSearchParams(queryString)
+			const md5 = urlParams.get('sNamer')
+			console.log(md5)
+			document.getElementById('MyInput') = md5    
+		}
+	</script>
+  	<input type="text" id="myInput" value="Enter Text Here">
+    <button id="$start">Start</button>
+    <script src="https://cdn.jsdelivr.net/npm/web-streams-polyfill@2.0.2/dist/ponyfill.min.js"></script>
+    <script src="./StreamSaver.js"></script>
+    <script>
+      $start.onclick = () => {
+        //const url = 'https://d8d913s460fub.cloudfront.net/videoserver/cat-test-video-320x240.mp4'
+        //const url = 'http://localhost:8081/cass/large/IMG.MOV'
+        //const url = 'http://localhost:8081/cass/large/takeout-001.zip'
+        //const url = 'http://localhost:8081/cass/getfile.fn?sNamer=f50212d5a6c1f698b99ccf2fa9e0d3be&sFileExt=jpeg&sFileName=e-file-1.jpeg'
+		const url2 = 'http://localhost:8081/cass/getfile.fn?sNamer=1c13b461a74fb4376e4ca563b45cec5b&sFileExt=mp4&sFileName=Nisei+BTS+for+website.mp4&uuid=822a5a18-8002-4519-8e7f-65d8115a48cc'
+		const queryString = window.location.search
+		console.log(queryString)
+		const urlParams = new URLSearchParams(queryString)
+		const md5 = urlParams.get('sNamer')
+		console.log(md5)
+		const filename = urlParams.get('sFileName')
+		console.log(filename)
+		const uuid = urlParams.get('uuid')
+		const url = 'getfile.fn?sNamer=' + md5 + '&sFileName=' + encodeURIComponent(filename) + '&uuid=' + uuid 
+		console.log(url)
+    	//const fileStream = streamSaver.createWriteStream('test.mp4')
+    	const fileStream = streamSaver.createWriteStream(filename)
+
+        fetch(url).then(res => {
+          const readableStream = res.body
+
+          // more optimized
+          if (window.WritableStream && readableStream.pipeTo) {
+            return readableStream.pipeTo(fileStream)
+              .then(() => console.log('done writing'))
+          }
+
+          window.writer = fileStream.getWriter()
+
+          const reader = res.body.getReader()
+          const pump = () => reader.read()
+            .then(res => res.done
+              ? writer.close()
+              : writer.write(res.value).then(pump))
+
+          pump()
+        })
+      }
+    </script>
+  </body>
+</html>

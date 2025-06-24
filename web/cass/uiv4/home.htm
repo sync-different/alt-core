@@ -1,0 +1,671 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<!-- Estilos CSS -->
+		<link rel="stylesheet" type="text/css" href="bootstrap-4.6.2/css/bootstrap.min.css">
+		<link rel="stylesheet" type="text/css" href="bootstrap-4.6.2/css/fontawesome.min.css">
+		<link rel="stylesheet" type="text/css" href="bootstrap-4.6.2/css/solid.min.css">
+		<link rel="stylesheet" type="text/css" href="bootstrap-4.6.2/css/bootstrap-tagsinput.css">
+		<link rel="stylesheet" type="text/css" href="bootstrap-4.6.2/css/nouislider.min.css">
+		<link rel="stylesheet" type="text/css" href="bootstrap-4.6.2/css/swiper-bundle.min.css">
+	
+		<link href="./css/video-js.min.css" rel="stylesheet">
+		<link rel="stylesheet" type="text/css" href="css/jquery-ui.min.css">
+		<link rel="stylesheet" type="text/css" href="css/template.css">
+	
+		<!-- AngularJS -->
+		<script type="text/javascript" src="./angularjs/angular.min.js"></script>
+		<script type="text/javascript" src="./angularjs/angular-route.min.js"></script>
+		<script type="text/javascript" src="./angularjs/angular-ui-router.min.js"></script>
+		<script type="text/javascript" src="./angularjs/angular-sanitize.min.js"></script>
+	
+		<!-- Scripts jQuery -->
+		<script src="jquery-3.7.1/jquery.min.js"></script>
+		<script src="jquery-3.7.1/jquery-ui.min.js"></script>
+	
+		<!-- Scripts Bootstrap y Plugins -->
+		<script type="text/javascript" src="bootstrap-4.6.2/js/ui-bootstrap-tpls.min.js"></script>
+		<script type="text/javascript" src="bootstrap-4.6.2/js/bootstrap.min.js"></script>
+		<script type="text/javascript" src="bootstrap-4.6.2/js/bootstrap-tagsinput.min.js"></script>
+		<script type="text/javascript" src="bootstrap-4.6.2/js/nouislider.min.js"></script>
+		<script type="text/javascript" src="bootstrap-4.6.2/js/swiper-bundle.min.js"></script>
+	
+		<!-- Scripts personalizados -->
+		<script src="./js/plugins/plugins.js"></script>
+		<script src="./js/plugins/slider.js"></script>
+		<script src="./js/plugins/dropzone.min.js"></script>
+		<script src="./js/plugins/jquery.balloon.min.js"></script>
+		<script src="./js/alterante.js"></script>
+	
+		<script src="js/app.js"></script>
+		<script src="js/appconf.js"></script>
+		<script src="js/controllers/filtercontroller.js"></script>
+		<script src="js/controllers/rigthbarcontroller.js"></script>
+		<script src="js/controllers/myfilescontroller.js"></script>
+		<script src="js/controllers/homecontroller.js"></script>
+		<script src="js/controllers/sharescontroller.js"></script>
+		<script src="js/controllers/backupcontroller.js"></script>
+		<script src="js/controllers/multiclustercontroller.js"></script>
+	
+		<script src="./js/plugins/hls.js"></script>
+		<script src="./js/loading.js"></script>
+	</head>
+	
+<body ng-app="app">
+
+	<div id="loading-overlay">
+		<div class="spinner"></div>
+		<div class="loading-text">Loading...</div>
+	</div>
+	
+	<div class="container-fluid p-0">
+		<div ng-controller="FilterController">
+			<div class="dragzonebox" id="my-dropzone">
+				<div class="row text-center d-flex justify-content-center align-items-center" style="height: 50px; font-size: 17px; color: #6c757d; font-weight: bold;">
+					Drop files here
+				</div>
+				<label class="position-absolute" style="right: 10px; top: 4px; cursor: pointer; font-size: 28px; font-weight: bold;" ng-click="closeUpload()">x</label>
+				<button class="btn btn-success fileinput-button">
+					<i class="fas fa-plus"></i> Add files...
+				</button>
+				<br>
+				<br>
+				<br>
+			</div>
+
+			<div class="row fixed-top bg-white" id="topbarheader" style="z-index: 1005;">
+				<div class="row align-items-center w-100" style="height: 50px; background-color: rgb(42,42,42); padding-left: 51px;">
+					<div class="col-auto d-flex align-items-center">
+						<img src="img/logo_molecula-02.png" width="50" class="img-fluid" alt="Logo Molecula">
+						<img src="img/logo_alterante-03.png" width="100" class="img-fluid ms-2" alt="Logo Alterante">
+					</div>
+			
+					<div class="col">
+						<nav class="nav">
+							<a class="nav-link"
+							   id="home" 
+							   ng-click="show('Home');" 
+							   ng-class="{active: mnu == 'home'}" 
+							   style="cursor: pointer; margin-left: 20px; color: gray; text-decoration: none; color: {{mnu == 'home' ? 'white' : 'gray'}};">
+							   Home
+							</a>
+							<a class="nav-link"
+							   id="myfiles" 
+							   ng-click="show('MyFiles');" 
+							   ng-class="{active: mnu == 'myfiles'}" 
+							   style="cursor: pointer; color: gray; text-decoration: none; color: {{mnu == 'myfiles' ? 'white' : 'gray'}};">
+							   My Files
+							</a>
+							<a class="nav-link"
+							   ng-click="openBackup();" 
+							   ng-class="{active: mnu == 'backup'}" 
+							   style="cursor: pointer; color: gray; text-decoration: none; color: {{mnu == 'backup' ? 'white' : 'gray'}};">
+							   Backup
+							</a>
+							<a class="nav-link"
+							   ng-click="openShares();" 
+							   ng-class="{active: mnu == 'shares'}" 
+							   style="cursor: pointer; color: gray; text-decoration: none; color: {{mnu == 'shares' ? 'white' : 'gray'}};">
+							   Shares
+							</a>
+							<a class="nav-link"
+							   ng-click="openMultiCluster();" 
+							   ng-class="{active: mnu == 'multicluster'}" 
+							   style="cursor: pointer; color: gray; text-decoration: none; color: {{mnu == 'multicluster' ? 'white' : 'gray'}};">
+							   Multi-Cluster
+							</a>
+						</nav>						
+					</div>							
+			
+					<div class="col-auto d-flex align-items-center" style="position: relative;">
+						<div class="d-flex align-items-center" style="gap: 10px;">
+							<i class="fas fa-cloud-upload-alt text-white" ng-click="openUpload()" style="font-size: 26px; cursor: pointer;"></i>
+							<label class="mb-0" ng-click="openUpload()" style="font-size: 14px; cursor: pointer; color: white; font-weight: 600; text-transform: uppercase;">Upload</label>
+						</div>
+						&nbsp;&nbsp;&nbsp;&nbsp;
+						<input type="password" style="display:none;">
+						<input type="text" class="form-control ms-3" value=".all" id="txtSearch" placeholder="Search..." style="width:200px;">
+						&nbsp;&nbsp;&nbsp;&nbsp;
+						<table style="background-color:rgb(74,74,74);color:white;position:absolute;z-index:99999999;left:0;top:100%;-moz-border-radius: 15px;border-radius: 15px;" id="txtSearchSuggest2" ng-show="showSuggest2">
+							<tr><td style="padding: 2px 10px 2px 10px;"> &nbsp; </td></tr>
+							<tr><td style="padding: 2px 10px 2px 10px;" align="center"> Found {{suggest.length}} match</td></tr>
+							<tr ng-repeat="label in suggest2">
+								<td>
+									<label class="fas fa-camera text-white" style="padding: 2px 10px 2px 10px; cursor:pointer;" ng-click="search(label.name)" ng-show="label.type!='tag' &&  label.file_ext=='jpg' || label.file_ext=='jpeg' || label.file_ext=='png' || label.file_ext=='gif'">&nbsp;{{label.name}}</label>
+									<label class="fas fa-music text-white" style="padding: 2px 10px 2px 10px; cursor:pointer;" ng-click="search(label.name)" ng-show="label.type!='tag' &&  label.file_thumbnail==null && (label.file_ext=='mp3' || label.file_ext=='m4a' || label.file_ext=='mp4' || label.file_ext=='wav'|| label.file_ext=='wma')">&nbsp;{{label.name}}</label>
+									<label class="fas fa-briefcase text-white" style="padding: 2px 10px 2px 10px; cursor:pointer;" ng-click="search(label.name)" ng-show="label.type!='tag' && label.file_thumbnail==null && (label.file_ext=='doc' || label.file_ext=='docx' || label.file_ext=='pdf' || label.file_ext=='ppt' || label.file_ext=='pptx' || label.file_ext=='xls' || label.file_ext=='xlsx')">&nbsp;{{label.name}}</label>
+									<label class="fas fa-tag text-white" style="padding: 2px 10px 2px 10px; cursor:pointer;" ng-click="search(label.name)" ng-show="label.type=='tag'">&nbsp;{{label.name}}</label>
+								</td>
+							</tr>
+						</table>
+						<label class="text-white ms-3" style="cursor: pointer;" ng-click="showMinMenu = true; $event.stopPropagation(); offPlayListPanel();">
+							{{username}} <i class="fas fa-chevron-down text-white" style="font-size: 12px;"></i>
+						</label>
+						<table class="table table-dark position-absolute" style="background-color: rgb(74,74,74); color: white; z-index: 99999999; right: 24px; top: 36px;" ng-show="showMinMenu">
+							<tr>
+								<td style="padding: 2px 10px; cursor: pointer;" align="left" ng-click="openAbout()">About</td>
+							</tr>
+							<tr>
+								<td style="padding: 2px 10px; cursor: pointer;" align="left" ng-click="openSettings()">Settings</td>
+							</tr>
+							<tr>
+								<td style="padding: 2px 10px; cursor: pointer;" align="left" onclick="document.location.href='indexv2.htm'">Log Out</td>
+							</tr>
+						</table>
+					</div>
+				</div>
+			</div>
+			
+			<div class="mt-5" style="background-color: rgb(73,144,226); width: 100%; position: absolute; left: 0; padding-left: 122px; top: 50px; z-index: 99;" id="topbar">
+				<table class="table table-borderless mb-0" style="width: 100%; height: 50px;">
+					<tr>
+						<td class="text-center">
+							<input ng-model="selAllAttr" id="selAllAttr" ng-change="selAllChange()" type="checkbox" class="form-check-input">
+							<label class="form-check-label text-white">&nbsp;Select All</label>
+						</td>
+						<td class="text-center">
+							<label class="text-white">Select {{filesSelected}} files</label>
+						</td>
+						<td class="text-center">
+							<a href="" ng-click="selShare()" class="text-white text-decoration-none">Share</a>&nbsp;&nbsp;&nbsp;
+							<a href="" ng-click="selTag2()" class="text-white text-decoration-none">Tag</a>&nbsp;&nbsp;&nbsp;
+							<a href="" ng-click="selCancel()" class="text-white text-decoration-none">Cancel</a>
+						</td>
+					</tr>
+				</table>
+			</div>
+
+			<div class="mt-5" style="background-color: #f9f9f9" class="row" id="topbarcommands2">
+				<uib-alert class="topBarMsg" style="z-index:999;" type="success" id="loading">Loading....</uib-alert>
+				<uib-alert class="topBarMsg" ng-repeat="alert in alerts" type="{{alert.type}}" close="closeAlert($index)" style="z-index:9999;">
+					{{alert.msg}}
+					<button 
+						type="button" 
+						class="close" 
+						aria-label="Close" 
+						ng-click="closeAlert($index)" 
+						style="position:absolute; top:50%; right:15px; transform:translateY(-50%); font-size:26px; color:gray; opacity:0.7; cursor:pointer; background:none; border:none; transition:color 0.3s, opacity 0.3s;"
+						onmouseover="this.style.color='black'; this.style.opacity='1';"
+						onmouseout="this.style.color='gray'; this.style.opacity='0.7';">
+						&times;
+					  </button>
+				</uib-alert>
+			
+				<table class="table" style="width:100%;">
+					<tr>
+						<td style="width:120px;height:50px;background-color:rgb(74,74,74);">&nbsp;</td>
+						<td class="text-end align-bottom" style="height:50px;padding-right:52px;" align="right">
+							<label style="cursor:pointer;" ng-show="mnu!='multicluster'" ng-click="showOrderList2=!showOrderList2">
+								Sort By: Date (<i id="sortOrder">{{order}}</i>) <i class="fas fa-chevron-down" style="color:rgb(155,155,155);font-size: 20px;position: relative;top: 6px;"></i>
+							</label>
+							&nbsp;
+							<i class="fas fa-th" ng-show="fileView=='list' && mnu!='multicluster'" style="font-size:20px;cursor:pointer;" ng-click="showGrid()"></i>
+							<i class="fas fa-list" ng-show="fileView=='grid' && mnu!='multicluster'" style="font-size:20px;cursor:pointer;" ng-click="showList()"></i>
+							<div id="orderlist" style="position: absolute;right: 75px;" ng-show="mnu!='multicluster'">
+								<table class="table table-striped bg-light" ng-show="showOrderList2" ng-mouseleave="showOrderList2=false">
+									<tr><td ng-click="setOrder('Asc')" style="cursor:pointer;">Date Asc</td></tr>
+									<tr><td ng-click="setOrder('Desc')" style="cursor:pointer;">Date Desc</td></tr>
+								</table>
+							</div>
+							&nbsp;
+							<i class="fas fa-play" style="cursor:pointer" ng-show="mnu=='myfiles'" ng-click="showPlayList2=!showPlayList2"></i>
+							<div id="playlist" style="position: absolute;right: 15px;" ng-show="mnu!='multicluster'">
+								<table class="table table-striped bg-light" ng-show="showPlayList2" ng-mouseleave="showPlayList2=false">
+									<tr><td ng-click="playMusic()" style="cursor:pointer;">Add music to playlist</td></tr>
+									<tr><td ng-click="playPhoto()" style="cursor:pointer;">Play photos</td></tr>
+								</table>
+							</div>
+							&nbsp;
+							<i class="fas fa-comments rightMenuIcon" style="top:-4px;position:relative;font-size: 23px;cursor: pointer;" id="rightMenuIcon" ng-click="changeShowRightMenu()"></i>
+						</td>
+					</tr>
+				</table>
+			</div>
+				
+		
+	 <!--
+	 <div class="row" id="deviceExplorer">
+		<div class="row" ng-repeat="device in devices">
+			<i class="glyphicon glyphicon-cloud" ng-show="device.node_type!='server' && device.node_type!='client'" ng-click="deviceExplorer(device)" style="font-size:17px;cursor:pointer;"><label title="{{device.node_machine}}" class="deviceLabel" style="padding-left:3px;">{{device.node_machine}}</label></i>
+			<i class="glyphicon glyphicon-object-align-vertical" ng-show="device.node_type=='server'" ng-click="deviceExplorer(device)" style="font-size:17px;cursor:pointer;"><label title="{{device.node_machine}}" class="deviceLabel" style="padding-left:3px;">{{device.node_machine}}</label></i>
+			<i class="glyphicon glyphicon-hdd" ng-show="device.node_type=='client'" style="font-size:17px;cursor:pointer;" ng-click="deviceExplorer(device)"><label title="{{device.node_machine}}" class="deviceLabel" style="padding-left:3px;">{{device.node_machine}}</label></i>
+			<br/>
+		</div>		
+	 </div>
+	-->
+	<div id="leftMenu" ng-show="mnu!='multicluster'">
+		<p class="menuLeftLabel">FILE TYPES</p>
+		<ul class="nav flex-column" style="padding-left:30px;color:rgb(164,164,164);">
+			<li id="typ1" tagtype=".all" ng-click="selType('.all')" style="cursor:pointer;padding-bottom:5px;">
+				<i class="fas fa-globe"></i>&nbsp;<label class="badgehome" id="n_total"></label>
+			</li>
+			<li id="typ2" tagtype=".photo" ng-click="selType('.photo')" style="cursor:pointer;padding-bottom:5px;">
+				<i class="fas fa-camera"></i>&nbsp;<label class="badgehome" id="n_photo"></label>
+			</li>
+			<li id="typ3" tagtype=".music" ng-click="selType('.music')" style="cursor:pointer;padding-bottom:5px;">
+				<i class="fas fa-music"></i>&nbsp;<label class="badgehome" id="n_music"></label>
+			</li>
+			<li id="typ4" tagtype=".video" ng-click="selType('.video')" style="cursor:pointer;padding-bottom:5px;">
+				<i class="fas fa-video"></i>&nbsp;<label class="badgehome" id="n_video"></label>
+			</li>
+			<li id="typ9" tagtype=".document" ng-click="selType('.document')" style="cursor:pointer;padding-bottom:5px;">
+				<i class="fas fa-briefcase"></i>&nbsp;<label class="badgehome" id="n_docu"></label>
+			</li>
+			<li id="typ5" tagtype=".doc" ng-click="selType('.doc')" style="cursor:pointer;padding-bottom:5px;">
+				<i class="fas fa-file"></i>&nbsp;<label class="badgehome" id="n_doc"></label>
+			</li>
+			<li id="typ6" tagtype=".xls" ng-click="selType('.xls')" style="cursor:pointer;padding-bottom:5px;">
+				<i class="fas fa-chart-bar"></i>&nbsp;<label class="badgehome" id="n_xls"></label>
+			</li>
+			<li id="typ7" tagtype=".ppt" ng-click="selType('.ppt')" style="cursor:pointer;padding-bottom:5px;">
+				<i class="fas fa-chart-pie"></i>&nbsp;<label class="badgehome" id="n_ppt"></label>
+			</li>
+			<li id="typ8" tagtype=".pdf" ng-click="selType('.pdf')" style="cursor:pointer;padding-bottom:5px;">
+				<i class="fas fa-file-pdf"></i>&nbsp;<label class="badgehome" id="n_pdf"></label>
+			</li>
+		</ul>
+		<p class="menuLeftLabel">TIME RANGE</p>
+		<ul class="nav flex-column" style="cursor:pointer;padding-left:30px;color:rgb(164,164,164);">
+			<li id="time24h" tagrange="1" ng-click="selRange('1')" style="cursor:pointer;padding-bottom:5px;">
+				<i class="fas fa-clock"></i>&nbsp;<label class="badgehome" id="n_past24h"></label>
+			</li>
+			<li id="time3d" tagrange="3" ng-click="selRange('3')" style="cursor:pointer;padding-bottom:5px;">
+				<i class="fas fa-clock"></i>&nbsp;<label class="badgehome" id="n_past3d"></label>
+			</li>
+			<li id="time7d" tagrange="7" ng-click="selRange('7')" style="cursor:pointer;padding-bottom:5px;">
+				<i class="fas fa-clock"></i>&nbsp;<label class="badgehome" id="n_past7d"></label>
+			</li>
+			<li id="time14d" tagrange="14" ng-click="selRange('14')" style="cursor:pointer;padding-bottom:5px;">
+				<i class="fas fa-clock"></i>&nbsp;<label class="badgehome" id="n_past14d"></label>
+			</li>
+			<li id="time30d" tagrange="30" ng-click="selRange('30')" style="cursor:pointer;padding-bottom:5px;">
+				<i class="fas fa-clock"></i>&nbsp;<label class="badgehome" id="n_past30d"></label>
+			</li>
+			<li id="time365d" tagrange="365" ng-click="selRange('365')" style="cursor:pointer;padding-bottom:5px;">
+				<i class="fas fa-clock"></i>&nbsp;<label class="badgehome" id="n_past365d"></label>
+			</li>
+			<li id="timeall" tagrange=".all" ng-click="selRange('.all')" style="cursor:pointer;padding-bottom:5px;">
+				<i class="fas fa-clock"></i>&nbsp;<label class="badgehome" id="n_alltime"></label>
+			</li>
+		</ul>
+		<p class="menuLeftLabel">TAGS</p>
+		<ul class="nav flex-column" style="cursor:pointer;padding-left:30px;color:rgb(164,164,164);">
+			<li ng-repeat="tag in tags" tagtags="{{tag.tagname}}" ng-click="selTag(tag.tagname)" style="cursor:pointer;padding-bottom:5px;">
+				<i class="fas fa-tag"></i>&nbsp;<label class="badgehome">{{tag.tagcnt}}</label>
+			</li>
+		</ul>
+		<p ng-if="!tags.length">No hay tags disponibles.</p>
+	</div>
+	
+	<div id="leftMenu2" ng-show="mnu!='multicluster'">
+		<p class="menuLeftLabel">&nbsp;&nbsp;&nbsp;</p>
+		<ul class="nav flex-column" style="padding-left:30px;color:rgb(164,164,164);">
+			<li id="typ1" tagtype=".all" ng-click="selType('.all')" style="cursor:pointer;padding-bottom:8px;padding-top:3px;width:200px">&nbsp;&nbsp;&nbsp;All Types&nbsp&nbsp&nbsp;<i class="fas fa-check"></i></li>
+			<li id="typ2" tagtype='.photo' ng-click="selType('.photo')" style="cursor:pointer;padding-bottom:8px;padding-top:5px;width:200px;"> &nbsp;&nbsp;&nbsp;Photos&nbsp&nbsp&nbsp;<i class="fas fa-check"></i></li>
+			<li id="typ3" tagtype='.music' ng-click="selType('.music')" style="cursor:pointer;padding-bottom:8px;padding-top:5px;width:200px;"> &nbsp;&nbsp;&nbsp;Music&nbsp&nbsp&nbsp;<i class="fas fa-check"></i></li>
+			<li id="typ4" tagtype=".video" ng-click="selType('.video')" style="cursor:pointer;padding-bottom:8px;padding-top:5px;width:200px;"> &nbsp;&nbsp;&nbsp;Videos&nbsp&nbsp&nbsp;<i class="fas fa-check"></i> </li>
+			<li id="typ9" tagtype=".document" ng-click="selType('.document')" style="cursor:pointer;padding-bottom:8px;padding-top:5px;width:200px;"> &nbsp;&nbsp;&nbsp;Documents&nbsp&nbsp&nbsp;<i class="fas fa-check"></i></li>
+			<li id="typ5" tagtype=".doc" ng-click="selType('.doc')" style="cursor:pointer;padding-bottom:8px;padding-top:5px;width:200px;"> &nbsp;&nbsp;&nbsp;.doc&nbsp&nbsp&nbsp;<i class="fas fa-check"></i></li>
+			<li id="typ6" tagtype=".xls" ng-click="selType('.xls')" style="cursor:pointer;padding-bottom:8px;padding-top:5px;width:200px;"> &nbsp;&nbsp;&nbsp;.xls&nbsp&nbsp&nbsp;<i class="fas fa-check"></i></li>
+			<li id="typ7" tagtype=".ppt" ng-click="selType('.ppt')" style="cursor:pointer;padding-bottom:8px;padding-top:5px;width:200px;"> &nbsp;&nbsp;&nbsp;.ppt&nbsp&nbsp&nbsp;<i class="fas fa-check"></i></li>
+			<li id="typ8" tagtype=".pdf" ng-click="selType('.pdf')" style="cursor:pointer;padding-bottom:8px;padding-top:5px;width:200px;"> &nbsp;&nbsp;&nbsp;.pdf&nbsp&nbsp&nbsp;<i class="fas fa-check"></i></li>
+		</ul>
+		<p class="menuLeftLabel">&nbsp;&nbsp;&nbsp;</p>
+		<ul class="nav flex-column" style="cursor:pointer;padding-left:30px;color:rgb(164,164,164);">
+			<li id="time24h" tagrange="1" ng-click="selRange('1')" style="cursor:pointer;padding-bottom:8px;padding-top:4px;width:200px;">  &nbsp;&nbsp;&nbsp;Today&nbsp&nbsp<i class="fas fa-check"></i></li>
+			<li id="time3d" tagrange="3" ng-click="selRange('3')" style="cursor:pointer;padding-bottom:8px;padding-top:4px;width:200px;">   &nbsp;&nbsp;&nbsp;Past 3 days&nbsp&nbsp<i class="fas fa-check"></i></li>
+			<li id="time7d" tagrange="7" ng-click="selRange('7')" style="cursor:pointer;padding-bottom:8px;padding-top:4px;width:200px;">   &nbsp;&nbsp;&nbsp;This Week&nbsp&nbsp<i class="fas fa-check"></i></li>
+			<li id="time14d" tagrange="14" ng-click="selRange('14')" style="cursor:pointer;padding-bottom:8px;padding-top:5px;width:200px;"> &nbsp;&nbsp;&nbsp;Past 2 Weeks&nbsp&nbsp<i class="fas fa-check"></i></li>
+			<li id="time30d" tagrange="30" ng-click="selRange('30')" style="cursor:pointer;padding-bottom:8px;padding-top:5px;width:200px;"> &nbsp;&nbsp;&nbsp;Past 30 days&nbsp&nbsp<i class="fas fa-check"></i></li>
+			<li id="time365d" tagrange="365" ng-click="selRange('365')" style="cursor:pointer;padding-bottom:8px;padding-top:5px;width:200px;">&nbsp;&nbsp;&nbsp;This Year&nbsp&nbsp<i class="fas fa-check"></i></li>
+			<li id="timeall" tagrange=".all" ng-click="selRange('.all')" style="cursor:pointer;padding-bottom:8px;padding-top:5px;width:200px;">&nbsp;&nbsp;&nbsp;All Time&nbsp&nbsp<i class="fas fa-check"></i></li>
+		</ul>
+		<p class="menuLeftLabel">&nbsp;&nbsp;&nbsp;</p>
+		<ul class="nav flex-column" style="cursor:pointer;padding-left:30px;color:rgb(164,164,164);">
+			<li ng-repeat="tag in tags" 
+				tagtags="{{tag.tagname}}" 
+				ng-click="selTag(tag.tagname)" 
+				style="cursor:pointer;padding-top:1px;width:200px;position:relative;"
+				ng-style="{'padding-bottom': $last ? '3px' : '5px'}">
+			  &nbsp;&nbsp;&nbsp;
+			  <label id="lbl{{tag.tagname}}" style="cursor:pointer;" tag="sharetaglabel" tagname="{{tag.tagname}}">{{tag.tagname}}</label>&nbsp;&nbsp;
+			  <i class="fas fa-ellipsis-h fa-lg" style="cursor:pointer;position: absolute;right: 50px;top: 4px;z-index: 10;" 
+				 ng-click="$event.stopPropagation();tag.showMenu=!tag.showMenu;showShareMenu=true;"></i>
+				<div id="share{{tag.tagname}}" 
+					align="center" 
+					ng-mouseleave="tag.showMenu=false" 
+					style="cursor:pointer;position: absolute;top: 7px;right:-28px;background-color: rgb(240,242,246);width: 100px;z-index: 9;" 
+					ng-show="tag.showMenu && showShareMenu" 
+					ng-click="openShare(tag.tagname, $event); showShareMenu=false;">
+					<label style="cursor: pointer;">Share</label>
+				</div>
+			</li>
+		  </ul>
+	</div>
+	 
+	<div id="leftMenu3" ng-show="mnu=='multicluster'">
+		<p class="menuLeftLabel">FILE TYPES</p>
+		<ul class="nav flex-column" style="padding-left:30px;color:rgb(164,164,164);">
+			<li id="mtyp1" mtagtype=".all" ng-click="selMType('.all')" style="cursor:pointer;padding-bottom:7px;width:200px">
+				<i class="fas fa-globe"></i>&nbsp;<label class="badgehome" id="mn_total"></label>
+			</li>
+			<li id="mtyp2" mtagtype=".photo" ng-click="selMType('.photo')" style="cursor:pointer;padding-bottom:7px;width:200px">
+				<i class="fas fa-camera"></i>&nbsp;<label class="badgehome" id="mn_photo"></label>
+			</li>
+			<li id="mtyp3" mtagtype=".music" ng-click="selMType('.music')" style="cursor:pointer;padding-bottom:7px;width:200px">
+				<i class="fas fa-music"></i>&nbsp;<label class="badgehome" id="mn_music"></label>
+			</li>
+			<li id="mtyp4" mtagtype=".video" ng-click="selMType('.video')" style="cursor:pointer;padding-bottom:7px;width:200px">
+				<i class="fas fa-video"></i>&nbsp;<label class="badgehome" id="mn_video"></label>
+			</li>
+			<li id="mtyp9" mtagtype=".document" ng-click="selMType('.document')" style="cursor:pointer;padding-bottom:7px;width:200px">
+				<i class="fas fa-briefcase"></i>&nbsp;<label class="badgehome" id="mn_docu"></label>
+			</li>
+			<li id="mtyp5" mtagtype=".doc" ng-click="selMType('.doc')" style="cursor:pointer;padding-bottom:7px;width:200px">
+				<i class="fas fa-file"></i>&nbsp;<label class="badgehome" id="mn_doc"></label>
+			</li>
+			<li id="mtyp6" mtagtype=".xls" ng-click="selMType('.xls')" style="cursor:pointer;padding-bottom:7px;width:200px">
+				<i class="fas fa-chart-bar"></i>&nbsp;<label class="badgehome" id="mn_xls"></label>
+			</li>
+			<li id="mtyp7" mtagtype=".ppt" ng-click="selMType('.ppt')" style="cursor:pointer;padding-bottom:7px;width:200px">
+				<i class="fas fa-chart-pie"></i>&nbsp;<label class="badgehome" id="mn_ppt"></label>
+			</li>
+			<li id="mtyp8" mtagtype=".pdf" ng-click="selMType('.pdf')" style="cursor:pointer;padding-bottom:7px;width:200px">
+				<i class="fas fa-file-pdf"></i>&nbsp;<label class="badgehome" id="mn_pdf"></label>
+			</li>
+		</ul>
+		<p class="menuLeftLabel">TIME RANGE</p>
+		<ul class="nav flex-column" style="cursor:pointer;padding-left:30px;color:rgb(164,164,164);">
+			<li id="mtime24h" mtagrange="1" ng-click="selMRange('1')" style="cursor:pointer;padding-bottom:7px;width:200px">
+				<i class="fas fa-clock"></i>&nbsp;<label class="badgehome" id="mn_past24h"></label>
+			</li>
+			<li id="mtime3d" mtagrange="3" ng-click="selMRange('3')" style="cursor:pointer;padding-bottom:7px;width:200px">
+				<i class="fas fa-clock"></i>&nbsp;<label class="badgehome" id="mn_past3d"></label>
+			</li>
+			<li id="mtime7d" mtagrange="7" ng-click="selMRange('7')" style="cursor:pointer;padding-bottom:7px;width:200px">
+				<i class="fas fa-clock"></i>&nbsp;<label class="badgehome" id="mn_past7d"></label>
+			</li>
+			<li id="mtime14d" mtagrange="14" ng-click="selMRange('14')" style="cursor:pointer;padding-bottom:7px;width:200px">
+				<i class="fas fa-clock"></i>&nbsp;<label class="badgehome" id="mn_past14d"></label>
+			</li>
+			<li id="mtime30d" mtagrange="30" ng-click="selMRange('30')" style="cursor:pointer;padding-bottom:7px;width:200px">
+				<i class="fas fa-clock"></i>&nbsp;<label class="badgehome" id="mn_past30d"></label>
+			</li>
+			<li id="mtime365d" mtagrange="365" ng-click="selMRange('365')" style="cursor:pointer;padding-bottom:7px;width:200px">
+				<i class="fas fa-clock"></i>&nbsp;<label class="badgehome" id="mn_past365d"></label>
+			</li>
+			<li id="mtimeall" mtagrange=".all" ng-click="selMRange('.all')" style="cursor:pointer;padding-bottom:7px;width:200px">
+				<i class="fas fa-clock"></i>&nbsp;<label class="badgehome" id="mn_alltime"></label>
+			</li>
+		</ul>
+		<p class="menuLeftLabel">TAGS</p>
+		<div ng-repeat="cluster in clusters">
+			<p class="menuLeftLabel">{{cluster.name}}</p>
+			<ul class="nav flex-column" style="cursor:pointer;padding-left:30px;color:rgb(164,164,164);">
+				<li ng-repeat="tag in tagsCluster[cluster.cluster]" tagtags="{{tag.tagname}}" cluster="{{cluster.cluster}}" ng-click="selMTag(tag.tagname,cluster)" style="cursor:pointer;padding-bottom:5px">
+					<i class="fas fa-tag"></i>&nbsp;<label class="badgehome">{{tag.tagcnt}}</label>
+				</li>
+			</ul>
+		</div>
+	</div>
+	
+	<div id="leftMenu4" ng-show="mnu=='multicluster'">
+		<p class="menuLeftLabel">&nbsp;&nbsp;&nbsp;</p>
+		<ul class="nav flex-column" style="padding-left:30px;color:rgb(164,164,164);">
+			<li id="mtyp1" mtagtype=".all" ng-click="selMType('.all')" style="cursor:pointer;padding-bottom:8px;padding-top:5px;width:200px">&nbsp;&nbsp;&nbsp;All Types&nbsp&nbsp&nbsp;<i class="fas fa-check"></i></li>
+			<li id="mtyp2" mtagtype='.photo' ng-click="selMType('.photo')" style="cursor:pointer;padding-bottom:8px;padding-top:6px;width:200px;"> &nbsp;&nbsp;&nbsp;Photos&nbsp&nbsp&nbsp;<i class="fas fa-check"></i></li>
+			<li id="mtyp3" mtagtype='.music' ng-click="selMType('.music')" style="cursor:pointer;padding-bottom:8px;padding-top:6px;width:200px;"> &nbsp;&nbsp;&nbsp;Music&nbsp&nbsp&nbsp;<i class="fas fa-check"></i></li>
+			<li id="mtyp4" mtagtype=".video" ng-click="selMType('.video')" style="cursor:pointer;padding-bottom:8px;padding-top:6px;width:200px;"> &nbsp;&nbsp;&nbsp;Videos&nbsp&nbsp&nbsp;<i class="fas fa-check"></i> </li>
+			<li id="mtyp9" mtagtype=".document" ng-click="selMType('.document')" style="cursor:pointer;padding-bottom:8px;padding-top:6px;width:200px;"> &nbsp;&nbsp;&nbsp;Documents&nbsp&nbsp&nbsp;<i class="fas fa-check"></i></li>
+			<li id="mtyp5" mtagtype=".doc" ng-click="selMType('.doc')" style="cursor:pointer;padding-bottom:8px;padding-top:6px;width:200px;"> &nbsp;&nbsp;&nbsp;.doc&nbsp&nbsp&nbsp;<i class="fas fa-check"></i></li>
+			<li id="mtyp6" mtagtype=".xls" ng-click="selMType('.xls')" style="cursor:pointer;padding-bottom:8px;padding-top:6px;width:200px;"> &nbsp;&nbsp;&nbsp;.xls&nbsp&nbsp&nbsp;<i class="fas fa-check"></i></li>
+			<li id="mtyp7" mtagtype=".ppt" ng-click="selMType('.ppt')" style="cursor:pointer;padding-bottom:8px;padding-top:6px;width:200px;"> &nbsp;&nbsp;&nbsp;.ppt&nbsp&nbsp&nbsp;<i class="fas fa-check"></i></li>
+			<li id="mtyp8" mtagtype=".pdf" ng-click="selMType('.pdf')" style="cursor:pointer;padding-bottom:8px;padding-top:6px;width:200px;"> &nbsp;&nbsp;&nbsp;.pdf&nbsp&nbsp&nbsp;<i class="fas fa-check"></i></li>
+		</ul>
+		<p class="menuLeftLabel">&nbsp;&nbsp;&nbsp;</p>
+		<ul class="nav flex-column" style="cursor:pointer;padding-left:30px;color:rgb(164,164,164);">
+			<li id="mtime24h" mtagrange="1" ng-click="selMRange('1')" style="cursor:pointer;padding-bottom:8px;padding-top:9px;width:200px;">  &nbsp;&nbsp;&nbsp;Today&nbsp&nbsp<i class="fas fa-check"></i></li>
+			<li id="mtime3d" mtagrange="3" ng-click="selMRange('3')" style="cursor:pointer;padding-bottom:8px;padding-top:7px;width:200px;">   &nbsp;&nbsp;&nbsp;Past 3 days&nbsp&nbsp<i class="fas fa-check"></i></li>
+			<li id="mtime7d" mtagrange="7" ng-click="selMRange('7')" style="cursor:pointer;padding-bottom:8px;padding-top:7px;width:200px;">   &nbsp;&nbsp;&nbsp;This Week&nbsp&nbsp<i class="fas fa-check"></i></li>
+			<li id="mtime14d" mtagrange="14" ng-click="selMRange('14')" style="cursor:pointer;padding-bottom:8px;padding-top:7px;width:200px;"> &nbsp;&nbsp;&nbsp;Past 2 Weeks&nbsp&nbsp<i class="fas fa-check"></i></li>
+			<li id="mtime30d" mtagrange="30" ng-click="selMRange('30')" style="cursor:pointer;padding-bottom:8px;padding-top:7px;width:200px;"> &nbsp;&nbsp;&nbsp;Past 30 days&nbsp&nbsp<i class="fas fa-check"></i></li>
+			<li id="mtime365d" mtagrange="365" ng-click="selMRange('365')" style="cursor:pointer;padding-bottom:8px;padding-top:7px;width:200px;">&nbsp;&nbsp;&nbsp;This Year&nbsp&nbsp<i class="fas fa-check"></i></li>
+			<li id="mtimeall" mtagrange=".all" ng-click="selMRange('.all')" style="cursor:pointer;padding-bottom:8px;padding-top:7px;width:200px;">&nbsp;&nbsp;&nbsp;All Time&nbsp&nbsp<i class="fas fa-check"></i></li>
+		</ul>
+		<p class="menuLeftLabel">&nbsp;&nbsp;&nbsp;</p>
+		<div ng-repeat="cluster in clusters">
+			<p class="menuLeftLabel">&nbsp;&nbsp;&nbsp;</p>
+			<ul class="nav flex-column" style="cursor:pointer;padding-left:30px;color:rgb(164,164,164);">
+				<li ng-repeat="tag in tagsCluster[cluster.cluster]" tagtags="{{tag.tagname}}" cluster="{{cluster.cluster}}" ng-click="selMTag(tag.tagname,cluster)" style="cursor:pointer;padding-bottom:4px;width:200px;padding-top:4px;">&nbsp;&nbsp;&nbsp;<label id="lblCluster{{tag.tagname}}" style="cursor:pointer;" tag="sharetaglabel" tagname="{{tag.tagname}}">{{tag.tagname}}</label>&nbsp;&nbsp;</li>
+			</ul>
+		</div>
+	</div>
+	
+	 
+	<div class="modal fade" id="modalsettings" tabindex="-1" role="dialog">
+		<div class="modal-dialog modal-dialog-centered" style="width:100vw; height:calc(100vh - 60px); margin:0; max-width:100%; padding:0; position:fixed; top:60px; display:flex; flex-direction:column;">
+			<div class="modal-content" style="background-color:rgb(42,42,42); flex-grow:1; display:flex; flex-direction:column; padding:0; border:0;">
+				<div class="position-relative" style="height:35px; background-color:rgb(32,32,32);">
+					<span ng-click="closeSettings()" data-dismiss="modal" class="command" style="color:white; position:absolute; right:10px; top:5px; cursor:pointer;">X</span>
+				</div>
+				<div class="position-relative" style="flex-grow:1; display:flex; width:100%;">
+					<table style="width:100%; height:100%; border-collapse:collapse;">
+						<tr>
+							<td style="width:300px; height:100%; padding:0;">
+								<iframe src="/cass/settings.htm" style="width:250px; height:100%; border:none;"></iframe>
+							</td>
+							<td style="width:100%; height:100%; padding:0;">
+								<iframe name="MAIN" id="MAIN" src="" style="width:100%; height:100%; border:none;"></iframe>
+							</td>
+						</tr>
+					</table>
+				</div>
+			</div>
+		</div>
+	</div>
+	 
+		
+	<div id="modalabout" class="modal fade" tabindex="-1" role="dialog">
+		<div class="modal-dialog modal-dialog-centered" style="width:100vw; height:calc(100vh - 60px); margin:0; max-width:100%; padding:0; position:fixed; top:60px;">
+			<div class="modal-content" style="width:100%; height:100%; background-color:rgb(42,42,42); border:0; padding:0;">
+				<div class="position-relative" style="height:35px; background-color:rgb(32,32,32);">
+					<span ng-click="closeAbout()" data-dismiss="modal" class="command" style="color:white; position:absolute; right:10px; top:5px; cursor:pointer;">X</span>
+				</div>
+				<div style="position:relative; width:100%; height:calc(100% - 35px);">
+					<iframe src="/cass/about.htm" style="width:100%; height:100%; border:none;"></iframe>
+				</div>
+			</div>
+		</div>
+	</div>		  
+		
+	<div id="modalshares" class="modal fade" tabindex="-1" role="dialog">
+		<div class="modal-dialog" role="document" style="max-width: 100%; height: 100vh; margin: 0;">
+		  <div class="modal-content" style="display: flex; flex-direction: column; height: 100%; background-color: rgb(42, 42, 42); border: none; margin: 0; padding: 0;">
+			<div class="modal-header" style="padding: 10px; border-bottom: none; height: 40px;">
+			  <span ng-click="closeShares()" class="command" style="color: white; margin-left: auto; cursor: pointer;">X</span>
+			</div>
+			<div class="modal-body" style="flex-grow: 1; padding: 0; margin: 0; overflow: hidden;">
+			  <iframe id="iframeshare" src="/cass/shares.htm" onload="$('#loading').hide();" style="width: 100%; height: 100%; border: none; margin: 0; padding: 0;"></iframe>
+			</div>
+		  </div>
+		</div>
+	  </div>
+	  
+	  
+	  
+		
+	<div class="modal fade" id="clusterformhome">
+		<div class="modal-dialog">
+			<div class="modal-content">
+				<div class="position-relative" align="center" style="padding-top: 0px; height:41px; background-color:rgb(42,42,42);">
+					Add new cluster
+					<button type="button" class="close" ng-click="close()" style="color:white; margin-top: 10px; margin-right: 10px; position:absolute; right:10px; top:1px;">X</button>
+				</div>
+				<div class="position-relative" style="padding-top: 50px; padding-left:20px; padding-right:20px; height:150px;">
+					<uib-alert ng-repeat="alert in alertsClusters" type="danger" close="closeAlert($index)">{{alert.msg}}</uib-alert>
+					<table>
+						<tr><td>Cluster Name*</td><td><input type="text" style="width:422px;" ng-model="clusterName"/></td></tr>
+						<tr><td>Local User*</td><td><input type="text" style="width:422px;" ng-model="clusterUser"/></td></tr>
+					</table>
+				</div>
+				<div class="row" style="height:50px;">
+					<button type="button" class="btn" ng-click="close()" style="position:absolute; right:160px;">Cancel</button>
+					<button type="button" class="btn btn-primary" ng-click="acceptCluster()" style="position:absolute; right:70px;">Accept</button>
+				</div>
+			</div>
+		</div>
+	</div>
+	
+
+	<div class="modal fade" id="popupmsghome">
+		<div class="modal-dialog">
+			<div class="modal-content">
+				<div class="position-relative" align="center" style="padding-top: 0px; height:41px; background-color:rgb(42,42,42);">
+					<button type="button" class="close" ng-click="closePupup()" style="color:white; margin-top: 10px; margin-right: 10px; position:absolute; right:10px; top:1px;">X</button>
+				</div>
+				<div class="position-relative" style="padding-top: 50px; padding-left:20px; padding-right:20px; height:130px;">
+					{{popupmsghome}}
+				</div>
+				<div class="row" style="height:50px;">
+					<button type="button" class="btn btn-primary" ng-click="acceptPopup()" style="position:absolute; right:160px;">Accept</button>
+					<button type="button" class="btn btn-primary" ng-click="closePopup()" style="position:absolute; right:70px;">Cancel</button>
+				</div>
+			</div>
+		</div>
+	</div>
+	
+		
+	</div> 
+</div>
+	<div ng-controller="RightBarController">
+		<audio id="beep" style="position:absolute;left:-7500">
+			<source src="sound/beep.mp3">
+		</audio>	
+		<div class="rightMenu" id="rightMenu" ng-show="showRightMenu">
+			<label style="cursor:pointer;position:absolute;right:5px;top:5px;" ng-click="changeShowRightMenu()">X</label>
+			<div class="row" style="margin-top: 17px;margin-left:0px;">
+			  <table style="width:100%;">
+				<tr style="border-bottom-color: rgb(240,242,246);border-bottom-style: inset;">
+				  <td ng-click="showChat='chat';openTab();" ng-class="{'activeTab':showChat=='chat'}" align="center" width="33%" style="cursor:pointer;border-right-color: rgb(240,242,246);border-right-style: inset;">
+					<i class="fas fa-comments"></i>
+				  </td>
+				  <td ng-click="showChat='playlist';openTab();" ng-class="{'activeTab':showChat=='playlist'}" align="center" width="33%" style="cursor:pointer;border-right-color: rgb(240,242,246);border-right-style: inset;">
+					<i class="fas fa-music"></i>
+				  </td>
+				  <td ng-click="showChat='events';openTab();" ng-class="{'activeTab':showChat=='events'}" align="center" width="33%" style="cursor:pointer;">
+					<i class="fas fa-users"></i>
+				  </td>
+				</tr>
+			  </table>
+			</div>
+			<div class="row rightMenuContent" style="margin-top: 10px; text-align: center; height: 100%; display: flex; flex-direction: column;">
+			  <div id="chatlist" ng-show="showChat=='chat'" style="width:90%; margin-left:auto; margin-right:auto; display:flex; flex-direction:column; height:100%;">
+				<div id="cahtmsgs" class="w-100 p-2" style="flex-grow: 1; overflow-y: auto; max-height: 65%; border-bottom: 1px solid #ccc;">
+				  <div class="textMsg" ng-repeat="m in msgs" align="left" style="padding: 5px; text-align: left; width: calc(100% - 40px); margin: 5px auto; height: auto; border-bottom: 1px solid #ccc; word-wrap: break-word; display: flex; flex-direction: column;">
+					<div class="headMsg d-flex justify-content-between">
+					  <label style="font-weight: bold;">{{m.username}}</label>
+					  <label>{{m.date | date:'MMM d, y h:mm a'}}</label>
+					</div>
+					<div class="contentMsg ps-5 pe-2 text-dark" compile-data template="{{m.msg}}"></div>
+				  </div>
+				</div>
+				<div class="row" style="padding: 5px; width: calc(100% - 40px); margin: 0 auto; display: flex; flex-direction: column; gap: 10px; flex-shrink: 0; margin-bottom: 10px;">
+				  <textarea class="form-control" rows="3" ng-keydown="checkReturn($event)" ng-model="inputText" style="width: 100%; resize: none;"></textarea>
+				  <button ng-click="send()" class="btn btn-primary" style="width: 100%;">Send</button>
+				  <a href="" ng-click="clearChats()" ng-show="isAdmin" style="text-align: center; color: #007bff; cursor: pointer; margin-top: 10px;">Clear Chats</a>
+				</div>
+			  </div>
+			  <div id="playlist" ng-show="showChat=='playlist'" style="margin-top: 10px; flex-shrink: 0;">
+				<div class="row" id="playlistcontainer" style="margin-right: 20px; overflow-y: auto; padding-bottom: 50px; width: 100%;">
+				  <div ng-repeat="file in playlistfiles" class="audioPlaylist" ng-click="setPlayIndex($index)" id="audio{{$index}}" ng-class="{audioPlaylistActive: $index == index}">
+					<label style="position: absolute; top: 13px; right: 8px; cursor: pointer;" ng-click="$event.stopPropagation(); deletePlayIndex($index)">X</label>
+					<label ng-show="file.song_title==null || file.song_title==undefined">{{file.name}}</label>
+					<label ng-show="file.song_title!=undefined">{{dec(file.song_title)}}</label>
+					<label ng-show="file.song_artist!=undefined" style="font-weight: bold;">{{dec(file.song_artist)}}</label>
+				  </div>
+				</div>
+				<div class="row" style="margin: 0; padding: 5px; position: relative; width: 100%;">
+				  <div id="footerAudioBar" class="position-relative">
+					<label ng-click="playListClear()" style="cursor: pointer;">Clear All</label>
+					<audio autoplay controls id="audio" style="width: 100%;">
+					  <source src="" id="audioFile">
+					  Your browser does not support the audio tag.
+					</audio>
+					<a href="" class="text-primary" id="aaudioopen" target="_blank"><i class="fa-solid fa-folder-open"></i> Open</a>
+					<a href="" class="text-primary" id="aaudiodownload" download><i class="fa-solid fa-download"></i> Download</a>
+					<a href="" class="text-primary" id="afolderaudio" target="_blank"><i class="fa-solid fa-folder"></i> Folder</a>
+				  </div>
+				</div>
+			  </div>
+			  <div ng-show="showChat=='events'" style="width:90%; margin-left:auto; margin-right:auto; display:flex; flex-direction:column; margin-top:10px; height:100%;">
+				<div id="events" class="w-100 overflow-scroll p-2">
+				  <div class="textMsg" ng-repeat="e in events" align="left" style="padding: 5px; text-align: left; width: calc(100% - 40px); margin: 5px auto; height: auto; border-bottom: 1px solid #ccc; word-wrap: break-word; display: flex; flex-direction: column;">
+					<div class="headMsg d-flex justify-content-between">
+					  <label style="font-weight: bold;">{{e.username}}</label>
+					  <label>{{e.date | date:'MMM d, y h:mm a'}}</label>
+					</div>
+					<br>
+					{{e.msg}}
+					<br>
+					<div class="contentMsg ps-5 pe-2 text-dark" ng-show="e.thumbnail" ng-click="play(e.file)" style="cursor: pointer; height: 100px; background: url('data:image/jpg;base64,{{e.thumbnail}}') no-repeat center;"></div>
+					<div class="contentMsg ps-5 pe-2 text-dark" ng-show="!e.thumbnail" ng-click="play(e.file)" style="cursor: pointer; height: auto;"></div>
+				  </div>
+				</div>
+			  </div>
+			</div>
+		  </div>		  
+	</div>
+	 <div class="position-relative">
+		<div>
+			<ng-view></ng-view>
+		</div>		   
+	 </div>
+</div>
+</div>
+
+<div id="backToTop" 
+     style="margin-top: 20px; background-color: #6c757d; color: #fff; width: 50px; height: 50px; border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2); cursor: pointer; transition: transform 0.3s ease, box-shadow 0.3s ease;">
+    <i class="fas fa-arrow-up" style="font-size: 20px;"></i>
+</div>
+
+<div class="table table-striped files" id="previews">
+
+	<div id="template" class="file-row">
+		<!-- This is used as the file preview template -->
+		<div>
+			<span class="preview"><img data-dz-thumbnail /></span>
+		</div>
+		<div>
+			<p class="name" data-dz-name></p>
+			<strong class="error text-danger" data-dz-errormessage></strong>
+		</div>
+		<div>
+			<p class="size" data-dz-size></p>
+			<div class="progress progress-striped active" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+				<div class="progress-bar progress-bar-success" style="width:0%;" data-dz-uploadprogress></div>
+			</div>
+		</div>
+		<div>
+			<br/>
+			<button data-dz-remove class="btn btn-warning cancel">
+				<i class="fas fa-ban"></i>
+				<span>Cancel</span>
+			</button>
+			<button data-dz-remove class="btn btn-danger delete">
+				<i class="fas fa-trash-alt"></i>
+				<span>Clear</span>
+			</button>
+			<button data-dz-remove class="btn btn-info close-upload" onclick="document.getElementById('my-dropzone').style.display = 'none';">
+				<i class="fas fa-check-circle"></i>
+				<span>Close</span>
+			</button> 
+			<br/><br/>    
+		</div>
+	</div>
+</div>
+ 	 
+<iframe id="idownload" name="idownload" style="visibility:hidden;display:none;"/>	 
+
+
+</body>
+</html>

@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <title>Bootstrap, from Twitter</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="">
+    <meta name="author" content="">
+
+    <!-- Le styles -->
+    <style type="text/css">
+      body {
+        padding-top: 60px;
+        padding-bottom: 40px;
+      }
+    </style>
+    <link href="bootstrap/css/bootstrap.min.css" rel="stylesheet" media="screen">    
+    <link href="bootstrap/css/bootstrap-responsive.css" rel="stylesheet">
+    
+    <!-- HTML5 shim, for IE6-8 support of HTML5 elements -->
+    <!--[if lt IE 9]>
+      <script src="http://html5shim.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+
+    <!-- Fav and touch icons -->
+    <link rel="shortcut icon" href="bootstrap/ico/favicon.ico">
+    <link rel="apple-touch-icon-precomposed" sizes="144x144" href="bootstrap/ico/apple-touch-icon-144-precomposed.png">
+    <link rel="apple-touch-icon-precomposed" sizes="114x114" href="bootstrap/ico/apple-touch-icon-114-precomposed.png">
+    <link rel="apple-touch-icon-precomposed" sizes="72x72" href="bootstrap/ico/apple-touch-icon-72-precomposed.png">
+    <link rel="apple-touch-icon-precomposed" href="bootstrap/ico/apple-touch-icon-57-precomposed.png">
+  </head>
+
+  <body>
+
+      <form id="frm1" action="setup.htm" method="get">
+        <div class="container">
+            <div class="row">
+                <div class="span9">
+                    <section id="sec1"> 
+                        <fieldset>
+                        <legend>File types</legend>
+                        <span class="help-block">Please choose the file types you would like to include in your index.</span>
+                        
+                        <input type="checkbox" onclick="togglechk(this.checked);" checked>&nbsp Select All</input>
+                        <br>
+                        <table class="table table-striped">
+                                ***REP***
+                        </table>
+                        </fieldset>
+                    </section>      <!--Body content-->
+                    <input id="cpage" type="hidden" name="cpage" value="3">
+                    <input id="spage" type="hidden" name="spage" value="5">
+                    <button id="prebutton" type="button" class="btn" onclick="golink();">Previous</button>
+                    <button id="nextbutton" type="submit" class="btn btn-primary">Next</button>
+                    <button id="savebutton" type="button" class="btn btn-primary" onclick="gosave();">Save</button>
+                    
+                    <script type="text/javascript" src="jquery.min.js"></script>
+                    <script>
+                        var state = "***REPSTATE***";
+                        if(state == "NEW"){
+                            $("#nextbutton").show();
+                            $("#savebutton").hide();
+                        }else{
+                            $("#savebutton").show();
+                            $("#nextbutton").hide();
+                            $("#prebutton").hide();
+                        }
+                        function golink() {
+                            window.location = "setup.htm?spage=8&isprev=true";
+                        }
+                        
+                        function togglechk(status) {
+                            //alert("toggle");
+                            $("Input[type=checkbox]").prop("checked",status?'checked':status);
+                        }
+                        
+                        function gosave() {
+                            $("#spage").val(5);
+                            $('#frm1').submit();
+                        }
+                       
+                    </script>
+                </div>
+            </div>
+        </div>
+    </form>
+      
+    <!-- Le javascript
+    ================================================== -->
+    <!-- Placed at the end of the document so the pages load faster
+    <script src="bootstrap/js/jquery.js"></script>
+    <script src="bootstrap/js/bootstrap-transition.js"></script>
+    <script src="bootstrap/js/bootstrap-alert.js"></script>
+    <script src="bootstrap/js/bootstrap-modal.js"></script>
+    <script src="bootstrap/js/bootstrap-dropdown.js"></script>
+    <script src="bootstrap/js/bootstrap-scrollspy.js"></script>
+    <script src="bootstrap/js/bootstrap-tab.js"></script>
+    <script src="bootstrap/js/bootstrap-tooltip.js"></script>
+    <script src="bootstrap/js/bootstrap-popover.js"></script>
+    <script src="bootstrap/js/bootstrap-button.js"></script>
+    <script src="bootstrap/js/bootstrap-collapse.js"></script>
+    <script src="bootstrap/js/bootstrap-carousel.js"></script>
+    <script src="bootstrap/js/bootstrap-typeahead.js"></script> -->
+
+  </body>
+</html>

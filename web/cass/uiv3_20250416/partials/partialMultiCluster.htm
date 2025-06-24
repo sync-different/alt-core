@@ -1,0 +1,67 @@
+<div style="padding-left:135px; margin-top: 100px;">
+    Query - MultiCluster
+    <table class="table w-100">
+        <tr>
+            <td align="right" style="padding-right:8px;">
+                <input type="text" class="form-control d-inline-block" style="width: 300px;" placeholder="Enter the alternate URL shared with you" ng-model="preClusterURL" />
+                &nbsp;&nbsp;&nbsp;
+                <button class="btn btn-primary" ng-click="addCluster()">Add Cluster</button>
+            </td>
+        </tr>
+    </table>
+
+    <div class="row" ng-repeat="cluster in clusters" style="padding-right:20px;">
+        <div class="d-flex align-items-center w-100 mb-2" style="padding-left: 20px;">
+            <span>{{cluster.name}} - {{clustersResult[cluster.cluster].fighters.length}} files in result</span>
+            <div class="ms-3">
+                <i class="fas fa-pencil-alt" style="cursor:pointer; margin-left: 10px;" ng-click="editCluster(cluster)"></i>
+                <i class="fas fa-trash" style="cursor:pointer; margin-left: 10px;" ng-click="removeCluster(cluster)"></i>
+                <i class="fas fa-minus" style="cursor:pointer; margin-left: 10px;" ng-show="!clustersDisabeled[cluster.cluster].nocollapse" ng-click="clustersDisabeled[cluster.cluster]={nocollapse:true}"></i>
+                <i class="fas fa-plus" style="cursor:pointer; margin-left: 10px;" ng-show="clustersDisabeled[cluster.cluster].nocollapse" ng-click="clustersDisabeled[cluster.cluster]={nocollapse:false}"></i>
+            </div>
+        </div>
+
+        <div class="w-100 mb-2">
+            <img src="img/loading_spinner.gif" id="spinner{{cluster.cluster}}" class="my-2" style="display:none;" width="50px" />
+        </div>
+
+        <div id="table{{cluster.cluster}}" class="w-100" style="overflow-x: auto; padding-bottom: 20px;" ng-show="!clustersDisabeled[cluster.cluster].nocollapse">
+            <label ng-show="clustersResult[cluster.cluster].disabeled">Unreachable!!</label>
+            <label ng-show="clustersResult[cluster.cluster].userinvalid" class="font-weight-bold">&nbsp;&nbsp;&nbsp;User or password invalid!!</label>
+
+            <table class="table table-striped table-responsive-md w-100">
+                <thead>
+                    <tr>
+                        <th>&nbsp;</th>
+                        <th>&nbsp;</th>
+                        <th>Name</th>
+                        <th>Date Created</th>
+                        <th>File Size</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr ng-repeat="r in clustersResult[cluster.cluster].fighters">
+                        <td>&nbsp;</td>
+                        <td ng-click="play(r,cluster)" style="cursor:pointer">
+                            <img ng-show="r.file_thumbnail || ['jpg', 'jpeg', 'png', 'gif'].includes(r.file_ext)" src="data:image/{{r.file_ext}};base64,{{r.file_thumbnail}}" class="img-fluid" style="width: 75px;" />
+                            <i class="fas fa-video fa-3x" ng-show="!r.file_thumbnail && ['mp4', 'mov'].includes(r.file_ext)"></i>
+                            <i class="fas fa-music fa-3x" ng-show="!r.file_thumbnail && ['mp3', 'm4a', 'wav', 'wma'].includes(r.file_ext)"></i>
+                            <i class="fas fa-file-word fa-3x" ng-show="!r.file_thumbnail && ['doc', 'docx'].includes(r.file_ext)"></i>
+                            <i class="fas fa-chart-pie fa-3x" ng-show="!r.file_thumbnail && ['ppt', 'pptx'].includes(r.file_ext)"></i>
+                            <i class="fas fa-file-excel fa-3x" ng-show="!r.file_thumbnail && ['xls', 'xlsx'].includes(r.file_ext)"></i>
+                            <i class="fas fa-file-pdf fa-3x" ng-show="!r.file_thumbnail && r.file_ext === 'pdf'"></i>
+                        </td>
+                        <td ng-click="play(r,cluster)" class="align-middle">{{r.name}}</td>
+                        <td ng-click="play(r,cluster)" class="align-middle">{{r.file_date_long | date:'MMM d, y h:mm:ss a'}}</td>
+                        <td ng-click="play(r,cluster)" class="align-middle">{{(r.file_size / 1024 / 1024).toFixed(2)}} MB</td>
+                        <td>
+                            <input type="text" tag="tags" md5="{{r.nickname}}" cluster="{{cluster.cluster}}" value="{{r.file_tags}}" data-role="tagsinput" class="form-control" />
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<div id="modals"></div>

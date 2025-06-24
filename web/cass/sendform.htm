@@ -1,0 +1,404 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
+<html>
+<head>
+<title>Boxology</title>
+
+    <link href="bootstrap/css/bootstrap.css" rel="stylesheet">
+    <style type="text/css">
+      body {
+        padding-top: 10px;
+      }
+    </style>
+    <link href="bootstrap/css/bootstrap-responsive.css" rel="stylesheet">
+
+    
+<script type="text/javascript" src="jquery.min.js"></script>
+
+<script type="text/javascript">
+   var a = [];
+   var g = {};
+   
+    $.ajax(
+        {
+                url:'/cass/getemailandgroups.fn',
+                async:true
+        }
+        ).done(
+                function(data){                       
+                    eval(data);
+                    var containermails=  $('#mailtodiv');                    
+                    if(a.length>0){
+                        var containergroups=  $('#groupdiv');
+                        $.each(g, function(index,value) {
+                            containergroups.append('<button type="button" class="btn btn-small" id="linktoshow'+ index +'" onclick="toggleEmailsGroup(\''+ index +'\')">+ Add '+index+'</button>');                        
+                        });
+                        $.each(a, function(index,value) {                             
+                            containermails.append('<label class="checkbox inline"><input type="checkbox" name="mailtoacc" value="'+value+'"/>'+value+'</label>&nbsp;&nbsp;');                        
+                        });                        
+                    } else {
+                        containermails.append("You have not enabled file sharing via email. Click 'Email Setup' to enable it and start sharing files with your friends.");
+                        $("#sendbutton").attr('disabled','disabled');
+                        $("#inputSubject").attr('disabled','disabled');
+                        $("#inputMessage").attr('disabled','disabled');
+                    }
+                }
+            );
+            
+             
+       function toggleEmailsGroup(groupname){
+           var arr = g[groupname];
+           if($("#linktoshow"+groupname).text().indexOf("Add")!=-1){
+                $.each(arr, function(index,value) {                
+                     $("input:checkbox[value='"+value+"']").prop("checked", true);
+                 });
+                 $("#linktoshow"+groupname).text("Remove "+ groupname);     
+           }else{
+                $.each(arr, function(index,value) {                
+                    $("input:checkbox[value='"+value+"']").prop("checked", false);
+                 });
+                 $("#linktoshow"+groupname).text("+ Add "+ groupname);     
+
+           }
+       }
+
+
+
+        function sendemail(){
+            var accounts = "";
+//            $('input[name=mailtogroup]').each(function (){
+//                    if(this.checked && (accounts.indexOf(this.value) == -1)){  
+//                        var accountsarr = g[this.value];
+//                        $.each(accountsarr,
+//                            function (){
+//                                    if(accounts) accounts+=",";
+//                                    accounts+= this;
+//                            }
+//                        );  
+//                    }
+//                }
+//            );
+            $('input[name=mailtoacc]').each(function (){
+                    if(this.checked && (accounts.indexOf(this.value) == -1)){                        
+                        if(accounts) accounts+=",";
+                        accounts+= this.value;                    }
+                }
+            );
+            //alert(accounts);     
+            if(accounts){
+                $('#sendtoemails').attr('value',accounts.substring(0)=='='? accounts.substring(1):accounts);
+                $('#sendform').submit();
+            } else{
+                alert("Please select at least one email destination")
+            }           
+        }
+            
+            
+       function getUrlVars()
+        {
+           var vars = [], hash;
+            var hashes = window.location.href.slice(window.location.href.indexOf('?') + 1).split('&');
+            for(var i = 0; i < hashes.length; i++)
+            {
+                hash = hashes[i].split('=');
+                vars.push(hash[0]);
+                vars[hash[0]] = hash[1];
+            }
+            return vars;
+        }
+       
+	function lookup(inputString) {
+            
+		if(inputString.length == 0) {
+			// Hide the suggestion box.
+			$('#suggestions').hide();
+		} else {
+			$.post("rpc.php", {queryString: ""+inputString+""}, function(data){
+				if(data.length >0) {
+					$('#suggestions').show();
+					$('#autoSuggestionsList').html(data);
+				}
+			});
+		}
+	} // lookup
+	
+	function fill(thisValue) {
+		$('#inputString').val(thisValue);
+		setTimeout("$('#suggestions').hide();", 200);
+	}
+</script>
+
+<script type="text/javascript">
+    
+  $(document).ready(function() {
+      
+      
+        var pVal = getUrlVars()["subject"];
+        $('#inputSubject').val(pVal);
+
+        var pVal = getUrlVars()["message"];
+        $('#inputMessage').val(pVal);
+
+        var pHost = getUrlVars()["host"];
+        var pPort = getUrlVars()["port"];
+
+        var pVal = getUrlVars()["file"];
+        var pVal2 = decodeURIComponent(pVal);
+        
+        var pHeight = getUrlVars()["height"];
+        var pWidth = getUrlVars()["width"];
+        
+        var pMD5 = getUrlVars()["md5"];
+        
+        $('#inputFile').val(pMD5);
+        //$('#inputImage').attr("src", 'http://' + pHost + ':' + pPort + '/' + pVal2 + '.jpg');
+        //$('#inputImage').attr("src", '/' + pVal2 + '.jpg');
+        //$('#inputImage').attr("src", 'http://' + pHost + ':' + pPort + '/' + pVal2 + '.jpg');
+        $('#inputImage').attr("src", 'getfile.fn?sNamer=' + pMD5);
+
+        var winHeight=($(window).height()<window.innerHeight?window.innerHeight:$(window).height())*0.9-$('#viewImageTitle').height();
+        var winWidth= ($(window).width()<window.innerWidth?window.innerWidth:$(window).width())*0.9;
+
+        //$('#inputImage').attr("height", pHeight);
+        //$('#inputImage').attr("width", pWidth);
+	
+		var ratioHeight=1;
+		var ratioWidth=1;
+		if(pHeight>winHeight){
+			//pHeight - 100%
+			//winHeight - x%
+			//x=winHeight*100/pHeight
+			ratioHeight=winHeight/pHeight;
+		}
+		if(pWidth>winWidth){
+			//pHeight - 100%
+			//winHeight - x%
+			//x=winHeight*100/pHeight
+			ratioWidth=winWidth/pWidth;
+		}
+		var ratio = Math.min(ratioHeight,ratioWidth);
+		var imgHeigh=pHeight*ratio;
+		var imgWidth=pWidth*ratio;
+		
+        $('#inputImage').attr("height",imgHeigh);
+        $('#inputImage').attr("width", imgWidth)
+        
+        
+        //move he last list item before the first item. The purpose of this is if the user clicks to slide left he will be able to see the last item.
+        $('#carousel_ul li:first').before($('#carousel_ul li:last')); 
+        
+        
+        //when user clicks the image for sliding right        
+        $('#right_scroll img').click(function(){
+        
+            //get the width of the items ( i like making the jquery part dynamic, so if you change the width in the css you won't have o change it here too ) '
+            var item_width = $('#carousel_ul li').outerWidth() + 10;
+            
+            //calculae the new left indent of the unordered list
+            var left_indent = parseInt($('#carousel_ul').css('left')) - item_width;
+            
+            //make the sliding effect using jquery's anumate function '
+            $('#carousel_ul:not(:animated)').animate({'left' : left_indent},500,function(){    
+                
+                //get the first list item and put it after the last list item (that's how the infinite effects is made) '
+                $('#carousel_ul li:last').after($('#carousel_ul li:first')); 
+                
+                //and get the left indent to the default -210px
+                $('#carousel_ul').css({'left' : '-210px'});
+            }); 
+        });
+        
+        //when user clicks the image for sliding left
+        $('#left_scroll img').click(function(){
+            
+            var item_width = $('#carousel_ul li').outerWidth() + 10;
+            
+            /* same as for sliding right except that it's current left indent + the item width (for the sliding right it's - item_width) */
+            var left_indent = parseInt($('#carousel_ul').css('left')) + item_width;
+            
+            $('#carousel_ul:not(:animated)').animate({'left' : left_indent},500,function(){    
+            
+            /* when sliding to left we are moving the last item before the first list item */            
+            $('#carousel_ul li:first').before($('#carousel_ul li:last')); 
+            
+            /* and again, when we make that change we are setting the left indent of our unordered list to the default -210px */
+            $('#carousel_ul').css({'left' : '-210px'});
+            });
+            
+            
+        });
+        
+        $('a').click(function() {
+             var a = $(this).attr('id');
+             /* alert(a); */
+             /* window.open(this.href,'name','options'); */
+             window.open($(this).attr('href'));
+             return false;
+        });
+        
+        
+  });
+</script>
+<style type="text/css">
+    
+
+#carousel_inner {
+float:left; /* important for inline positioning */
+width:1050px; /* important (this width = width of list item(including margin) * items shown */ 
+overflow: hidden;  /* important (hide the items outside the div) */
+/* non-important styling bellow */
+background: #F0F0F0;
+}
+
+#carousel_ul {
+position:relative;
+left:-210px; /* important (this should be negative number of list items width(including margin) */
+list-style-type: none; /* removing the default styling for unordered list items */
+margin: 0px;
+padding: 0px;
+width:9999px; /* important */
+/* non-important styling bellow */
+padding-bottom:10px;
+}
+
+#carousel_ul li{
+float: left; /* important for inline positioning of the list items */                                    
+width:200px;  /* fixed width, important */
+/* just styling bellow*/
+padding:0px;
+height:200px;
+background: #000000;
+margin-top:10px;
+margin-bottom:10px; 
+margin-left:5px; 
+margin-right:5px; 
+}
+
+#carousel_ul li img {
+margin-bottom:-4px; /* IE is making a 4px gap bellow an image inside of an anchor (<a href...>) so this is to fix that*/
+/* styling */
+cursor:pointer;
+cursor: hand; 
+border:0px; 
+}
+#left_scroll, #right_scroll{
+float:left; 
+height:220px; 
+width:15px; 
+background: #C0C0C0; 
+}
+#left_scroll img, #right_scroll img{
+/*styling*/
+cursor: pointer;
+cursor: hand;
+}
+	body {
+		font-family: Helvetica;
+		font-size: 11px;
+		color: #000;
+	}
+	
+	h3 {
+		margin: 0px;
+		padding: 0px;	
+	}
+
+	.suggestionsBox {
+		position: relative;
+		left: 30px;
+		margin: 10px 0px 0px 0px;
+		width: 200px;
+		background-color: #212427;
+		-moz-border-radius: 7px;
+		-webkit-border-radius: 7px;
+		border: 2px solid #000;	
+		color: #fff;
+	}
+	
+	.suggestionList {
+		margin: 0px;
+		padding: 0px;
+	}
+	
+	.suggestionList li {
+		
+		margin: 0px 0px 3px 0px;
+		padding: 3px;
+		cursor: pointer;
+	}
+	
+	.suggestionList li:hover {
+		background-color: #659CD8;
+	}
+</style>
+
+</head>
+<body>
+    
+    <div class="row-fluid">        
+        <div class="span4"><h3 style='color:black'>Send picture</h1></div>
+        <div class="span3 offset4"><button type="button" class="btn btn-primary" onclick="window.open('./setup.htm?spage=5','_self')"><i class="icon-cog icon-white"></i>Email setup</button></div>
+    </div>
+                         
+    
+
+        <div>
+     
+                        
+
+		<form id="sendform" action="sendfile.php"  method=get>
+			<div>                                                           
+                                
+                                
+                                <div class="row">
+                                    <br>
+                                    <div class="span1" >
+                                         To:
+                                    </div>
+                                    <div id="groupdiv" class="span11">
+                                    </div>
+                                    <div id="mailtodiv" class="span11 offset1">
+                                    </div>
+
+                                </div>
+                                 <br>
+                                <div class="row">
+                                    <div class="span1">
+                                    Subject:
+                                    </div>
+                                <div class="span11" >
+                                        <input type="text" name="msubject" id="inputSubject" class="span11">
+                                        <!--<textarea rows="1" name ="msubject" id="inputSubject"></textarea>-->
+                                  </div>       
+                                </div>
+                                <br>
+                                <div class="row">
+                                    <div class="span1">
+                                    Message:
+                                    </div>
+                                    <div class="span11" >
+                                        <textarea rows="3" name="mmsg" id="inputMessage" class="span11"></textarea>
+                                        <!--<input type="text" name="mmsg" size="200" id="inputMessage">-->
+                                         </div>
+                                </div>
+                                <br>
+                                <input type="hidden" name ="mfile" size="10" id="inputFile">
+                                        
+                                <button id="sendbutton" type="button" class="btn btn-primary" onclick="sendemail();">Send</button>
+                                
+                                <input type="hidden" id='sendtoemails' name='sendtoemails'/>
+			</div>
+                    
+			
+			<div class="suggestionsBox" id="suggestions" style="display: none;">
+				<img src="upArrow.png" style="position: relative; top: -12px; left: 30px;" alt="upArrow" />
+				<div class="suggestionList" id="autoSuggestionsList">
+					&nbsp;
+				</div>
+			</div>
+		</form>
+     
+     <img id ="inputImage"/>
+
+ </div>
+
+</body></html>

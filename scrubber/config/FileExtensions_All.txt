@@ -1,0 +1,51 @@
+@,Documents,office
+.doc,Word document,&#xe037;
+.docx,Word document,&#xe037;
+.pdf,PDF document,&#xe002;
+.ppt,Powerpoint document,&#xe043;
+.pptx,Powerpoint document,&#xe043;
+.xls,Excel document,&#xe042;
+.xlsx,Excel document,&#xe042;
+@,Video Files,video
+.mov,Quicktime Movie,&#xe009;
+.mpg,MPEG Movie,&#xe009;
+.mp4,Advanced Audio Coding,&#xe018;
+.ogv,Ogg Vorbis,&#xe018;
+.webm,Webm,&#xe018;
+.mmv,Windows Media Video,&#xe009;
+.avi,Audio Video Interleave,&#xe009;
+@,Audio Files,audio
+.mp3,MP3 Audio,&#xe018;
+.m4a,Audio,&#xe018;
+.wav,Wave sound file,&#xe018;
+.wma,Windows Media Audio,&#xe018;
+@,Image Files,foto
+.jpg,JPEG Image,&#xe006;
+.jpeg,JPEG Image,thumb&#xe006;
+.gif,GIF Image file,&#xe007;
+.png,PNG Image file,&#xe007;
+@,Adobe Files,adobe
+.ai,Adobe Illustrator,&#xe002;
+.psd,Adobe Photoshop,&#xe002;
+.fla,Adobe Flash,&#xe002;
+.swf,Adobe Flash Player,&#xe002;
+.indd,Adobe Adobe inDesign,&#xe002;
+@,CAD Files,cad
+.dwg,AutoCAD DWG,&#xe002;
+.dxf,AutoCAD DXF,&#xe002;
+.sld,Solidworks,&#xe002;
+.sldasm,Solidworks ASM,&#xe002;
+.sldprt,Solidworks PRT,&#xe002;
+.slddrw,Solidworks DRW,&#xe002;
+@,Other,others
+.zip,ZIP file,&#xe206;
+.rar,RAR file,&#xe206;
+.ttf,True Type Fonts,&#xe206;
+.otf,Open Type Fonts,&#xe206;
+.dll,Dynamic Link Library,&#xe138;
+.exe,Executable file,&#xe137;
+.html,HTML file,&#xe341;
+.htm,HTM file,&#xe341;
+.txt,Plan Text file,&#xe030;
+.java,Java source file,&#xe295;
+.pst,Outlook file,&#125;

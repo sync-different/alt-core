@@ -1,0 +1,605 @@
+<div class="modal fade" id="clusterform">
+	<div class="modal-dialog">
+	  <div class="modal-content">
+		  <div  class="position-relative" align="center"  style="padding-top: 0px;height:41px;background-color:rgb(42,42,42);">
+			  Add or edit cluster
+			  <button type="button" class="close" ng-click="close()"style="color:white;margin-top: 10px;margin-right: 10px;position:absolute;right:10px;top: 1px;">X</button>
+		  </div>
+		  <div  class="position-relative"   style="padding-top: 50px;padding-left:20px;padding-right:20px;height:250px;">
+			  <uib-alert  ng-repeat="alert in alertsClusters" type="danger" close="closeAlert($index)">{{alert.msg}}</uib-alert>
+			  <table>
+				  <tr><td>Cluster URL*</td><td><input type="text" ng-model="clusterURL" ng-disabled="true"/></td></tr>
+				  <tr><td>Cluster Name*</td><td><input type="text" ng-model="clusterName"/></td></tr>
+				  <tr><td>Cluster User*</td><td><input type="text" ng-model="user"/></td></tr>
+				  <tr><td>Cluster Password*</td><td><input type="password" ng-model="password"/></td></tr>
+			  </table>	
+		  </div>
+		  <div class="row" style="height:50px;">
+			  <button type="button" class="btn" ng-click="close()" style="position:absolute;right:160px;">Cancel</button>
+			  <button type="button" class="btn btn-primary" ng-click="acceptCluster()" style="position:absolute;right:70px;">Accept</button>
+		  </div>
+	  </div>
+	</div>
+  </div>
+  
+  <div class="modal fade" id="popupmsg2">
+	<div class="modal-dialog">
+	  <div class="modal-content">
+		  <div  class="position-relative" align="center"  style="padding-top: 0px;height:41px;background-color:rgb(42,42,42);">
+			  <button type="button" class="close" ng-click="closePupup()"style="color:white;margin-top: 10px;margin-right: 10px;position:absolute;right:10px;top: 1px;">X</button>
+		  </div>
+		  <div  class="position-relative"   style="padding-top: 50px;padding-left:20px;padding-right:20px;height:70px;">
+			  {{popupmsg}}
+		  </div>
+		  <div class="row" style="height:50px;">
+			  <button type="button" class="btn btn-primary" ng-click="acceptPopup()" style="position:absolute;right:160px;">Accept</button>
+			  <button type="button" class="btn btn-primary" ng-click="closePopup()" style="position:absolute;right:70px;">Cancel</button>
+		  </div>
+	  </div>
+	</div>
+  </div>
+  
+  
+  <div class="modal fade" id="popupmsg">
+	<div class="modal-dialog">
+	  <div class="modal-content">
+		  <div  class="position-relative" align="center"  style="padding-top: 0px;height:41px;background-color:rgb(42,42,42);">
+			  <button type="button" class="close" ng-click="closePupup()"style="color:white;margin-top: 10px;margin-right: 10px;position:absolute;right:10px;top: 1px;">X</button>
+		  </div>
+		  <div  class="position-relative"   style="padding-top: 50px;padding-left:20px;padding-right:20px;height:250px;">
+			  {{popupmsg}}
+		  </div>
+		  <div class="row" style="height:50px;">
+			  <button type="button" class="btn btn-primary" ng-click="closePupup()" style="position:absolute;right:70px;">Close</button>
+		  </div>
+	  </div>
+	</div>
+  </div>
+  
+  <div class="modal fade" id="sharefacebook">
+	<div class="modal-dialog">
+	  <div class="modal-content">
+		  <div  class="position-relative" align="center"  style="padding-top: 0px;height:41px;background-color:rgb(42,42,42);">
+			  <label style="color:white;margin-top: 9px;">Share On Facebook</label>
+			  <button type="button" class="close" ng-click="close2()"style="color:white;margin-top: 10px;margin-right: 10px;position:absolute;right:10px;top: 1px;">X</button>
+		  </div>
+		  <div  class="position-relative">
+		  <uib-alert style="z-index:999;" type="danger" id="popupblock" >Your browser is blocking popup facebook, please unlock it and then click on accept.</uib-alert>
+			  <table width="100%">
+			  <tr>
+				  <td align="center">
+					  <input type="text" placeholder="Enter your comment" ng-model="fbtext" style="width: 400px;"/>
+				  </td>
+			  </tr>
+			  <tr>
+				  <td align="center">
+					  <img src="{{selectedFile}}" width="400px"/>
+				  </td>
+			  </tr>
+			  </table>
+			  <img src="img/loading_spinner.gif" id="sharefacebookloading" width="50px" style="position: absolute;left: 45%;top: 49%;;z-index: 9999;"/>
+		  </div>
+		  <div class="row" style="height:50px;">
+			  <button type="button" class="btn" ng-click="close2()" style="position:absolute;right:100px;">Cancel</button>
+			  <button type="button" class="btn btn-primary" ng-click="accept()" style="position:absolute;right:20px;">Accept</button>
+		  </div>
+	  </div>
+	</div>
+  </div>
+  
+  <div class="modal fade" id="sharemodalnoremoteeula">
+	<div class="modal-dialog">
+	  <div class="modal-content">
+		  <div  class="position-relative" align="center"  style="padding-top: 0px;height:41px;background-color:rgb(42,42,42);">
+			  <label style="color:white;margin-top: 9px;">Privacy Policy</label>
+			  <button type="button" class="close" ng-click="close()"style="color:white;margin-top: 10px;margin-right: 10px;position:absolute;right:10px;top: 1px;">X</button>
+		  </div>
+		  <div  class="position-relative"   style="height:450px;overflow-y:scroll;" compile-data template="{{eula}}">
+			  
+		  </div>
+		  <div class="row" style="height:50px;">
+			  <button type="button" class="btn" ng-click="decline()" style="position:absolute;right:100px;">Decline</button>
+			  <button type="button" class="btn btn-primary" ng-click="accept()" style="position:absolute;right:20px;">Accept</button>
+		  </div>
+	  </div>
+	</div>
+  </div>
+  
+  <div class="modal fade" id="sharemodalnoremote">
+	<div class="modal-dialog">
+	  <div class="modal-content">
+		  <div  class="position-relative" align="center"  style="padding-top: 0px;height:41px;background-color:rgb(42,42,42);">
+			  <button type="button" class="close" ng-click="close()"style="color:white;margin-top: 10px;margin-right: 10px;position:absolute;right:10px;top: 1px;">X</button>
+		  </div>
+		  <div  class="position-relative"   style="padding-top: 50px;padding-left:20px;padding-right:20px;height:250px;">
+			  Remote Access is currently disabled. Go to 'Settings > Network and Users' to enable it or enable with button below
+			  <br/>
+			  You can skip enabling remote access , if you are just sharing with other users in your private LAN
+		  </div>
+		  <div class="row" style="height:50px;">
+			  <button type="button" class="btn" ng-click="skip()" style="position:absolute;right:250px;">Skip</button>	
+			  <button type="button" class="btn btn-primary" ng-click="enableRA()" style="position:absolute;right:70px;">Enable Remote Access</button>
+		  </div>
+	  </div>
+	</div>
+  </div>
+  
+  <div class="modal fade" id="sharemodal">
+	<div class="modal-dialog">
+	  <div class="modal-content">
+		  <div  class="position-relative" align="center"  style="padding-top: 0px;height:41px;background-color:rgb(42,42,42);">
+			  <label style="color:white;margin-top: 9px;">Tag Files to Share</label>
+			  <button type="button" class="close" ng-click="close()"style="color:white;margin-top: 10px;margin-right: 10px;position:absolute;right:10px;top: 1px;">X</button>
+		  </div>
+		  <div  class="position-relative"   style="padding-top: 0px;">
+			  <uib-alert style="width:100%;" type="danger" ng-repeat="alert in shareModalAlerts"  >{{alert.msg}}</uib-alert>
+			  <input type="text" placeholder="Add Tag..." ng-disabled="preloadUser" id="tagfileInputShare" style="" class="form-control">
+			  <br/>
+			  <a ng-click="addUser()" href="" class="btn btn-primary" style="margin-left: 10px; text-decoration: none;">Add User</a>
+			  <br/>
+			  <br/>
+			  <div style="height:300px;overflow:scroll;">
+				  <table class="table table-striped table-responsive"  >
+					  <tr ng-repeat="u in users">
+						  <td>
+							  <input type="checkbox" tag="user" user="{{u.username}}" ng-checked="u.active"/> {{u.username}}&nbsp;&nbsp;({{u.email}})
+						  </td>
+					  </tr>
+				  </table>
+			  </div>
+			  <div style="height:50px;" valign="center">
+			  <button class="button btn-primary" ng-click="tagFilesShare()" style="float:right;margin-right:10px;">Share Files</button>	
+			  <button class="button btn-primary" ng-click="close()" style="float:right;margin-right:10px;">Cancel</button>
+			  </div>
+		  </div>
+	  </div>
+	</div>
+  </div>
+  
+  <div class="modal fade" id="shareusermodal">
+	<div class="modal-dialog">
+	  <div class="modal-content">
+		  <div  class="position-relative" align="center"  style="padding-top: 0px;height:41px;background-color:rgb(42,42,42);">
+			  <label style="color:white;margin-top: 9px;">Add User</label>
+			  <button type="button" class="close" ng-click="closeUser()"style="color:white;margin-top: 10px;margin-right: 10px;position:absolute;right:10px;top: 1px;">X</button>
+		  </div>
+		  <div  class="position-relative"   style="padding-top: 0px;" align="center">
+			  <uib-alert style="width:100%;" type="danger" ng-repeat="alert in shareUserModalAlerts"  >{{alert.msg}}</uib-alert>
+			  
+			  <table class="table table-striped table-responsive" width="100%"  >
+				  <tr>
+					  <td align="left">
+						  Username
+					  </td>					
+					  <td align="left">
+						  <input type="text" placeholder="User Name" ng-model="username"/>
+					  </td>					
+				  </tr>
+				  <tr>
+					  
+					  <td align="left">
+						  Password
+					  </td>
+					  <td align="left">
+						  <input type="text" placeholder="Password" ng-model="password"/>
+					  </td>					
+				  </tr>
+				  <tr>
+					  <td align="left">
+						  Email
+					  </td>
+					  <td align="left">
+						  <input type="text" placeholder="Email" ng-model="email"/>
+					  </td>					
+				  </tr>
+			  </table>
+	   
+			  <div style="height:50px;" valign="center">
+				  <button class="button btn-primary" ng-click="addUserSave()" style="float:right;margin-right:10px;">Add User</button>	
+				  <button class="button btn-primary" ng-click="closeUser()" style="float:right;margin-right:10px;">Cancel</button>
+			  </div>
+		  </div>
+	  </div>
+	</div>
+  </div>
+  
+  <div class="modal fade" id="sharenotifymodal">
+	<div class="modal-dialog">
+	  <div class="modal-content">
+		  <div  class="position-relative" align="center"  style="padding-top: 0px;height:41px;background-color:rgb(42,42,42);">
+			  <label style="color:white;margin-top: 9px;">Share Notify</label>
+			  <button type="button" class="close" ng-click="closeNotify()"style="color:white;margin-top: 10px;margin-right: 10px;position:absolute;right:10px;top: 1px;">X</button>
+		  </div>
+		  <div  class="position-relative"   style="padding-top: 0px;" align="center">
+			  <table class="table table-striped table-responsive" width="50%"  >
+				  <tr>
+					  <td>
+						  To:{{dec(notify.email_to)}}
+					  </td>					
+				  </tr>
+				  <tr>
+					  <td>
+						  Subject:{{dec(notify.email_subject)}} 
+					  </td>					
+				  </tr>
+				  <tr>
+					  <td >
+						  <div ng-bind-html="dec3(notify.email_body)" style="height:400px;overflow:scroll;">
+						  </div>
+					  </td>					
+				  </tr>
+			  </table>
+			  <div style="height:50px;" valign="center">
+				  <a class="btn btn-primary" style="float:right;margin-right:10px;" href="mailto:{{notify.email_to}}?&subject={{dec2(notify.email_subject)}}&body={{dec2(notify.email_body)}}">Send Notify</a>	
+				  <a class="btn btn-primary" ng-click="closeNotify()" style="float:right;margin-right:10px;">Cancel</a>
+			  </div>
+		  </div>
+	  </div>
+	</div>
+  </div>
+  
+  
+  <div class="modal fade" id="tagview">
+	<div class="modal-dialog">
+	  <div class="modal-content">
+		  <div  class="position-relative" align="center"  style="padding-top: 0px;height:41px;background-color:rgb(42,42,42);">
+			  <label style="color:white;margin-top: 9px;">Tag Files </label>
+			  <button type="button" class="close" ng-click="close()"style="color:white;margin-top: 10px;margin-right: 10px;position:absolute;right:10px;top: 1px;">X</button>
+		  </div>
+		  <div  class="position-relative"   style="padding-top: 0px;">
+			  <input type="text" placeholder="Add Tags..." id="tagfilesInput" style="" class="form-control">
+			  <br/>
+			  <ul class="nav nav-pills" id="tagfileslist">
+				  <li  ng-repeat="t in tags" tagname="{{t.tagname}}" ng-class="{active:t.active}"><a href="" ng-click="selOptTag(t.tagname)"> {{t.tagname}}</a></li>
+			  </ul>
+			  <br/>
+			  <div style="height:50px;" valign="center">
+			  <button class="button btn-primary" ng-click="tagFiles()" style="float:right;margin-right:10px;">Tag Files</button>	
+			  <button class="button btn-primary" ng-click="close()" style="float:right;margin-right:10px;">Cancel</button>
+			  </div>
+		  </div>
+	  </div>
+	</div>
+  </div>
+	
+  
+  <div class="modal fade" id="imageview" tabindex="-1" role="dialog" aria-labelledby="imageviewLabel" aria-hidden="true">
+	  <div class="modal-dialog modal-xl modal-fullscreen-md-down" role="document">
+		  <div class="modal-content bg-dark text-white">
+			  <div class="position-relative p-3">
+				  <div class="d-flex justify-content-between align-items-center">
+					  <h4 id="header" class="mb-0">{{activeSlide + 1}} / {{slides.length}}</h4>
+					  <div class="d-flex align-items-center">
+						  <div id="slider" ui-slider="slider.options" min="0" max="20000" ng-model="sliderValue"></div>
+						  <label class="ml-3 sliderText">{{(sliderValue / 1000).toFixed(0)}} s/pic</label>
+					  </div>
+					  <div class="d-flex align-items-center justify-content-end" style="gap: 20px;">
+						  <img src="img/fb_share_s.png" style="cursor:pointer;" ng-click="shareFB()" ng-show="isLocalhost || isCloud">
+						  <a href="{{remote}}" class="text-white" target="idownload" ng-show="!isCluster">
+							  <i class="fas fa-play"></i>
+						  </a>
+						  <a href="{{download}}" class="text-white" download="{{name}}">
+							  <i class="fas fa-download"></i>
+						  </a>
+						  <a href="{{folder}}" class="text-white" target="idownload" ng-show="!isCluster">
+							  <i class="fas fa-folder-open"></i>
+						  </a>
+						  <button type="button" class="btn-close text-white bg-transparent border-0" style="font-size: 24px;" aria-label="Close" ng-click="close()">
+							  <i class="fas fa-times"></i>
+						  </button>
+					  </div>
+				  </div>
+			  </div>
+			  <div class="d-flex" style="height: 80vh;">
+				  <div class="flex-grow-1 position-relative" style="overflow: hidden; max-width: 65%;">
+					  <img src="img/loading_spinner.gif" id="imgloading" class="position-absolute" style="left: 50%; top: 50%; transform: translate(-50%, -50%); width: 50px; z-index: 9999;">
+					  <div class="swiper-container" style="width: 100%; height: 100%; position: relative;">
+						  <div class="swiper-wrapper">
+							  <div class="swiper-slide" ng-repeat="slide in slides">
+								  <img ng-src="{{slide.image}}" alt="Image" style="width: 100%; height: 100%; object-fit: contain; display: block; margin: auto;">
+							  </div>
+						  </div>
+						  <div class="swiper-button-next" style="z-index: 10;"></div>
+						  <div class="swiper-button-prev" style="z-index: 10;"></div>
+						  <div class="swiper-pagination" style="z-index: 10;"></div>
+					  </div>
+				  </div>
+				  <div class="rightBarImage p-3 d-flex flex-column" style="width: 35%; background: #f9f9f9; border-left: 1px solid #ccc; z-index: 1;">
+					  <div class="row mt-3 ms-0">
+						  <table class="w-100">
+							  <tr style="border-bottom: inset rgb(240,242,246);">
+								  <td class="text-center" style="border-right: inset rgb(240,242,246); width: 45px;">
+									  <i class="fas fa-heart me-1 text-dark" style="cursor: pointer;" ng-click="like()"></i>
+									  <label class="text-dark">{{likes}}</label>
+								  </td>
+								  <td class="text-center" ng-click="showComments='comment';" ng-class="{activeTab: showComments == 'comment'}">
+									  <i class="fas fa-comments text-dark"></i>
+								  </td>
+								  <td class="text-center" ng-click="showComments='images';" ng-class="{activeTab: showComments == 'images'}">
+									  <i class="fas fa-images text-dark"></i>
+								  </td>
+								  <td class="text-center" ng-click="showComments='tags';" ng-class="{activeTab: showComments == 'tags'}">
+									  <i class="fas fa-tags text-dark"></i>
+								  </td>
+							  </tr>
+						  </table>
+					  </div>
+					  <div class="flex-grow-1 overflow-auto">
+						  <div id="commentscontainer" ng-show="showComments == 'comment'" class="w-100">
+							  <div id="commentsmsgs" class="w-100 overflow-auto p-2" style="max-height: 400px;">
+								  <div class="textMsg" ng-repeat="m in msgs" align="left">
+									  <div class="headMsg d-flex justify-content-between">
+										  <label class="fw-bold text-dark">{{m.username}}</label>
+										  <label class="text-dark">{{m.date | date: 'MMM d, y h:mm a'}}</label>
+									  </div>
+									  <div class="contentMsg ps-5 pe-2 text-dark" compile-data template="{{m.msg}}"></div>
+								  </div>
+							  </div>
+							  <div class="w-100 p-3">
+								  <textarea cols="20" rows="3" ng-keydown="checkReturn($event)" ng-model="inputText" class="form-control mb-2" style="width: 100%;"></textarea>
+								  <button ng-click="send()" class="btn btn-primary w-100">Send</button>
+								  <center><a href="" ng-click="downloadCommentsCSV()" style="display:block; margin-top:10px; font-size: 12px; color: #555;">Download comments</a></center>
+							  </div>
+						  </div>
+						  <div ng-show="showComments == 'tags'" class="w-100">
+							  <div class="overflow-auto" style="max-height: 400px;">
+								  <input type="text" id="tagscarrousel" tagphoto="tags" placeholder="Add Tags" class="form-control w-100">
+							  </div>
+						  </div>
+						  <div ng-show="showComments == 'images'" class="w-100">
+							  <div class="overflow-auto" style="max-height: 400px;">
+								  <div ng-repeat="image in slides track by $index" id="imagelist{{$index}}" 
+									   style="margin-top: 5px; height: 84px; padding-top: 1px; padding-bottom: 1px; background: url('data:image/{{image.file.file_ext}};base64,{{image.file.file_thumbnail}}') no-repeat center;" 
+									   valign="center" class="imagelist" ng-click="setImage($index)" 
+									   ng-class="{imagelistActive: image.active}">
+								  </div>
+							  </div>
+						  </div>
+					  </div>
+				  </div>
+			  </div>
+		  </div>
+	  </div>
+  </div>
+  
+  
+  <div class="modal fade" id="footerVideoBar" tabindex="-1" role="dialog" aria-labelledby="footerVideoBarLabel" aria-hidden="true">
+	  <div class="modal-dialog modal-xl modal-fullscreen-md-down" role="document">
+		  <div class="modal-content bg-dark text-white">
+			  <div class="position-relative p-3">
+				  <div class="d-flex justify-content-between align-items-center">
+					  <h4 id="header" class="mb-0">{{name}}</h4>
+					  <div class="d-flex align-items-center justify-content-end" style="gap: 20px;">
+						  <a href="{{remote}}" class="text-white" target="idownload" ng-show="!isCluster">
+							  <i class="fas fa-play"></i>
+						  </a>
+						  <a href="" class="text-white" id="adownload" download="">
+							  <i class="fas fa-download"></i>
+						  </a>
+						  <a href="{{folder}}" class="text-white" target="idownload" ng-show="!isCluster">
+							  <i class="fas fa-folder-open"></i>
+						  </a>
+						  <button type="button" class="btn-close text-white bg-transparent border-0" aria-label="Close" ng-click="close()">
+							  <i class="fas fa-times"></i>
+						  </button>
+					  </div>
+				  </div>
+			  </div>
+			  <div class="position-relative w-100">
+				  <table class="table w-100 h-100 text-white">
+					  <tr>
+						  <td class="align-middle text-center">
+							  <div id="videoContainer" class="VideoContainer"></div>
+						  </td>
+						  <td class="align-top" ng-style="{'padding-right': padding}">
+							  <div class="rightBarImage p-3" style="width: 300px;">
+								  <div class="row mt-3 ms-0">
+									  <table class="w-100">
+										  <tr style="border-bottom: inset rgb(240,242,246);">
+											  <td class="text-center" style="border-right: inset rgb(240,242,246); width: 15px;">
+												  <i class="fas fa-heart me-1 text-dark" style="cursor: pointer;" ng-click="like()"></i>
+												  <label class="text-dark">{{likes}}</label>
+											  </td>
+											  <td class="text-center" style="border-right: inset rgb(240,242,246);" ng-class="{activeTab: showComments == 'comment'}" ng-click="showComments='comment';">
+												  <i class="fas fa-comments text-dark"></i>
+											  </td>
+											  <td class="text-center" ng-click="showComments='tags';" ng-class="{activeTab: showComments == 'tags'}">
+												  <i class="fas fa-tags text-dark"></i>
+											  </td>
+										  </tr>
+									  </table>
+								  </div>
+								  <div class="row w-100 ms-0 mt-3 position-relative" align="center">
+									  <div id="commentscontainer" ng-show="showComments == 'comment'" class="w-100">
+										  <div id="commentsmsgs3" class="w-100 overflow-auto p-2" style="max-height: 300px; overflow-y: auto;">
+											  <div class="textMsg" ng-repeat="m in msgs" align="left">
+												  <div class="headMsg d-flex justify-content-between">
+													  <label class="fw-bold text-dark">{{m.username}}</label>
+													  <label class="text-dark">{{m.date | date: 'MMM d, y h:mm a'}}</label>
+												  </div>
+												  <div class="contentMsg ps-5 pe-2 text-dark" compile-data template="{{m.msg}}"></div>
+											  </div>
+										  </div>
+										  <div class="w-100 p-3">
+											  <textarea cols="20" rows="3" ng-keydown="checkReturn($event)" ng-model="inputText" class="form-control mb-2"></textarea>
+											  <button ng-click="send()" class="btn btn-primary w-100">Send</button>
+											  <center><a href="" ng-click="downloadCommentsCSV()" style="display:block; margin-top:10px; font-size: 12px; color: #555;">Download comments</a></center>
+										  </div>
+									  </div>
+									  <div ng-show="showComments == 'tags'" ng-style="{height: commentsHeight - 80}" class="w-100 ms-0 me-4 overflow-scroll">
+										  <input type="text" id="tagsvideo" tagpvideo="tags" placeholder="Add Tags" class="form-control">
+									  </div>
+								  </div>
+							  </div>
+						  </td>
+					  </tr>
+				  </table>
+			  </div>
+		  </div>
+	  </div>
+  </div>
+  
+  
+  <div class="modal fade" id="pdfViewer" tabindex="-1" role="dialog" aria-labelledby="pdfViewerLabel" aria-hidden="true">
+	  <div class="modal-dialog" role="document" style="width: 100vw; margin: 0; padding: 0; max-width: 100%; height: 100vh;">
+		  <div class="modal-content bg-dark text-white position-relative" style="height: 100%; width: 100%; margin: 0; padding: 0; border-radius: 0;">
+			  <div class="position-relative p-3 d-flex justify-content-between align-items-center">
+				  <h4 id="header" class="mb-0">PDF Viewer</h4>
+				  <div class="d-flex align-items-center justify-content-end" style="gap: 20px;">
+					  <a href="{{remote}}" class="text-white" target="idownload" ng-show="!isCluster">
+						  <i class="fas fa-play"></i>
+					  </a>
+					  <a href="{{download}}" class="text-white" download="{{name}}">
+						  <i class="fas fa-download"></i>
+					  </a>
+					  <a href="{{folder}}" class="text-white" target="idownload" ng-show="!isCluster">
+						  <i class="fas fa-folder-open"></i>
+					  </a>
+					  <button type="button" class="btn-close text-white bg-transparent border-0" aria-label="Close" ng-click="close()">
+						  <i class="fas fa-times"></i>
+					  </button>
+				  </div>
+			  </div>
+			  <div class="position-relative w-100 h-100">
+				  <table class="table w-100 h-100 text-white" style="table-layout: fixed; margin: 0; padding: 0; border: none;">
+					  <tr style="height: 100%;">
+						  <td class="align-middle text-center p-0" style="height: 100%; width: 70%;">
+							  <iframe src="{{trustSrc(pdf)}}" class="w-100 h-100" style="border: none;"></iframe>
+						  </td>
+						  <td class="align-top p-0" style="height: 100%; width: 30%;">
+							  <div class="rightBarImage p-3 h-100 d-flex flex-column">
+								  <div class="row mt-3 ms-0">
+									  <table class="w-100">
+										  <tr style="border-bottom: inset rgb(240,242,246);">
+											  <td class="text-center" style="border-right: inset rgb(240,242,246); width: 15px;">
+												  <i class="fas fa-heart me-1 text-dark" style="cursor: pointer;" ng-click="like()"></i>
+												  <label class="text-dark">{{likes}}</label>
+											  </td>
+											  <td class="text-center" style="border-right: inset rgb(240,242,246);" ng-class="{activeTab: showComments == 'comment'}">
+												  <i class="fas fa-comments text-dark"></i>
+											  </td>
+											  <td class="text-center" ng-click="showComments='tags';" ng-class="{activeTab: showComments == 'tags'}">
+												  <i class="fas fa-tags text-dark"></i>
+											  </td>
+										  </tr>
+									  </table>
+								  </div>
+  
+								  <div class="flex-grow-1 overflow-auto">
+									  <div id="commentscontainer" ng-show="showComments == 'comment'" class="w-100">
+										  <div id="commentsmsgs3" class="w-100 overflow-auto p-2" style="max-height: 400px;">
+											  <div class="textMsg" ng-repeat="m in msgs" align="left">
+												  <div class="headMsg d-flex justify-content-between">
+													  <label class="fw-bold text-dark">{{m.username}}</label>
+													  <label class="text-dark">{{m.date | date: 'MMM d, y h:mm a'}}</label>
+												  </div>
+												  <div class="contentMsg ps-5 pe-2 text-dark" compile-data template="{{m.msg}}"></div>
+											  </div>
+										  </div>
+										  <div class="w-100 p-3">
+											  <textarea cols="20" rows="3" ng-keydown="checkReturn($event)" ng-model="inputText" class="form-control mb-2" style="width: 100%;"></textarea>
+											  <button ng-click="send()" class="btn btn-primary w-100">Send</button>
+											  <center><a href="" ng-click="downloadCommentsCSV()" style="display:block; margin-top:10px; font-size: 12px; color: #555;">Download comments</a></center>
+										  </div>
+									  </div>
+									  <div  ng-show="showComments=='tags'"  ng-style="{height:commentsHeight-80}" style="width:100%;margin-left:0px;margin-right:20px;overflow-y:scroll;">
+										  <input type="text" id="tagspdf" tagpdf="tags"  value="" placeholder="Add Tags" data-role="tagsinput" />
+									  </div>
+								  </div>
+							  </div>
+						  </td>
+					  </tr>
+				  </table>
+			  </div>
+		  </div>
+	  </div>
+  </div>
+  
+  
+  <div class="modal fade" id="docViewer" tabindex="-1" role="dialog" aria-labelledby="docViewerLabel" aria-hidden="true">
+	  <div class="modal-dialog modal-xl modal-fullscreen-md-down" role="document">
+		<div class="modal-content bg-dark text-white position-relative" style="height: 100vh;">
+		  <div class="position-relative p-3 d-flex justify-content-between align-items-center">
+			<h4 id="header" class="mb-0">Document Viewer</h4>
+			<div class="d-flex align-items-center justify-content-end" style="gap: 20px;">
+			  <a href="{{remote}}" class="text-white" target="idownload" ng-show="!isCluster">
+				<i class="fas fa-play"></i>
+			  </a>
+			  <a href="{{download}}" class="text-white" download="{{name}}">
+				<i class="fas fa-download"></i>
+			  </a>
+			  <a href="{{folder}}" class="text-white" target="idownload" ng-show="!isCluster">
+				<i class="fas fa-folder-open"></i>
+			  </a>
+			  <button type="button" class="btn-close text-white bg-transparent border-0" aria-label="Close" ng-click="close()">
+				<i class="fas fa-times"></i>
+			  </button>
+			</div>
+		  </div>
+		  <div class="position-relative w-100 h-100">
+			<table class="table w-100 h-100 text-white" style="table-layout: fixed;">
+			  <tr style="height: 100%;">
+				<td class="align-middle text-center p-0" style="height: 100%; width: 70%;">
+				  <img ng-show="(doc.file_thumbnail != null && doc.file_thumbnail != '')" 
+					   src="data:image/{{doc.file_ext}};base64,{{doc.file_thumbnail}}" 
+					   class="img-fluid" 
+					   style="max-width: 300px;" />
+				  <i class="fa fa-video text-white" style="font-size: 300px;" ng-show="(doc.file_thumbnail == null || doc.file_thumbnail == '') && (doc.file_ext == 'mp4' || doc.file_ext == 'mov')"></i>
+				  <i class="fa fa-music text-white" style="font-size: 300px;" ng-show="(doc.file_thumbnail == null || doc.file_thumbnail == '') && (doc.file_ext == 'mp3' || doc.file_ext == 'wav')"></i>
+				  <i class="fa fa-file-word text-white" style="font-size: 300px;" ng-show="(doc.file_thumbnail == null || doc.file_thumbnail == '') && (doc.file_ext == 'doc' || doc.file_ext == 'docx')"></i>
+				  <i class="fa fa-file-powerpoint text-white" style="font-size: 300px;" ng-show="(doc.file_thumbnail == null || doc.file_thumbnail == '') && (doc.file_ext == 'ppt' || doc.file_ext == 'pptx')"></i>
+				  <i class="fa fa-file-excel text-white" style="font-size: 300px;" ng-show="(doc.file_thumbnail == null || doc.file_thumbnail == '') && (doc.file_ext == 'xls' || doc.file_ext == 'xlsx')"></i>
+				  <i class="fa fa-file-pdf text-white" style="font-size: 300px;" ng-show="(doc.file_thumbnail == null || doc.file_thumbnail == '') && (doc.file_ext == 'pdf')"></i>
+				  <br>
+				  <label class="text-white" style="font-size: 40px;">{{doc.name}}</label>
+				</td>
+				<td class="align-top p-0" style="height: 100%; width: 30%;">
+				  <div class="rightBarImage p-3 h-100 d-flex flex-column">
+					<div class="row mt-3 ms-0">
+					  <table class="w-100">
+						<tr style="border-bottom: inset rgb(240,242,246);">
+						  <td class="text-center" style="border-right: inset rgb(240,242,246); width: 15px;">
+							<i class="fas fa-heart me-1 text-dark" style="cursor: pointer;" ng-click="like()"></i>
+							<label class="text-dark">{{likes}}</label>
+						  </td>
+						  <td class="text-center" style="border-right: inset rgb(240,242,246);" ng-class="{activeTab: showComments == 'comment'}" ng-click="showComments = 'comment';">
+							<i class="fas fa-comments text-dark"></i>
+						  </td>
+						  <td class="text-center" ng-class="{activeTab: showComments == 'tags'}" ng-click="showComments = 'tags';">
+							<i class="fas fa-tags text-dark"></i>
+						  </td>
+						</tr>
+					  </table>
+					</div>
+					<div class="flex-grow-1 overflow-auto">
+					  <div id="commentscontainer" ng-show="showComments == 'comment'" class="w-100">
+						  <div id="commentsmsgs4" class="w-100 overflow-auto p-2" style="max-height: 400px;">
+							  <div class="textMsg" ng-repeat="m in msgs" align="left">
+								  <div class="headMsg d-flex justify-content-between">
+									  <label class="fw-bold text-dark">{{m.username}}</label>
+									  <label class="text-dark">{{m.date | date: 'MMM d, y h:mm a'}}</label>
+								  </div>
+								  <div class="contentMsg ps-5 pe-2 text-dark" compile-data template="{{m.msg}}"></div>
+							  </div>
+						  </div>
+						  <div class="w-100 p-3">
+							  <textarea cols="20" rows="3" ng-keydown="checkReturn($event)" ng-model="inputText" class="form-control mb-2" style="width: 100%;"></textarea>
+							  <button ng-click="send()" class="btn btn-primary w-100">Send</button>
+							  <center><a href="" ng-click="downloadCommentsCSV()" style="display:block; margin-top:10px; font-size: 12px; color: #555;">Download comments</a></center>
+						  </div>
+					  </div>
+					  <div ng-show="showComments == 'tags'" class="w-100">
+						  <div class="overflow-auto" style="max-height: 400px;">
+							  <input type="text" id="tagsdoc" tagpdf="tags" placeholder="Add Tags" class="form-control w-100">
+						  </div>
+					  </div>
+					</div>
+				  </div>
+				</td>
+			  </tr>
+			</table>
+		  </div>
+		</div>
+	  </div>
+	</div>
+	

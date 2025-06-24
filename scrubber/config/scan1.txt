@@ -1,0 +1,3 @@
+#os
+#Fri Apr 25 06:07:28 PDT 2025
+scandir=%2FVolumes%2FMacintosh%20HD%2FUsers%2Falejandro%2Falterante%2F;%2FVolumes%2FMacintosh%20HD%2FApplications%2Falterante%2Fprojects%2Frtserver%2Fmobilebackup%2F

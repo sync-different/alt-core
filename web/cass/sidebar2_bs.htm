@@ -1,0 +1,1172 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html>
+<head> 
+    <title>Alterante</title>
+    <link href="bootstrap/css/bootstrap.min.css" rel="stylesheet" media="screen"/>
+
+</head>
+
+<body style="background-color:#EEEEEE">
+
+<script type="text/javascript" src="jquery.min.js"></script>
+<script type="text/javascript" src="tags.js"></script>
+<script type="text/javascript" src="loading.js"></script>
+<script type="text/javascript" src="bootstrap/js/bootstrap.min.js"></script>
+
+<style type="text/css">
+
+ .affix {
+    position: fixed;
+    top: 0px;
+    width: 90%;
+    left: auto;
+    right: auto;
+    background-color: white;
+}
+   .tags_div {
+        margin-left: 1em;
+        width: 90%;
+        color:#EEEEEE;   
+     }
+    
+    input[type="button"] {
+		font-family: Helvetica;
+		font-size: 13px;
+        color:#00;   
+        background-color: #FCF0AD;
+        border-radius: 5px;
+        //word-wrap:break-word;
+        //display:block;
+        margin-bottom: 1px;
+        max-width:100;
+    }
+    
+     
+
+#carousel_inner {
+float:left; /* important for inline positioning */
+width:1050px; /* important (this width = width of list item(including margin) * items shown */ 
+overflow: hidden;  /* important (hide the items outside the div) */
+/* non-important styling bellow */
+background: #F0F0F0;
+}
+
+#carousel_ul {
+position:relative;
+left:-210px; /* important (this should be negative number of list items width(including margin) */
+list-style-type: none; /* removing the default styling for unordered list items */
+margin: 0px;
+padding: 0px;
+width:9999px; /* important */
+/* non-important styling bellow */
+padding-bottom:10px;
+}
+
+#carousel_ul li{
+float: left; /* important for inline positioning of the list items */                                    
+width:200px;  /* fixed width, important */
+/* just styling bellow*/
+padding:0px;
+height:200px;
+background: #000000;
+margin-top:10px;
+margin-bottom:10px; 
+margin-left:5px; 
+margin-right:5px; 
+}
+
+#carousel_ul li img {
+margin-bottom:-4px; /* IE is making a 4px gap bellow an image inside of an anchor so this is to fix that*/
+/* styling */
+cursor:pointer;
+cursor: hand; 
+border:0px; 
+}
+#left_scroll, #right_scroll{
+float:left; 
+height:220px; 
+width:15px; 
+background: #C0C0C0; 
+}
+#left_scroll img, #right_scroll img{
+/*styling*/
+cursor: pointer;
+cursor: hand;
+}
+	body {
+		font-family: Helvetica;
+		font-size: 14px;
+		font-weight: normal;
+		color: #000;
+	}
+        
+    select {
+		font-family: Helvetica;
+		font-size: 11px;
+		color: #000;
+        background: #F0F0F0;
+	}
+        	
+	h3 {
+		margin: 0px;
+		padding: 0px;	
+	}
+
+	.suggestionsBox {
+		position: relative;
+		left: 0px;
+                top: 0px;
+		margin: 0px 0px 0px 0px;
+		width: 200px;
+		background-color: #212427;
+		-moz-border-radius: 7px;
+		-webkit-border-radius: 7px;
+		border: 2px solid #000;	
+		color: #fff;
+                overflow: visible;
+	}
+	
+	.suggestionList {
+		margin: 0px;
+		padding: 0px;
+	}
+	
+	.suggestionList li {
+		
+		margin: 0px 0px 3px 0px;
+		padding: 3px;
+		cursor: pointer;
+	}
+	
+	.suggestionList li:hover {
+		background-color: #659CD8;
+	}
+		
+</style>
+
+<script type="text/javascript">
+
+        function searchclick() {
+            mysubmit();
+        }
+        function golink(inputString, queryString) {
+            //alert(queryString);
+            //alert($('#inputString').valueOf());
+            //$('#inputString').val("hello");
+            window.location = inputString;
+        }
+
+
+        function togglechk(status) {
+            $(".checkbox").each( function() {
+            $(this).attr("checked",status);
+            })
+        }
+
+       function getUrlVars()
+        {
+           var vars = [], hash;
+            var hashes = window.location.href.slice(window.location.href.indexOf('?') + 1).split('&');
+            for(var i = 0; i < hashes.length; i++)
+            {
+                hash = hashes[i].split('=');
+                vars.push(hash[0]);
+                vars[hash[0]] = hash[1];
+            }
+            return vars;
+        }
+       
+	function lookup(inputString) {
+            
+                $('#dosubmit').val("1");
+                
+		if(inputString.length == 0) {
+			// Hide the suggestion box.
+			$('#suggestions').hide();
+		} else {
+			$.post("rpc.php", {queryString: ""+inputString+""}, function(data){
+				if(data.length >0) {
+					$('#suggestions').show();
+					$('#autoSuggestionsList').html(data);
+				}
+			});
+                        $('#datestr').val("");
+                }
+	} // lookup
+	
+	function fill(thisValue) {
+                $('#inputString').val(thisValue);
+		var ds = $('#dosubmit').val();
+                //alert(ds);
+		setTimeout("$('#suggestions').hide();", 200);
+                if (ds == "1") {
+                    //setTimeout(mysubmit, 200);
+                    mysubmit();
+                }
+	}
+        
+        function do_photo() {
+            
+            if ( $('#inputString').val() == ".photo" || 
+                 $('#inputString').val() == ".music" ||
+                 $('#inputString').val() == ".all" ||
+                 $('#inputString').val() == ".video" ||
+                 $('#inputString').val() == ".document" ||
+                 $('#inputString').val() == ".doc" ||
+                 $('#inputString').val() == ".xls" ||
+                 $('#inputString').val() == ".ppt" ||
+                 $('#inputString').val() == ".pdf")                 
+                $('#inputString').val(".photo");
+            
+            $('#inputType').val(".photo");
+            
+            $('#typ1').removeClass("active");
+            $('#typ2').addClass("active");
+            $('#typ3').removeClass("active");
+            $('#typ4').removeClass("active");
+            $('#typ5').removeClass("active");
+            $('#typ6').removeClass("active");
+            $('#typ7').removeClass("active");
+            $('#typ8').removeClass("active");
+            $('#typ9').removeClass("active");
+            
+            $('#typ2').css('color', 'red');
+            
+            updateSearchField();
+            mysubmit();
+        }
+
+        function do_music() {
+            
+            if ( $('#inputString').val() == ".photo" || 
+                 $('#inputString').val() == ".music" ||
+                 $('#inputString').val() == ".all" ||
+                 $('#inputString').val() == ".video" ||
+                 $('#inputString').val() == ".document" ||
+                 $('#inputString').val() == ".doc" ||
+                 $('#inputString').val() == ".xls" ||
+                 $('#inputString').val() == ".ppt" ||
+                 $('#inputString').val() == ".pdf")
+                 $('#inputString').val(".music");
+            
+
+            $('#inputType').val(".music");
+            
+            $('#typ1').removeClass("active");
+            $('#typ2').removeClass("active");
+            $('#typ3').addClass("active");
+            $('#typ4').removeClass("active");
+            $('#typ5').removeClass("active");
+            $('#typ6').removeClass("active");
+            $('#typ7').removeClass("active");
+            $('#typ8').removeClass("active");
+            $('#typ9').removeClass("active");
+
+
+            updateSearchField();
+            mysubmit();
+        }
+
+        function do_all(submit) {
+            
+            if ( $('#inputString').val() == ".photo" || 
+                 $('#inputString').val() == ".music" ||
+                 $('#inputString').val() == ".all" ||
+                 $('#inputString').val() == ".video" ||
+                 $('#inputString').val() == ".document" ||
+                 $('#inputString').val() == ".doc" ||
+                 $('#inputString').val() == ".xls" ||
+                 $('#inputString').val() == ".ppt" ||
+                 $('#inputString').val() == ".pdf")
+                 $('#inputString').val(".all");
+            
+            
+            $('#inputType').val(".all");
+            
+            $('#typ1').addClass("active");
+            $('#typ2').removeClass("active");
+            $('#typ3').removeClass("active");
+            $('#typ4').removeClass("active");
+            $('#typ5').removeClass("active");
+            $('#typ6').removeClass("active");
+            $('#typ7').removeClass("active");
+            $('#typ8').removeClass("active");
+            $('#typ9').removeClass("active");
+
+
+            if(submit){
+                    updateSearchField();
+                    mysubmit();
+            }
+
+        }
+
+        function do_video() {
+            if ( $('#inputString').val() == ".photo" || 
+                 $('#inputString').val() == ".music" ||
+                 $('#inputString').val() == ".all" ||
+                 $('#inputString').val() == ".video" ||
+                 $('#inputString').val() == ".document" ||
+			 	 $('#inputString').val() == ".doc" ||
+                 $('#inputString').val() == ".xls" ||
+                 $('#inputString').val() == ".ppt" ||
+                 $('#inputString').val() == ".pdf")
+                $('#inputString').val(".video");
+            
+
+            $('#inputType').val(".video");
+            
+            $('#typ1').removeClass("active");
+            $('#typ2').removeClass("active");
+            $('#typ3').removeClass("active");
+            $('#typ4').addClass("active");
+            $('#typ5').removeClass("active");
+            $('#typ6').removeClass("active");
+            $('#typ7').removeClass("active");
+            $('#typ8').removeClass("active");
+            $('#typ9').removeClass("active");
+
+
+            updateSearchField();
+            mysubmit();
+        }
+        
+        function do_documents() {
+            if ( $('#inputString').val() == ".photo" || 
+                 $('#inputString').val() == ".music" ||
+                 $('#inputString').val() == ".all" ||
+                 $('#inputString').val() == ".video" ||
+                 $('#inputString').val() == ".document" ||
+                 $('#inputString').val() == ".doc" ||
+                 $('#inputString').val() == ".xls" ||
+                 $('#inputString').val() == ".ppt" ||
+                 $('#inputString').val() == ".pdf")
+                 $('#inputString').val(".document");
+            
+
+            $('#inputType').val(".document");
+            
+            $('#typ1').removeClass("active");
+            $('#typ2').removeClass("active");
+            $('#typ3').removeClass("active");
+            $('#typ4').removeClass("active");
+            $('#typ5').removeClass("active");
+            $('#typ6').removeClass("active");
+            $('#typ7').removeClass("active");
+            $('#typ8').removeClass("active");
+            $('#typ9').addClass("active");
+
+            updateSearchField();
+            mysubmit();
+        }
+        
+        function do_office_doc() {
+
+            if ( $('#inputString').val() == ".photo" || 
+                 $('#inputString').val() == ".music" ||
+                 $('#inputString').val() == ".all" ||
+                 $('#inputString').val() == ".video" ||
+                 $('#inputString').val() == ".document" ||
+                 $('#inputString').val() == ".doc" ||
+                 $('#inputString').val() == ".xls" ||
+                 $('#inputString').val() == ".ppt" ||
+                 $('#inputString').val() == ".pdf") 
+                 $('#inputString').val(".doc");
+            
+
+            $('#inputType').val(".doc");
+            
+            $('#typ1').removeClass("active");
+            $('#typ2').removeClass("active");
+            $('#typ3').removeClass("active");
+            $('#typ4').removeClass("active");
+            $('#typ5').addClass("active");
+            $('#typ6').removeClass("active");
+            $('#typ7').removeClass("active");
+            $('#typ8').removeClass("active");
+            $('#typ9').removeClass("active");
+
+
+            updateSearchField();
+            mysubmit();
+        }
+        
+        function do_office_xls() {
+            
+            if ( $('#inputString').val() == ".photo" || 
+                 $('#inputString').val() == ".music" ||
+                 $('#inputString').val() == ".all" ||
+                 $('#inputString').val() == ".video" ||
+                 $('#inputString').val() == ".document" ||
+                 $('#inputString').val() == ".doc" ||
+                 $('#inputString').val() == ".xls" ||
+                 $('#inputString').val() == ".ppt" ||
+                 $('#inputString').val() == ".pdf")
+                 $('#inputString').val(".xls");
+            
+            
+            $('#inputType').val(".xls");
+            
+            $('#typ1').removeClass("active");
+            $('#typ2').removeClass("active");
+            $('#typ3').removeClass("active");
+            $('#typ4').removeClass("active");
+            $('#typ5').removeClass("active");
+            $('#typ6').addClass("active");
+            $('#typ7').removeClass("active");
+            $('#typ8').removeClass("active");
+            $('#typ9').removeClass("active");
+
+            updateSearchField();
+            mysubmit();
+        }
+        
+        function do_office_ppt() {
+            
+            if ( $('#inputString').val() == ".photo" || 
+                 $('#inputString').val() == ".music" ||
+                 $('#inputString').val() == ".all" ||
+                 $('#inputString').val() == ".video" ||
+                 $('#inputString').val() == ".document" ||
+                 $('#inputString').val() == ".doc" ||
+                 $('#inputString').val() == ".xls" ||
+                 $('#inputString').val() == ".ppt" ||
+                 $('#inputString').val() == ".pdf")
+                 $('#inputString').val(".ppt");
+            
+            
+            $('#inputType').val(".ppt");
+            
+            $('#typ1').removeClass("active");
+            $('#typ2').removeClass("active");
+            $('#typ3').removeClass("active");
+            $('#typ4').removeClass("active");
+            $('#typ5').removeClass("active");
+            $('#typ6').removeClass("active");
+            $('#typ7').addClass("active");
+            $('#typ8').removeClass("active");
+            $('#typ9').removeClass("active");
+
+            updateSearchField();
+            mysubmit();
+        }
+        
+        function do_pdf() {
+            if ( $('#inputString').val() == ".photo" || 
+                 $('#inputString').val() == ".music" ||
+                 $('#inputString').val() == ".all" ||
+                 $('#inputString').val() == ".video" ||
+                 $('#inputString').val() == ".document" ||
+                 $('#inputString').val() == ".doc" ||
+                 $('#inputString').val() == ".xls" ||
+                 $('#inputString').val() == ".ppt" ||
+                 $('#inputString').val() == ".pdf")
+                 $('#inputString').val(".pdf");
+            
+
+            $('#inputType').val(".pdf");
+            
+            $('#typ1').removeClass("active");
+            $('#typ2').removeClass("active");
+            $('#typ3').removeClass("active");
+            $('#typ4').removeClass("active");
+            $('#typ5').removeClass("active");
+            $('#typ6').removeClass("active");
+            $('#typ7').removeClass("active");
+            $('#typ8').addClass("active");
+            $('#typ9').removeClass("active");
+
+            updateSearchField();
+            mysubmit();
+        }
+        
+        function do_view_tile() {
+			
+			do_cpr_5(false);
+			
+            $('#inputView').val("tile");
+            
+            $('#vi1').addClass("active");
+            $('#vi2').removeClass("active");
+            $('#vi3').removeClass("active");
+            $('#vi4').removeClass("active");
+            $('#vi5').removeClass("active");
+
+            updateSearchField();
+            mysubmit();
+        }
+        
+        function do_view_detail() {
+			
+			do_cpr_1(false);
+            
+			$('#inputView').val("detail");
+            
+            $('#vi1').removeClass("active");
+            $('#vi2').addClass("active");
+            $('#vi3').removeClass("active");
+            $('#vi4').removeClass("active");
+            $('#vi5').removeClass("active");
+     
+            updateSearchField();
+            mysubmit();            
+        }
+        
+        function do_view_show() {
+            $('#inputView').val("show");
+            
+            $('#vi1').removeClass("active");
+            $('#vi2').removeClass("active");
+            $('#vi3').addClass("active");
+            $('#vi4').removeClass("active");
+            $('#vi5').removeClass("active");
+
+            updateSearchField();
+            mysubmit();            
+        }
+        
+        function do_view_polar() {
+            $('#inputView').val("polar");
+            
+            $('#vi1').removeClass("active");
+            $('#vi2').removeClass("active");
+            $('#vi3').removeClass("active");
+            $('#vi4').removeClass("active");
+            $('#vi5').addClass("active");
+
+            updateSearchField();
+            mysubmit();
+        }
+        
+        function do_view_caro() {
+            $('#inputView').val("caro");
+            
+            $('#vi1').removeClass("active");
+            $('#vi2').removeClass("active");
+            $('#vi3').removeClass("active");
+            $('#vi4').removeClass("active");
+            $('#vi5').addClass("active");
+
+            updateSearchField();
+            mysubmit();
+        }
+
+        
+        
+        function do_cpr_1(submit) {
+            $('#inputNumCol').val("1");
+            
+            $('#cpr1').addClass("active");
+            $('#cpr3').removeClass("active");
+            $('#cpr5').removeClass("active");
+            $('#cpr7').removeClass("active");
+            $('#cpr9').removeClass("active");
+
+			if(submit){
+                updateSearchField();
+				mysubmit();
+			}
+        }
+        function do_cpr_3() {
+            $('#inputNumCol').val("3");
+            
+            $('#cpr1').removeClass("active");
+            $('#cpr3').addClass("active");
+            $('#cpr5').removeClass("active");
+            $('#cpr7').removeClass("active");
+            $('#cpr9').removeClass("active");
+
+            updateSearchField();
+            mysubmit();
+        }
+        function do_cpr_5(submit) {
+            $('#inputNumCol').val("5");
+            
+            $('#cpr1').removeClass("active");
+            $('#cpr3').removeClass("active");
+            $('#cpr5').addClass("active");
+            $('#cpr7').removeClass("active");
+            $('#cpr9').removeClass("active");
+			if(submit){
+                updateSearchField();
+				mysubmit();
+			}
+        }
+        function do_cpr_7() {
+            $('#inputNumCol').val("7");
+            
+            $('#cpr1').removeClass("active");
+            $('#cpr3').removeClass("active");
+            $('#cpr5').removeClass("active");
+            $('#cpr7').addClass("active");
+            $('#cpr9').removeClass("active");
+
+            updateSearchField();
+            mysubmit();
+        }
+        function do_cpr_9() {
+            $('#inputNumCol').val("9");
+            
+            $('#cpr1').removeClass("active");
+            $('#cpr3').removeClass("active");
+            $('#cpr5').removeClass("active");
+            $('#cpr7').removeClass("active");
+            $('#cpr9').addClass("active");
+
+            updateSearchField();
+            mysubmit();
+        }
+
+        function do_res_25() {
+            $('#inputNumObj').val("25");
+            
+            $('#res25').addClass("active");
+            $('#res50').removeClass("active");
+            $('#res100').removeClass("active");
+            $('#res250').removeClass("active");
+            $('#res500').removeClass("active");
+
+            updateSearchField();
+            mysubmit();
+        }
+
+        function do_res_50() {
+            $('#inputNumObj').val("50");
+            
+            $('#res25').removeClass("active");
+            $('#res50').addClass("active");
+            $('#res100').removeClass("active");
+            $('#res250').removeClass("active");
+            $('#res500').removeClass("active");
+
+            updateSearchField();
+            mysubmit();
+        }
+
+        function do_res_100() {
+            $('#inputNumObj').val("100");
+            
+            $('#res25').removeClass("active");
+            $('#res50').removeClass("active");
+            $('#res100').addClass("active");
+            $('#res250').removeClass("active");
+            $('#res500').removeClass("active");
+
+            updateSearchField();
+            mysubmit();
+        }
+
+        function do_res_250() {
+            $('#inputNumObj').val("250");
+            
+            $('#res25').removeClass("active");
+            $('#res50').removeClass("active");
+            $('#res100').removeClass("active");
+            $('#res250').addClass("active");
+            $('#res500').removeClass("active");
+
+            updateSearchField();
+            mysubmit();
+        }
+        
+        function do_res_500() {
+            $('#inputNumObj').val("500");
+            
+            $('#res25').removeClass("active");
+            $('#res50').removeClass("active");
+            $('#res100').removeClass("active");
+            $('#res250').removeClass("active");
+            $('#res500').addClass("active");
+
+            updateSearchField();
+            mysubmit();
+        }
+        
+        function do_time_all(submit) {
+            $('#inputNumDays').val("");
+            
+            $('#timeall').addClass("active");
+            $('#time24h').removeClass("active");
+            $('#time3d').removeClass("active");
+            $('#time7d').removeClass("active");
+            $('#time14d').removeClass("active");
+            $('#time30d').removeClass("active");
+            $('#time365d').removeClass("active");
+            if (submit) {
+                updateSearchField();
+                mysubmit();
+            }
+        }
+        
+        function do_time_24h() {
+            $('#inputNumDays').val("1");
+            
+            $('#timeall').removeClass("active");
+            $('#time24h').addClass("active");
+            $('#time3d').removeClass("active");
+            $('#time7d').removeClass("active");
+            $('#time14d').removeClass("active");
+            $('#time30d').removeClass("active");
+            $('#time365d').removeClass("active");
+            updateSearchField();
+            mysubmit();
+        }
+        function do_time_3d() {
+            $('#inputNumDays').val("3");
+            
+            $('#timeall').removeClass("active");
+            $('#time24h').removeClass("active");
+            $('#time3d').addClass("active");
+            $('#time7d').removeClass("active");
+            $('#time14d').removeClass("active");
+            $('#time30d').removeClass("active");
+            $('#time365d').removeClass("active");
+            updateSearchField();
+            mysubmit();
+        }
+        function do_time_7d() {
+            $('#inputNumDays').val("7");
+            
+            $('#timeall').removeClass("active");
+            $('#time24h').removeClass("active");
+            $('#time3d').removeClass("active");
+            $('#time7d').addClass("active");
+            $('#time14d').removeClass("active");
+            $('#time30d').removeClass("active");
+            $('#time365d').removeClass("active");
+            updateSearchField();
+            mysubmit();
+        }
+        
+        function do_time_14d() {
+            $('#inputNumDays').val("14");
+            
+            $('#timeall').removeClass("active");
+            $('#time24h').removeClass("active");
+            $('#time3d').removeClass("active");
+            $('#time7d').removeClass("active");
+            $('#time14d').addClass("active");
+            $('#time30d').removeClass("active");
+            $('#time365d').removeClass("active");
+            updateSearchField();
+            mysubmit();
+        }
+        
+        function do_time_30d() {
+            $('#inputNumDays').val("30");
+            
+            $('#timeall').removeClass("active");
+            $('#time24h').removeClass("active");
+            $('#time3d').removeClass("active");
+            $('#time7d').removeClass("active");
+            $('#time14d').removeClass("active");
+            $('#time30d').addClass("active");
+            $('#time365d').removeClass("active");
+            updateSearchField();
+            mysubmit();
+        }
+        function do_time_365d() {
+            $('#inputNumDays').val("365");
+            
+            $('#timeall').removeClass("active");
+            $('#time24h').removeClass("active");
+            $('#time3d').removeClass("active");
+            $('#time7d').removeClass("active");
+            $('#time14d').removeClass("active");
+            $('#time30d').removeClass("active");
+            $('#time365d').addClass("active");
+            updateSearchField();
+            mysubmit();
+        }
+
+
+        function updateSearchField(){
+            /*
+                var frameResult = top.frames["MAIN1"].document.getElementById("MAINRESULT").contentDocument;
+                var frameFilter = top.frames["MAIN1"].document.getElementById("MAINFILTER").contentDocument;
+
+                $(frameFilter).find('#inputString').val($(frameResult).find('#inputString').val());
+                */
+        }
+        
+        function mysubmit() {
+                //alert('mysubmit');
+
+
+                
+                
+                var re = "undefined";
+                var mystring = $('#datestr').val();
+                
+                //console.log(mystring.toString());
+                
+                if (mystring == "undefined") {
+                    //console.log("is undefined.");
+                    $('#datestr').val("");
+                }
+                
+                //hide the suggestions
+                setTimeout("$('#suggestions').hide();", 200);
+                    
+                var parentElement = top.frames["MAIN1"].document.getElementById("MAINRESULT");
+                var screenSize = $(parentElement).width();
+                $('#screenSize').val(screenSize);
+                
+
+                //submit the form
+                $('#frm1').submit();
+
+
+                //document.getElemenById("frm1").submit();
+                //this.form.submit();     
+                dowait();
+		}
+		
+		function SetMouseHourglass(){
+			for (var i = 0; i < window.parent.frames.length; i++){
+			  window.parent.frames[i].document.body.style.cursor = 'wait';
+			}
+			
+			for (var i = 0; i < window.parent.parent.frames.length; i++){
+			  window.parent.parent.frames[i].document.body.style.cursor = 'wait';
+			}
+
+			return false;
+	    }
+
+        function dowait() {
+            CursorToHourglass();
+            showLoading();
+            //$('#plw').css('background', 'rgb(252,240,173)');
+            //$('#plw').css('color', 'black');            
+        }
+
+        function CursorToHourglass()
+        {
+          $('*', window.parent.parent.NAVBAR.document).css("cursor", "wait");
+          $('*', window.parent.SIDEBAR.document).css("cursor", "wait");
+          $('*', window.parent.parent.MAIN.document).css("cursor", "wait");
+          $('*', window.parent.parent.MAIN1.document).css("cursor", "wait");
+        }
+          
+
+		
+		function clearFilters(){
+			do_all(false);
+			do_time_all(false);
+		}
+		
+
+
+        
+</script>
+
+<script type="text/javascript">
+
+  
+  $(document).ready(function() {
+
+        var pVal2 = getUrlVars()["foo"];
+		 
+
+        //var pVal = "";
+        //if (typeof pVal2 === "undefined") {
+        //    var pVal2 = "a";
+        //}
+        try{
+			if (pVal2.length > 0) {
+				var pVal = decodeURIComponent(pVal2);
+			}
+			$('#inputString').val(pVal);
+		}catch(e){}
+             //Default values for filters
+		
+	    var pVal = getUrlVars()["ftype"];
+		if(typeof pVal != "undefined" && pVal!=null && pVal.length>0){
+			$('#inputType').val(pVal);
+		}else{
+			$('#inputType').val('.all');
+		}
+
+        var pVal = getUrlVars()["view"];
+        if(typeof pVal != "undefined" && pVal!=null && pVal.length>0){
+			$('#inputView').val(pVal);
+		}else{
+			$('#inputView').val('tile');
+		}
+
+        var pVal = getUrlVars()["numobj"];
+		if(typeof pVal != "undefined" && pVal!=null && pVal.length>0){
+			$('#inputNumObj').val(pVal);
+		}else{
+			$('#inputNumObj').val('25');
+		}
+        
+        var pVal = getUrlVars()["numcol"];
+		if(typeof pVal != "undefined" && pVal!=null && pVal.length>0){
+			$('#inputNumCol').val(pVal);
+		}else{
+			$('#inputNumCol').val('5');
+		}
+		
+        var pVal = getUrlVars()["days"];
+		if(typeof pVal != "undefined" && pVal!=null && pVal.length>0){
+			$('#inputNumDays').val(pVal);
+		}else{
+			$('#inputNumDays').val('');
+		}
+
+	
+        //move he last list item before the first item. The purpose of this is if the user clicks to slide left he will be able to see the last item.
+        $('#carousel_ul li:first').before($('#carousel_ul li:last')); 
+        
+        
+        //when user clicks the image for sliding right        
+        $('#right_scroll img').click(function(){
+        
+            //get the width of the items ( i like making the jquery part dynamic, so if you change the width in the css you won't have o change it here too ) '
+            var item_width = $('#carousel_ul li').outerWidth() + 10;
+            
+            //calculae the new left indent of the unordered list
+            var left_indent = parseInt($('#carousel_ul').css('left')) - item_width;
+            
+            //make the sliding effect using jquery's anumate function '
+            $('#carousel_ul:not(:animated)').animate({'left' : left_indent},500,function(){    
+                
+                //get the first list item and put it after the last list item (that's how the infinite effects is made) '
+                $('#carousel_ul li:last').after($('#carousel_ul li:first')); 
+                
+                //and get the left indent to the default -210px
+                $('#carousel_ul').css({'left' : '-210px'});
+            }); 
+        });
+        
+        //when user clicks the image for sliding left
+        $('#left_scroll img').click(function(){
+            
+            var item_width = $('#carousel_ul li').outerWidth() + 10;
+            
+            /* same as for sliding right except that it's current left indent + the item width (for the sliding right it's - item_width) */
+            var left_indent = parseInt($('#carousel_ul').css('left')) + item_width;
+            
+            $('#carousel_ul:not(:animated)').animate({'left' : left_indent},500,function(){    
+            
+            /* when sliding to left we are moving the last item before the first list item */            
+            $('#carousel_ul li:first').before($('#carousel_ul li:last')); 
+            
+            /* and again, when we make that change we are setting the left indent of our unordered list to the default -210px */
+            $('#carousel_ul').css({'left' : '-210px'});
+            });
+            
+            
+        });
+        
+       //$('a').click(function() {
+       //      var a = $(this).attr('id');
+        //     alert(a);
+         //    /* window.open(this.href,'name','options'); */
+         //    window.open($(this).attr('href'));
+         //    return false;
+        //});
+		 
+		//Si se pasó una busqueda desde el plugin se lanza aqui
+		var page = getUrlVars()["page"];
+
+        //var pVal = "";
+        //if (typeof pVal2 === "undefined") {
+        //    var pVal2 = "a";
+        //}
+        
+		if(page=='mainresult'){
+			var pVal='';
+			var pVal2 = getUrlVars()["foo2"] ;
+			if (typeof pVal2 != "undefined" && pVal2.length > 0) {
+				pVal = decodeURIComponent(pVal2);
+			}else{
+				pVal2 = getUrlVars()["foo"];
+			}
+			
+			if (typeof pVal2 != "undefined" && pVal2.length > 0) {
+				pVal = decodeURIComponent(pVal2);
+			}
+			$('#inputString').val(pVal);
+			
+			searchclick();
+		}
+		
+        //updateTags();               
+        //setTimeout("timerTags()", 5000);
+		//alert('looper?' + $('#loop_tags').html());
+			var interval = 15000;   //number of mili seconds between each call
+						var refresh = function() {
+						   if ($('#loop_tags').html() == "xxx") {$.ajax({
+								url: "gettags.fn",
+								async: false,
+								cache: false,
+								beforeSend: function() {
+								   $('#res').html('<img src="ajax-loader.gif" />');
+								},
+								success: function(html) {
+									$('#tags_all').html(html);
+									//alert('looper' + $('#loop_tags').html());
+									 
+								}
+							}
+							
+							);
+							}
+							setTimeout(function() {
+											 refresh();
+									}, interval);
+						};
+			refresh();	
+		
+
+  });
+
+    function timerTags() {
+		console.log("loop = " + $('#loop_tags').html());
+        if ($('#loop_tags').html() == "true")  {
+            updateTags();
+			console.log("[1]");
+            setTimeout("timerTags()", 60000);
+        }
+        else {
+			console.log("[2]");
+            setTimeout("timerTags()", 5000);
+        }
+    }
+
+
+    function search_query(query){
+        if  ((query != null) && (query.charAt(0) != '\"') && (query.charAt(query.length-1) != '\"')){
+            if (query.indexOf(" ") != -1){
+                $('#inputString').val("\""+query+"\"");
+            }
+            else {
+                $('#inputString').val(query);
+            }
+        }
+        else {
+            $('#inputString').val(query);
+        }
+        mysubmit();
+    }
+</script>
+<div style="background-color:#EEEEEE;color:black;border-bottom:0px solid lightgrey">
+</div>
+    <form class="form-search "id="frm1" action="echoClient5.htm" target="MAIN" method=get autocomplete="off" >											
+		<div style="background-color:#EEEEEE;color:black;border-right:1px solid lightgrey">
+                                            <select style="display:none" class ="span2" name="ftype" id="inputType" onchange="mysubmit()">
+                                                    <option value=".all" selected><p style="color:green">All Files</p></option>
+                                                    <option value=".photo"><p style="color:green">Photos</p></option>
+                                                    <option value=".document">Document</option>
+                                                    <option value=".music">Music</option>
+                                                    <option value=".video">Videos</option>
+                                                    <option value=".doc">.DOC</option>
+                                                    <option value=".xls">.XLS</option>
+                                                    <option value=".ppt">.PPT</option>                                            
+                                                    <option value=".pdf">.PDF</option>                                            
+                                            </select> 
+                                                                               
+                                        <input type="hidden" name="date" value="" id="datestr"/>
+                                        <input type="hidden" name="dosubmit" value="1" id="dosubmit"/>
+                                        <input type="hidden" name="screenSize" id="screenSize"/>
+                                                            
+                                        <select class ="span2" style="display:none" name="days" id="inputNumDays" onchange="mysubmit()">
+                                            <option value="" selected>All time</option>
+                                            <option  value="1">Past 24h</option>
+                                            <option  value="3">Part 3 days</option>
+                                            <option  value="7">Part 7 days</option>
+                                            <option  value="14">Part 14 days</option>
+                                            <option  value="30">Past 30 days</option>
+                                            <option value="90">Past 90 days</option>
+                                            <option  value="180">Past 180 days</option>
+                                            <option  value="365">Past 365 days</option>
+                                        </select>
+                                        
+                                        <select class ="span2" style="display:none" name="view" id="inputView" onchange="mysubmit()">
+                                            <option value="detail">Detailed View</option>
+                                            <option value="show">Slideshow</option>
+                                            <option value="show2">Slideshow2</option>
+                                            <option value="tile" selected>Tile View</option>
+                                            <option value="polar">Polar View</option>
+                                            <option value="caro">Carousel View</option>
+                                        </select>
+                      
+                                        <select class ="span2" style="display:none" name="numobj" id="inputNumObj" onchange="mysubmit()">
+                                            <option value="25" selected>Show 25 results</option>
+                                            <option value="50">Show 50 results</option>
+                                            <option value="100">Show 100 results</option>
+                                            <option value="250">Show 250 results</option>
+                                            <option value="500">Show 500 results</option>
+                                       </select>
+                                            
+                                            
+                                        <select class ="span2" style="display:none" name="numcol" id="inputNumCol" onchange="mysubmit()">
+                                            <option value="1">Show 1 per row</option>
+                                            <option value="3">Show 3 per row</option>
+                                            <option value="5" selected>Show 5 per row</option>
+                                            <option value="7">Show 7 per row</option>
+                                            <option value="9">Show 9 per row</option>
+                                        </select>
+                                        
+                                        
+                                        <input class ="span2" type="hidden" name="pw" value="xyzzy2011">   
+                                            
+                                            <br>
+                                            &nbsp<b>FILE TYPE</b><br>
+                                             <ul class="pepe nav nav-list">
+                                                <li id="typ1" onclick="do_all(true)" class="active"><a href="#" style=" "><i class="icon-globe  "></i>All Types&nbsp&nbsp&nbsp<div class="badge" id="n_total"></div></a></li>
+                                                <li id="typ2" onclick="do_photo()"><a href="#"><i class="icon-camera  "></i>Photos&nbsp&nbsp&nbsp<div class="badge" id="n_photo"></div></a></li>
+                                                <li id="typ3"onclick="do_music()"><a href="#"><i class="icon-music"></i>Music&nbsp&nbsp&nbsp<div class="badge" id="n_music"></div></a></li>
+                                                <li id="typ4"onclick="do_video()"><a href="#" style=" "><i class="icon-facetime-video  "></i>Videos&nbsp&nbsp&nbsp<div class="badge" id="n_video"></div></a></li>
+                                                <li id="typ9"onclick="do_documents()"><a href="#" style=" "><i class="icon-briefcase  "></i>Documents&nbsp&nbsp&nbsp<div class="badge" id="n_docu"></div></a></li>
+                                                <li id="typ5"onclick="do_office_doc()"><a href="#" style=" "><i class="icon-briefcase  "></i>.doc&nbsp&nbsp&nbsp<div class="badge" id="n_doc"></div></a></li>
+                                                <li id="typ6"onclick="do_office_xls()"><a href="#" style=" "><i class="icon-briefcase  "></i>.xls&nbsp&nbsp&nbsp<div class="badge" id="n_xls"></div></a></li>
+                                                <li id="typ7"onclick="do_office_ppt()"><a href="#" style=" "><i class="icon-briefcase  "></i>.ppt&nbsp&nbsp&nbsp<div class="badge" id="n_ppt"></div></a></li>
+                                                <li id="typ8"onclick="do_pdf()"><a href="#" style=" "><i class="icon-briefcase  "></i>.pdf&nbsp&nbsp&nbsp<div class="badge" id="n_pdf"></div></a></li>
+                                            </ul> 
+                                            
+                                            &nbsp<b>TIME RANGE</b><br>
+
+                                            <ul class="nav nav-list" style="color:red">
+                                                <li id="time24h" onclick="do_time_24h()"><a href="#" style=" "><i class="icon-time  "></i>Today&nbsp&nbsp<div class="badge" id="n_past24h"></div></a></li>
+                                                <li id="time3d" onclick="do_time_3d()"><a href="#" style=" "><i class="icon-time  "></i>Past 3 days&nbsp&nbsp<div class="badge" id="n_past3d"></div></a></li>
+                                                <li id="time7d" onclick="do_time_7d()"><a href="#" style=" "><i class="icon-time  "></i>This Week&nbsp&nbsp<div class="badge" id="n_past7d"></div></a></li>
+                                                <li id="time14d" onclick="do_time_14d()"><a href="#" style=" "><i class="icon-time  "></i>Past 2 Weeks&nbsp&nbsp<div class="badge" id="n_past14d"></div></a></li>
+                                                <li id="time30d" onclick="do_time_30d()"><a href="#" style=" "><i class="icon-time  "></i>This Month&nbsp&nbsp<div class="badge" id="n_past30d"></div></a></li>
+                                                <li id="time365d" onclick="do_time_365d()"><a href="#" style=" "><i class="icon-time  "></i>This Year&nbsp&nbsp<div class="badge" id="n_past365d"></div></a></li>
+                                                <li id="timeall" onclick="do_time_all(true)" class="active"><a href="#" style=" "><i class="icon-time  "></i>All Time&nbsp&nbsp<div class="badge" id="n_alltime"></div></a></li>
+                                            </ul> 
+                                            
+                                            &nbsp<b>TAGS</b><br>
+
+                                            <div class="tags_div" id="tags_div">
+                                                <p/>
+                                                <span id="tags_all"></span>
+                                                <span id="loop_tags" style="display:none"></span>
+                                                <!--
+                                                <a href="" >[View all tags]</a>
+                                                -->
+                                            </div>
+                                            
+                                                
+                                            <div class="input-append" style="width:100%;">       
+                                                    <input type="hidden" style="width:65%;" class="search-query span1" name ="foo" id="inputString" onkeypress="clearFilters();"  onkeyup="lookup(this.value);" placeholder="Search"/>                                                
+                                                    <!--<span class="add-on btn btn-primary"><i class="icon-search icon-white" onclick="searchclick();"></i></span>-->
+
+                                            </div>
+                                            <div class="suggestionsBox" id="suggestions" style="display: none; overflow: visible">
+                                                    <div class="suggestionList" id="autoSuggestionsList">
+                                                            &nbsp;
+                                                    </div>
+                                            </div>                             
+		</div>                                        			
+                    </form>                
+
+  
+</body>
+</html>

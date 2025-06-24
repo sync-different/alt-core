@@ -1,0 +1,391 @@
+
+<div class="modal fade" id="clusterform">
+  <div class="modal-dialog">
+	<div class="modal-content" style="width: 120%;">
+		<div  class="position-relative" align="center"  style="padding-top: 0px;height:41px;background-color:rgb(42,42,42);color:white;">
+			Add or edit cluster
+			<button type="button" class="close" ng-click="close()"style="color:white;margin-top: 10px;margin-right: 10px;position:absolute;right:10px;top: 1px;">X</button>
+		</div>
+		<div  class="position-relative"   style="padding-top: 50px;padding-left:20px;padding-right:20px;height:250px;">
+			<img src="img/loading_spinner.gif" id="clusterformimgloading" width="50px" style="position: absolute;left: 39%;top: 49%;z-index: 9999;display:none;"/>
+			<uib-alert  ng-repeat="alert in alertsClusters" type="danger" close="closeAlert($index)">{{alert.msg}}</uib-alert>
+			<table>
+				<tr><td>Cluster URL*</td><td><input type="text"  style="width:422px;" ng-model="clusterURL" ng-disabled="true"/></td></tr>
+				<tr><td>Cluster Name*</td><td><input type="text" style="width:422px;" ng-model="clusterName"/></td></tr>
+				<tr><td>Cluster User*</td><td><input type="text" style="width:422px;" ng-model="user"/></td></tr>
+				<tr><td>Cluster Password*</td><td><input type="password" style="width:422px;" ng-model="password"/></td></tr>
+			</table>	
+		</div>
+		<div class="row" style="height:50px;">
+			<button type="button" class="btn" ng-click="close()" style="position:absolute;right:160px;">Cancel</button>
+			<button type="button" class="btn btn-primary" ng-click="acceptCluster()" style="position:absolute;right:70px;">Accept</button>
+		</div>
+	</div>
+  </div>
+</div>
+
+<div class="modal fade" id="popupmsg2">
+  <div class="modal-dialog">
+	<div class="modal-content">
+		<div  class="position-relative" align="center"  style="padding-top: 0px;height:41px;background-color:rgb(42,42,42);">
+			<button type="button" class="close" ng-click="closePupup()"style="color:white;margin-top: 10px;margin-right: 10px;position:absolute;right:10px;top: 1px;">X</button>
+		</div>
+		<div  class="position-relative"   style="padding-top: 50px;padding-left:20px;padding-right:20px;height:70px;">
+			{{popupmsg}}
+		</div>
+		<div class="row" style="height:50px;">
+			<button type="button" class="btn btn-primary" ng-click="acceptPopup()" style="position:absolute;right:160px;">Accept</button>
+			<button type="button" class="btn btn-primary" ng-click="closePopup()" style="position:absolute;right:70px;">Cancel</button>
+		</div>
+	</div>
+  </div>
+</div>
+
+
+<div class="modal fade" id="popupmsg">
+  <div class="modal-dialog">
+	<div class="modal-content">
+		<div  class="position-relative" align="center"  style="padding-top: 0px;height:41px;background-color:rgb(42,42,42);">
+			<button type="button" class="close" ng-click="closePupup()"style="color:white;margin-top: 10px;margin-right: 10px;position:absolute;right:10px;top: 1px;">X</button>
+		</div>
+		<div  class="position-relative"   style="padding-top: 50px;padding-left:20px;padding-right:20px;height:250px;">
+			{{popupmsg}}
+		</div>
+		<div class="row" style="height:50px;">
+			<button type="button" class="btn btn-primary" ng-click="closePupup()" style="position:absolute;right:70px;">Close</button>
+		</div>
+	</div>
+  </div>
+</div>
+ 
+  
+<div class="modal fade" id="imageview" tabindex="-1" role="dialog" aria-labelledby="imageviewLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-fullscreen-md-down" role="document">
+        <div class="modal-content bg-dark text-white">
+            <div class="position-relative p-3">
+                <div class="d-flex justify-content-between align-items-center">
+                    <h4 id="header" class="mb-0">{{activeSlide + 1}} / {{slides.length}}</h4>
+                    <div class="d-flex align-items-center">
+                        <div id="slider" ui-slider="slider.options" min="0" max="20000" ng-model="sliderValue"></div>
+                        <label class="ml-3 sliderText">{{(sliderValue / 1000).toFixed(0)}} s/pic</label>
+                    </div>
+                    <div class="d-flex align-items-center justify-content-end" style="gap: 20px;">
+                        <a href="{{download}}" class="text-white" download="{{name}}">
+                            <i class="fas fa-download"></i>
+                        </a>
+                        <button type="button" class="btn-close text-white bg-transparent border-0" style="font-size: 24px;" aria-label="Close" ng-click="close()">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+            <div class="d-flex" style="height: 80vh;">
+                <div class="flex-grow-1 position-relative" style="overflow: hidden; max-width: 65%;">
+                    <img src="img/loading_spinner.gif" id="imgloading" class="position-absolute" style="left: 50%; top: 50%; transform: translate(-50%, -50%); width: 50px; z-index: 9999;">
+                    <div class="swiper-container" style="width: 100%; height: 100%; position: relative;">
+                        <div class="swiper-wrapper">
+                            <div class="swiper-slide" ng-repeat="slide in slides">
+                                <img ng-src="{{slide.image}}" alt="Image" style="width: 100%; height: 100%; object-fit: contain; display: block; margin: auto;">
+                            </div>
+                        </div>
+                        <div class="swiper-button-next" style="z-index: 10;"></div>
+                        <div class="swiper-button-prev" style="z-index: 10;"></div>
+                        <div class="swiper-pagination" style="z-index: 10;"></div>
+                    </div>
+                </div>
+                <div class="rightBarImage p-3 d-flex flex-column" style="width: 35%; background: #f9f9f9; border-left: 1px solid #ccc; z-index: 1;">
+                    <div class="row mt-3 ms-0">
+                        <table class="w-100">
+                            <tr style="border-bottom: inset rgb(240,242,246);">
+                                <td class="text-center" style="border-right: inset rgb(240,242,246); width: 45px;">
+                                    <i class="fas fa-heart me-1 text-dark" style="cursor: pointer;" ng-click="like()"></i>
+                                    <label class="text-dark">{{likes}}</label>
+                                </td>
+                                <td class="text-center" ng-click="showComments='comment';" ng-class="{activeTab: showComments == 'comment'}">
+                                    <i class="fas fa-comments text-dark"></i>
+                                </td>
+                                <td class="text-center" ng-click="showComments='images';" ng-class="{activeTab: showComments == 'images'}">
+                                    <i class="fas fa-images text-dark"></i>
+                                </td>
+                                <td class="text-center" ng-click="showComments='tags';" ng-class="{activeTab: showComments == 'tags'}">
+                                    <i class="fas fa-tags text-dark"></i>
+                                </td>
+                            </tr>
+                        </table>
+                    </div>
+
+                    <div class="flex-grow-1 overflow-auto">
+                        <div id="commentscontainer" ng-show="showComments == 'comment'" class="w-100">
+                            <div id="commentsmsgs" class="w-100 overflow-scroll p-2">
+                                <div class="textMsg" ng-repeat="m in msgs" align="left">
+                                    <div class="headMsg d-flex justify-content-between">
+                                        <label class="fw-bold text-dark">{{m.username}}</label>
+                                        <label class="text-dark">{{m.date | date: 'MMM d, y h:mm a'}}</label>
+                                    </div>
+                                    <div class="contentMsg ps-5 pe-2 text-dark" compile-data template="{{m.msg}}"></div>
+                                </div>
+                            </div>
+                            <div class="w-100 p-3">
+                                <textarea cols="20" rows="3" ng-keydown="checkReturn($event)" ng-model="inputText" class="form-control mb-2"></textarea>
+                                <button ng-click="send()" class="btn btn-primary w-100">Send</button>
+                            </div>
+                        </div>
+
+                        <div ng-show="showComments == 'tags'" class="w-100 overflow-scroll">
+                            <input type="text" id="tagscarrousel" tagphoto="tags" placeholder="Add Tags" class="form-control">
+                        </div>
+
+                        <div ng-show="showComments == 'images'" class="w-100 overflow-scroll">
+                            <div 	ng-repeat="image in slides track by $index" id="imagelist{{$index}}" 
+									style="margin-top:5px;height:84px;padding-top:1px;padding-bottom:1px;background:url('data:image/{{image.file.file_ext}};base64,{{image.file.file_thumbnail}}') no-repeat center;" 
+									valign="center" class="imagelist" ng-click="setImage($index)" 
+									ng-class="{imagelistActive:image.active}">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="footerVideoBar" tabindex="-1" role="dialog" aria-labelledby="footerVideoBarLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-fullscreen-md-down" role="document">
+        <div class="modal-content bg-dark text-white">
+            <div class="position-relative p-3">
+                <div class="d-flex justify-content-between align-items-center">
+                    <h4 id="header" class="mb-0">{{name}}</h4>
+                    <div class="d-flex align-items-center justify-content-end" style="gap: 20px;">
+                        <a href="" class="text-white" id="adownload" download="">
+                            <i class="fas fa-download"></i>
+                        </a>
+                        <button type="button" class="btn-close text-white bg-transparent border-0" aria-label="Close" ng-click="close()">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="position-relative w-100">
+                <table class="table w-100 h-100 text-white">
+                    <tr>
+                        <td class="align-middle text-center">
+                            <uib-alert class="topBarMsg" ng-repeat="alert in alerts" type="{{alert.type}}" close="closeAlert($index)">
+                                {{alert.msg}}
+                            </uib-alert>
+                            <div id="videoContainer" class="VideoContainer"></div>
+                        </td>
+
+                        <td class="align-top" ng-style="{'padding-right': padding}">
+							<div class="rightBarImage p-3">
+								<div class="row mt-3 ms-0">
+									<table class="w-100">
+										<tr style="border-bottom: inset rgb(240,242,246);">
+											<td class="text-center" style="border-right: inset rgb(240,242,246); width: 15px;">
+												<i class="fas fa-heart me-1 text-dark" style="cursor: pointer;" ng-click="like()"></i>
+												<label class="text-dark">{{likes}}</label>
+											</td>
+											<td class="text-center" style="border-right: inset rgb(240,242,246);" ng-class="{activeTab: showComments == 'comment'}">
+												<i class="fas fa-comments text-dark"></i>
+											</td>
+											<td class="text-center" ng-click="showComments='tags';" ng-class="{activeTab: showComments == 'tags'}">
+												<i class="fas fa-tags text-dark"></i>
+											</td>
+										</tr>
+									</table>
+								</div>
+						
+								<div class="row" ng-style="{height: commentsHeight - 80}" class="w-100 ms-0 mt-3 position-relative" align="center">
+									<div id="commentscontainer" ng-show="showComments == 'comment'" ng-style="{height: commentsHeight - 80}" class="w-100 ms-0 me-4">
+										<div id="commentsmsgs3" ng-style="{height: commentsHeight - 160}" class="w-100 ms-0 me-4 overflow-scroll p-2">
+											<div class="textMsg" ng-repeat="m in msgs" align="left" class="ps-2">
+												<div class="headMsg d-flex justify-content-between">
+													<label class="fw-bold text-dark">{{m.username}}</label>
+													<label class="text-dark">{{m.date | date: 'MMM d, y h:mm a'}}</label>
+												</div>
+												<div class="contentMsg ps-5 pe-2 text-dark" compile-data template="{{m.msg}}"></div>
+											</div>
+										</div>
+										<div class="w-100 p-3">
+											<textarea cols="20" rows="3" ng-keydown="checkReturn($event)" ng-model="inputText" class="form-control mb-2" style="max-width: 100%;"></textarea>
+											<button ng-click="send()" class="btn btn-primary w-100">Send</button>
+										</div>
+									</div>
+						
+									<div ng-show="showComments == 'tags'" ng-style="{height: commentsHeight - 80}" class="w-100 ms-0 me-4 overflow-scroll">
+										<input type="text" id="tagsvideo" tagpvideo="tags" placeholder="Add Tags" class="form-control">
+									</div>
+								</div>
+							</div>
+						</td>
+						
+                    </tr>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="pdfViewer" tabindex="-1" role="dialog" aria-labelledby="pdfViewerLabel" aria-hidden="true">
+    <div class="modal-dialog" role="document" style="width: 100vw; margin: 0; padding: 0; max-width: 100%; height: 100vh;">
+        <div class="modal-content bg-dark text-white position-relative" style="height: 100%; width: 100%; margin: 0; padding: 0; border-radius: 0;">
+            <div class="position-relative p-3 d-flex justify-content-between align-items-center">
+                <h4 id="header" class="mb-0">PDF Viewer</h4>
+                <div class="d-flex align-items-center justify-content-end" style="gap: 20px;">
+                    <a href="{{download}}" class="text-white" download="{{name}}">
+                        <i class="fas fa-download"></i>
+                    </a>
+                    <button type="button" class="btn-close text-white bg-transparent border-0" aria-label="Close" ng-click="close()">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+            </div>
+            <div class="position-relative w-100 h-100">
+                <table class="table w-100 h-100 text-white" style="table-layout: fixed; margin: 0; padding: 0; border: none;">
+                    <tr style="height: 100%;">
+                        <td class="align-middle text-center p-0" style="height: 100%; width: 70%;">
+                            <uib-alert class="topBarMsg" ng-repeat="alert in alerts" type="{{alert.type}}" close="closeAlert($index)">
+                                {{alert.msg}}
+                            </uib-alert>
+                            <iframe src="{{trustSrc(pdf)}}" class="w-100 h-100" style="border: none;"></iframe>
+                        </td>
+                        <td class="align-top p-0" style="height: 100%; width: 30%;">
+                            <div class="rightBarImage p-3 h-100 d-flex flex-column">
+                                <div class="row" style="margin-top: 17px; margin-left: 0;">
+                                    <table style="width: 100%;">
+                                        <tr style="border-bottom-color: rgb(240,242,246); border-bottom-style: inset;">
+                                            <td width="15%" style="border-right-color: rgb(240,242,246); border-right-style: inset;">
+                                                <i class="fas fa-heart me-1 text-dark" style="cursor: pointer;" ng-click="like()"></i>
+                                                <label class="text-dark" style="padding-left: 3px;">{{likes}}</label>
+                                            </td>
+                                            <td ng-click="showComments='comment';" ng-class="{activeTab: showComments=='comment'}" align="center" style="position: relative; cursor: pointer; border-right-color: rgb(240,242,246); border-right-style: inset;">
+                                                <i class="fas fa-comments text-dark"></i>
+                                            </td>
+                                            <td ng-click="showComments='tags';" ng-class="{activeTab: showComments=='tags'}" align="center" style="cursor: pointer;">
+                                                <i class="fas fa-tags text-dark"></i>
+                                            </td>
+                                        </tr>
+                                    </table>
+                                </div>
+                                <div class="flex-grow-1 overflow-auto">
+                                    <div id="commentscontainer" ng-show="showComments == 'comment'" class="w-100">
+                                        <div id="commentsmsgs2" class="w-100 overflow-scroll p-2">
+                                            <div class="textMsg" ng-repeat="m in msgs" align="left">
+                                                <div class="headMsg d-flex justify-content-between">
+                                                    <label class="fw-bold text-dark">{{m.username}}</label>
+                                                    <label class="text-dark">{{m.date | date: 'MMM d, y h:mm a'}}</label>
+                                                </div>
+                                                <div class="contentMsg ps-5 pe-2 text-dark" compile-data template="{{m.msg}}"></div>
+                                            </div>
+                                        </div>
+                                        <div class="row mt-3 px-2">
+                                            <textarea class="form-control" rows="3" ng-keydown="checkReturn($event)" ng-model="inputText"></textarea>
+                                            <button ng-click="send()" class="btn btn-primary mt-2">Send</button>
+                                        </div>
+                                    </div>
+                                    <div ng-show="showComments=='tags'" class="w-100 overflow-auto mt-3">
+                                        <input type="text" id="tagspdf" tagpdf="tags" value="" placeholder="Add Tags" data-role="tagsinput" class="form-control" />
+                                    </div>
+                                </div>
+                            </div>
+                        </td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="docViewer" tabindex="-1" role="dialog" aria-labelledby="docViewerLabel" aria-hidden="true">
+	<div class="modal-dialog modal-xl modal-fullscreen-md-down" role="document">
+	  <div class="modal-content bg-dark text-white position-relative" style="height: 100vh;">
+		<div class="position-relative p-3 d-flex justify-content-between align-items-center">
+		  <h4 id="header" class="mb-0">Document Viewer</h4>
+		  <div class="d-flex align-items-center justify-content-end" style="gap: 20px;">
+			<a href="{{download}}" class="text-white" download="{{name}}">
+			  <i class="fas fa-download"></i>
+			</a>
+			<button type="button" class="btn-close text-white bg-transparent border-0" aria-label="Close" ng-click="close()">
+			  <i class="fas fa-times"></i>
+			</button>
+		  </div>
+		</div>
+  
+		<div class="position-relative w-100 h-100">
+		  <table class="table w-100 h-100 text-white" style="table-layout: fixed;">
+			<tr style="height: 100%;">
+			  <td class="align-middle text-center p-0" style="height: 100%; width: 70%;">
+				<uib-alert 
+					class="topBarMsg text-dark bg-light w-100 text-center py-2 position-fixed" 
+					ng-repeat="alert in alerts" 
+					type="{{alert.type}}" 
+					close="closeAlert($index)" 
+					style="top: 0; left: 0; z-index: 1050;">
+					<div class="d-flex justify-content-between align-items-center px-3">
+						<span>{{alert.msg}}</span>
+						<button type="button" class="btn-close text-dark bg-transparent border-0" aria-label="Close" ng-click="closeAlert($index)"></button>
+					</div>
+				</uib-alert>
+
+
+				<img ng-show="(doc.file_thumbnail != null && doc.file_thumbnail != '')" 
+					 src="data:image/{{doc.file_ext}};base64,{{doc.file_thumbnail}}" 
+					 class="img-fluid" 
+					 style="max-width: 300px;" />
+				<i class="fa fa-video text-white" style="font-size: 300px;" ng-show="(doc.file_thumbnail == null || doc.file_thumbnail == '') && (doc.file_ext == 'mp4' || doc.file_ext == 'mov')"></i>
+				<i class="fa fa-music text-white" style="font-size: 300px;" ng-show="(doc.file_thumbnail == null || doc.file_thumbnail == '') && (doc.file_ext == 'mp3' || doc.file_ext == 'wav')"></i>
+				<i class="fa fa-file-word text-white" style="font-size: 300px;" ng-show="(doc.file_thumbnail == null || doc.file_thumbnail == '') && (doc.file_ext == 'doc' || doc.file_ext == 'docx')"></i>
+				<i class="fa fa-file-powerpoint text-white" style="font-size: 300px;" ng-show="(doc.file_thumbnail == null || doc.file_thumbnail == '') && (doc.file_ext == 'ppt' || doc.file_ext == 'pptx')"></i>
+				<i class="fa fa-file-excel text-white" style="font-size: 300px;" ng-show="(doc.file_thumbnail == null || doc.file_thumbnail == '') && (doc.file_ext == 'xls' || doc.file_ext == 'xlsx')"></i>
+				<i class="fa fa-file-pdf text-white" style="font-size: 300px;" ng-show="(doc.file_thumbnail == null || doc.file_thumbnail == '') && (doc.file_ext == 'pdf')"></i>
+				<br>
+				<label class="text-white" style="font-size: 40px;">{{doc.name}}</label>
+			  </td>
+			  <td class="align-top p-0" style="height: 100%; width: 30%;">
+				<div class="rightBarImage p-3 h-100 d-flex flex-column">
+				  <div class="row mt-3 ms-0">
+					<table class="w-100">
+					  <tr style="border-bottom: inset rgb(240,242,246);">
+						<td class="text-center" style="border-right: inset rgb(240,242,246); width: 15px;">
+						  <i class="fas fa-heart me-1 text-dark" style="cursor: pointer;" ng-click="like()"></i>
+						  <label class="text-dark">{{likes}}</label>
+						</td>
+						<td class="text-center" style="border-right: inset rgb(240,242,246);" ng-class="{activeTab: showComments == 'comment'}" ng-click="showComments = 'comment';">
+						  <i class="fas fa-comments text-dark"></i>
+						</td>
+						<td class="text-center" ng-class="{activeTab: showComments == 'tags'}" ng-click="showComments = 'tags';">
+						  <i class="fas fa-tags text-dark"></i>
+						</td>
+					  </tr>
+					</table>
+				  </div>
+  
+				  <div class="flex-grow-1 overflow-auto">
+					<div id="commentscontainer" ng-show="showComments == 'comment'" class="w-100">
+					  <div id="commentsmsgs4" class="w-100 overflow-scroll p-2">
+						<div class="textMsg" ng-repeat="m in msgs" align="left">
+						  <div class="headMsg d-flex justify-content-between">
+							<label class="fw-bold text-dark">{{m.username}}</label>
+							<label class="text-dark">{{m.date | date: 'MMM d, y h:mm a'}}</label>
+						  </div>
+						  <div class="contentMsg ps-5 pe-2 text-dark" compile-data template="{{m.msg}}"></div>
+						</div>
+					  </div>
+					  <div class="w-100 p-3">
+						<textarea cols="20" rows="3" ng-keydown="checkReturn($event)" ng-model="inputText" class="form-control mb-2"></textarea>
+						<button ng-click="send()" class="btn btn-primary w-100">Send</button>
+					  </div>
+					</div>
+  
+					<div ng-show="showComments == 'tags'" class="w-100 overflow-scroll">
+					  <input type="text" id="tagsdoc" tagpdf="tags" placeholder="Add Tags" class="form-control">
+					</div>
+				  </div>
+				</div>
+			  </td>
+			</tr>
+		  </table>
+		</div>
+	  </div>
+	</div>
+  </div>

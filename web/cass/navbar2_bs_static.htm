@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <title>Bootstrap, from Twitter</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="">
+    <meta name="author" content="">
+
+    <!-- Le styles -->
+    <link href="bootstrap/css/bootstrap.css" rel="stylesheet">
+    <script type="text/javascript" src="tags.js"></script>
+    <style type="text/css">
+      body {
+		font-family: Helvetica;
+		font-size: 14px;
+		font-weight: normal;
+	    padding-top: 60px;
+        padding-bottom: 40px;
+      }
+      
+.affix {
+    top: 0px;
+    width: 100px;
+    left: auto;
+    right: auto;
+    background-color: black;
+}
+    </style>
+    <link href="bootstrap/css/bootstrap-responsive.css" rel="stylesheet">
+
+    <!-- HTML5 shim, for IE6-8 support of HTML5 elements -->
+    <!--[if lt IE 9]>
+      <script src="http://html5shim.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+
+    <!-- Fav and touch icons -->
+    <link rel="shortcut icon" href="bootstrap/ico/favicon.ico">
+    <link rel="apple-touch-icon-precomposed" sizes="144x144" href="bootstrap/ico/apple-touch-icon-144-precomposed.png">
+    <link rel="apple-touch-icon-precomposed" sizes="114x114" href="bootstrap/ico/apple-touch-icon-114-precomposed.png">
+    <link rel="apple-touch-icon-precomposed" sizes="72x72" href="bootstrap/ico/apple-touch-icon-72-precomposed.png">
+    <link rel="apple-touch-icon-precomposed" href="bootstrap/ico/apple-touch-icon-57-precomposed.png">
+ 
+ <script src="jquery.min.js">
+ </script>
+ <script type='text/javascript'>
+ 
+	function gerUrlVars(){
+			var vars = [], hash;
+            var hashes = window.location.href.slice(window.location.href.indexOf('?') + 1).split('&');
+            for(var i = 0; i < hashes.length; i++)
+            {
+                hash = hashes[i].split('=');
+                vars.push(hash[0]);
+                vars[hash[0]] = hash[1];
+            }
+            return vars;
+      }
+
+	function url(){
+		var url = './cass7.php?pw=xyzzy2011&view=' + window.parent.MAIN1.SIDEBAR.document.getElementById('inputView').value
+		+ "&ftype=" + window.parent.MAIN1.SIDEBAR.document.getElementById('inputType').value
+		+ "&days=" + window.parent.MAIN1.SIDEBAR.document.getElementById('inputNumDays').value
+		+ "&numobj=" + window.parent.MAIN1.SIDEBAR.document.getElementById('inputNumObj').value
+		+ "&numcol=" + window.parent.MAIN1.SIDEBAR.document.getElementById('inputNumCol').value;
+		
+		window.parent.MAIN1.MAINRESULT.location = url;
+	}
+        
+        
+            function login(){
+                $.ajax(
+                {
+                        url:'/cass/login.fn',
+                        async:true,
+                        data: { boxuser: $('input[name=boxuser]').val(), boxpass: $('input[name=boxpass]').val(), cluster:'***REP2***' }
+                }
+                ).done(
+                        function(data){
+//                            parent.location.reload();
+                            var containerlist =  $('#divmenu');
+                            containerlist.html(data);
+                            window.parent.MAIN1.MAIN.document.location.reload();
+                        }
+                    )                
+           }
+           
+           
+            function logout(){
+                $.ajax(
+                {
+                        url:'/cass/logout.fn',
+                        async:true,                        
+                }
+                ).done(
+                        function(){
+                            parent.location.reload();
+                        }
+                    ); 
+           }
+		
+	$(document).ready(
+		function(){
+			var vars=gerUrlVars();
+			if(vars['page']=='mainresult'){
+				$('#foo').val(vars['foo']);
+			}
+		}
+                
+	);
+            
+        $(document).keypress(function(e) {
+            if(e.which == 13) {
+                login();
+            }
+        });             
+        
+        function openNetwork(){
+          var a = document.createElement('a');
+          a.href='./setup.htm?spage=1';
+          a.target = 'MAIN';
+          document.body.appendChild(a);
+          a.click();
+        }
+
+                
+
+	
+ </script>
+  </head>
+
+  <body>
+    <div class="navbar navbar-inverse navbar-fixed-top" style="background-color:#00;">
+      <div class="navbar-inner" style="background-color:#0000;">
+        <div class="pull-left container" style="background-color:#0000;">
+          <a class="btn btn-navbar" data-toggle="collapse" data-target=".nav-collapse">
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+          </a>
+          <div id="divmenu" class="nav-collapse collapse" style="background-color:#00;">
+                    ***REP1***
+          </div>
+      </div>
+    </div>
+      
+    <div class="container" style="background-color:#00008c;">
+        
+      
+
+    </div> <!-- /container -->
+
+    <!-- Le javascript
+    ================================================== -->
+    <!-- Placed at the end of the document so the pages load faster -->
+    <script src="bootstrap/js/jquery.js"></script>
+<!--    <script src="bootstrap/js/bootstrap-transition.js"></script> 
+    <script src="bootstrap/js/bootstrap-alert.js"></script>
+    <script src="bootstrap/js/bootstrap-modal.js"></script> -->
+    <script src="bootstrap/js/bootstrap-dropdown.js"></script>
+<!--    <script src="bootstrap/js/bootstrap-scrollspy.js"></script>
+    <script src="bootstrap/js/bootstrap-tab.js"></script>
+    <script src="bootstrap/js/bootstrap-tooltip.js"></script>
+    <script src="bootstrap/js/bootstrap-popover.js"></script>
+    <script src="bootstrap/js/bootstrap-button.js"></script>
+    <script src="bootstrap/js/bootstrap-collapse.js"></script>
+    <script src="bootstrap/js/bootstrap-carousel.js"></script>
+    <script src="bootstrap/js/bootstrap-typeahead.js"></script> -->
+	
+  </body>
+</html>

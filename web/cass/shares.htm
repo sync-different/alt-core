@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="">
+    <meta name="author" content="">
+
+    <!-- styles -->
+    <link href="bootstrap/css/bootstrap.css" rel="stylesheet">
+    <link href="bootstrap/css/bootstrap-responsive.css" rel="stylesheet">
+    
+    <style type="text/css">
+      body {
+		font-family: Helvetica;
+		font-size: 14px;
+		font-weight: normal;		
+        padding-top: 60px;
+        padding-bottom: 40px;
+      }
+	  
+    </style>
+
+    <!-- HTML5 shim, for IE6-8 support of HTML5 elements -->
+    <!--[if lt IE 9]>
+      <script src="http://html5shim.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+
+    <!-- Fav and touch icons -->
+    <link rel="shortcut icon" href="bootstrap/ico/favicon.ico">
+    <link rel="apple-touch-icon-precomposed" sizes="144x144" href="bootstrap/ico/apple-touch-icon-144-precomposed.png">
+    <link rel="apple-touch-icon-precomposed" sizes="114x114" href="bootstrap/ico/apple-touch-icon-114-precomposed.png">
+    <link rel="apple-touch-icon-precomposed" sizes="72x72" href="bootstrap/ico/apple-touch-icon-72-precomposed.png">
+    <link rel="apple-touch-icon-precomposed" href="bootstrap/ico/apple-touch-icon-57-precomposed.png">
+     
+    <!-- scripts -->
+    <script src="bootstrap/js/bootstrap-tooltip.js"></script>
+    <script src="bootstrap/js/bootstrap.min.js"></script>
+    <script type="text/javascript" src="messages_en.js"></script>
+    <script type="text/javascript" src="jquery.min.js"></script>
+    <script src="bootstrap/js/bootstrap-tooltip.js"></script>
+    <script src="bootstrap/js/bootstrap-popover.js"></script>
+	<script src="bootstrap/js/bootstrap-modal.js"></script>
+    
+    <script>
+
+					   
+					   
+
+					   
+						function share(){
+							
+															
+							var optionchosen = $('#typechosen').val();
+							var selectedkey = $("#keychosen" ).val();
+							
+							var sList = "";
+							if ($('input[name=optionsRadios]:checked').val() == "option2"){
+								$("input.groupuser").each(function () {
+									if(this.checked){
+										if(sList!="") sList+=";";
+										sList += $(this).val();
+									}
+								});
+								if(!sList){
+									alert("Select at least one user");
+									return;
+								}								
+							}else if ($('input[name=optionsRadios]:checked').val() != "option1"){
+								alert("Select one option to continue");
+								return;
+							}
+							$('#myModal').modal('hide');
+                            $.ajax(
+								{
+                                    url:'/cass/doshare.fn?sharetype='+ optionchosen +'&sharehtml=' + htmlmodal + '&sharekey=' + selectedkey + '&shareusers=' + sList,
+                                    async:true
+								}
+                            ).done(
+                                    function(data){
+										if(data == 'error'){
+											$('<div class="modal hide" tabindex="-1" role="dialog" aria-hidden="true"><div class="modal-header"><h3 id="myModalLabel">Share error</h3></div><div class="modal-body">There was a problem sharing this element. Try again. If the problem persist, contact support@alterante.com</div><div class="modal-footer"><button class="btn" data-dismiss="modal" aria-hidden="true">Ok</button></div></div>').modal();
+											//alert('There was an error sharing. Please try again. If the problem persist, please contact support@alterante.com'); 
+										}else{
+											$('#sharelinkModal').remove();
+											$(data).modal();
+										}
+										
+                                    }
+                                ); 
+						}
+					   
+						var htmlmodal = false;
+						function getmodal(optionchosen,selectedkey){
+
+								 $.ajax(
+								{
+                                    url:'/cass/getsharesettingsmodal.fn?sharetype='+ optionchosen +'&sharehtml=' + htmlmodal + '&sharekey=' + selectedkey,
+                                    async:true
+								}
+								).done(
+                                    function(data){
+										if(htmlmodal){
+											$('#myModal').html(data);
+											$('#myModal').modal('show');
+										}else{
+											htmlmodal = true;
+											$(data).modal();
+										}
+                                    }
+                                );
+
+						}
+					   
+						function openWhatShareModal(){
+							$('#whattoshare').modal('show');
+						}
+						
+						function openadduserModal(){
+							$('#myModal').modal('hide');
+							$('#newusermodal').modal('show');	
+						}
+						
+						function closeadduserModal(){
+							$('#newusermodal').modal('hide');	
+							$('#myModal').modal('show');
+						}
+						
+						
+						
+						function adduser(){
+							if($('#addnewusername').val() && $('#addnewpassword').val() && $('#addnewuseremail').val()){
+								$.ajax(
+									{
+										url:'/cass/adduser.fn?boxuser='+ $('#addnewusername').val() +'&boxpass=' + $('#addnewpassword').val() + '&useremail=' + $('#addnewuseremail').val(),
+										async:true
+									}
+								).done(
+										function(data){
+											if(data=='success'){
+												var htmltoappend = "<div class=\"checkbox\">" +
+														"<label>" +
+															"<input class=\"groupuser\" type=\"checkbox\" value=\"" + $('#addnewusername').val() +"\">" +
+															$('#addnewusername').val() +
+														"</label>" +
+													"</div>";
+												$('#checkboxes').append(htmltoappend);
+												$('#newusermodal').modal('hide');	
+												$('#myModal').modal('show');
+											}else if(data=='alreadyexists'){
+												alert('User already exists');
+											}
+										}
+									); 
+							}else{
+								alert("Please complete all fields to add a new user");
+							}
+							
+						}
+						
+						
+						
+					   
+						function goToShareModal(){
+							var optionchosen = $('input[name=optionsWhatRadio]:checked', '#whattoshare').val();
+							if(optionchosen){
+								$('#whattoshare').modal('hide');
+								var selectedkey = $( "#tagselect option:selected" ).val();
+								getmodal(optionchosen,selectedkey);
+							}else{
+								alert("choose at least one option");
+							}
+						}
+						function doneinvitationmodal(){
+							updateTable();
+							if ($('input.sendbymail').is(':checked')) {
+								var selectedkey = $("#keychosen" ).val();
+								var optionchosen = $('#typechosen').val();
+								
+								$.ajax(
+								{
+                                    url:'/cass/invitation.fn?&sharekey=' + selectedkey + '&sharetype='+ optionchosen,
+                                    async:true
+								}
+								).done(
+										function(data){
+											//alert("ok");
+										}
+									);
+								
+							}
+							$('#sharelinkModal').hide();
+						}
+							
+						
+						function updateTable(){
+								 $.ajax(
+								{
+                                    url:'/cass/refreshsharetable.fn',
+                                    async:true
+								}
+								).done(
+                                    function(data){
+										$('#sharestable').html(data);
+                                    }
+                                );
+						}
+						
+						function removeshare(optionchosen,selectedkey){
+								 $.ajax(
+								{
+                                    url:'/cass/removeshare.fn?sharetype='+ optionchosen + '&sharekey=' + selectedkey,
+                                    async:true
+								}
+								).done(
+                                    function(data){
+										$('#sharestable').html(data);
+                                    }
+                                );
+
+						}
+						
+						function confirmremoveshare(optionchosen,selectedkey){
+								$('<div class="modal hide" tabindex="-1" role="dialog" aria-hidden="true"><div class="modal-header"><h3 id="myModalLabel">Remove Share</h3></div><div class="modal-body">Are you sure you want to remove share?</div><div class="modal-footer"><button class="btn" data-dismiss="modal" aria-hidden="true" onclick="removeshare(\'' + optionchosen + '\',\'' + selectedkey + '\')">Ok</button><button class="btn" data-dismiss="modal" aria-hidden="true">Cancel</button></div></div>').modal(); 
+						}
+
+
+					   
+					 
+	</script>   
+                    
+  </head>
+
+  <body>
+
+      <form id="frm1" action="setup.htm" method="get">
+        <div class="container">
+            <div class="row">
+                <div class="span9">                        
+                        
+                    <section id="sec1"> 
+                        <fieldset>
+						<legend>Active Shares</legend>
+                        
+						
+						***REP***
+						<br>
+						<button id="getmodalbutton" type="button" class="btn" onclick="openWhatShareModal();">+ Add Share</button>
+						
+						
+						
+						
+						<div class="modal hide" id="whattoshare" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+                            <div class="modal-header">
+                                    <h3 id="myModalLabel">Choose what to Share</h3>
+							</div>
+							<div class="modal-body">
+								<div class="radio">
+									<label>
+										<input type="radio" name="optionsWhatRadio" id="optionsWhatRadio" value="CLUSTER">
+										All Files on this Computer
+                                    </label>
+								</div>
+								<div class="radio">
+									<label>
+										<input type="radio" name="optionsWhatRadio" id="optionsWhatRadio" value="TAG">
+										Tag
+									</label>
+								</div>
+								<div class="btn-group">
+								 <select id="tagselect" name="tagselect" disabled="disabled">
+								  ***REP1***
+								</select>
+								</div>
+							</div>
+							
+							<script>
+                                    $('input:radio[name="optionsWhatRadio"]').change(
+                                        function(){
+                                            if ($(this).is(':checked') && $(this).val() == 'TAG') {
+                                                $("#tagselect").removeAttr("disabled");
+                                            }else{
+												$("#tagselect").attr("disabled", "disabled")
+                                    		}
+                                        });
+							</script>
+							
+                                  
+							<div class="modal-footer">
+								<input type='hidden' id='shareusers' name='shareusers'/>
+								<button class="btn" data-dismiss="modal" aria-hidden="true">Cancel</button>
+								<button id="nextbutton" type="button" class="btn btn-primary" onclick="goToShareModal();">Next</button>
+						   </div>
+						</div>
+						
+						
+						
+						<div class="modal hide" id="newusermodal" tabindex="-1" role="dialog" aria-labelledby="newusermodalLabel" aria-hidden="true">
+                            <div class="modal-header">
+                                    <h3 id="myModalLabel">New user</h3>
+							</div>
+							<div class="modal-body">
+								<input id="addnewusername" type="text" class="form-control" placeholder="Username">
+								<input id="addnewpassword" type="password" class="form-control" placeholder="Password">
+								<input id="addnewuseremail" type="text" class="form-control" placeholder="Email">
+							
+							</div>
+							<div class="modal-footer">
+								<input type='hidden' id='shareusers' name='shareusers'/>
+								<button class="btn" data-dismiss="modal" aria-hidden="true" onclick="closeadduserModal();">Cancel</button>
+								<button id="nextbutton" type="button" class="btn btn-primary" onclick="adduser();">Add</button>
+						   </div>
+						</div>
+						
+						<script>
+							$('#newusermodal').on('hidden', function(){
+								$('#addnewusername').val("");
+								$('#addnewpassword').val("");
+								$('#addnewuseremail').val("");
+							});
+						</script>	
+						
+						
+						
+						
+						
+						
+						
+                     
+                        
+                        </fieldset>
+                        
+                        
+                    </section>      <!--Body content-->
+                        <br>
+                        
+                </div>
+            </div>
+        </div>
+    </form>
+      
+    <!-- Le javascript
+    ================================================== -->
+    <!-- Placed at the end of the document so the pages load faster
+    <script src="bootstrap/js/jquery.js"></script>
+    <script src="bootstrap/js/bootstrap-transition.js"></script>
+    <script src="bootstrap/js/bootstrap-alert.js"></script>
+    <script src="bootstrap/js/bootstrap-modal.js"></script>
+    <script src="bootstrap/js/bootstrap-dropdown.js"></script>
+    <script src="bootstrap/js/bootstrap-scrollspy.js"></script>
+    <script src="bootstrap/js/bootstrap-tab.js"></script>
+    <script src="bootstrap/js/bootstrap-tooltip.js"></script>
+    <script src="bootstrap/js/bootstrap-popover.js"></script>
+    <script src="bootstrap/js/bootstrap-button.js"></script>
+    <script src="bootstrap/js/bootstrap-collapse.js"></script>
+    <script src="bootstrap/js/bootstrap-carousel.js"></script>
+    <script src="bootstrap/js/bootstrap-typeahead.js"></script> -->
+
+  </body>
+</html>

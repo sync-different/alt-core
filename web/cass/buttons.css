@@ -1,0 +1,14 @@
+.buttonElement {
+	font-size: 11px;
+	margin-left: 0.5em;
+	background-color: rgba(24,116,205,0.7);
+	border:1px solid #104E8B;
+	border-radius:5px;
+	color: rgb(255,255,255);
+	font-weight: bold;
+	padding: 0.2em;
+	padding-left: 0.5em;
+	padding-right: 0.5em;
+	text-shadow: 0.1em 0.1em #333;
+	display: none;
+}

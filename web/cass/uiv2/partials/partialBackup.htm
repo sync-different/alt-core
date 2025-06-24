@@ -1,0 +1,83 @@
+<div style="padding-left:110px;margin-top: 100px;">
+	<div style="background-color:rgb(73,144,226);width:100%;position: fixed;z-index:99;">
+		<table style="width:100%;height:50px;">
+			<tr>
+				<td align="center">
+					&nbsp;	 
+				</td>
+				<td align="right" style="padding-right:250px;">
+					<a href="" ng-click="selCancel()" style="text-decoration:none;color:white;">Cancel</a>&nbsp;&nbsp;&nbsp;<a href="" ng-click="selAcept()" style="text-decoration:none;color:white;">Accept</a>
+				</td>
+			</tr>
+		</table>
+	</div>
+	<div style="padding-top: 50px;">
+		<div class="row center-block" align="center" ng-repeat="rule in rules">
+			<table width="100%"  >
+			<tr><td align="left"  style="padding-left:20px;">1. Choose file types to backup</td><td align="left" style="padding-left:20px;"> 2. Choose backup locations </td></tr>
+			<tr><td valign="top" align="left">
+					<div style="overflow-y:scroll;width:350px;" ng-style="{'height':rule.devices.length*124}"> 
+						<div ng-attr-id="{{'tree'+rule.rule}}"></div>
+					</div>
+				</td>
+			<td align="left" width="100%" valign="top">
+			<table class="table table-striped tablefiles table-responsive" >
+				<tr ng-repeat="device in rule.devices" align="center" >
+					<td style="vertical-align: middle;">
+						<input type="checkbox" ng-attr-id="{{'device'+rule.rule+'_'+device.node_id}}" />
+					</td>
+					<td align="left">
+						<i class="glyphicon glyphicon-cloud" ng-show="device.node_type!='server' && device.node_type!='client'" style="font-size:70px"></i>
+						<i class="glyphicons glyphicons-imac" ng-show="device.node_type=='server'" style="font-size:70px"></i>
+						<i class="glyphicon glyphicon-hdd" ng-show="device.node_type=='client'" style="font-size:70px"></i>
+						<br/>
+						<label style="font-size:20px;font-style:bold;">{{up(device.node_type)}}:{{device.node_machine}}<label ng-show="device.node_ip!=undefined && device.node_ip!=null"> ({{device.node_ip}})</label></label>
+					</td>
+					<td style="padding-right:30px;">
+						<div class="row machineBox" style="min-width:330px;">
+								<table>
+								<tr>
+									<td valign="center"><label> Usage </label></td>
+									<td align="center" style="width:200px;" valign="center">
+										<div class="progress progressBarAlterante" style="width:200px;position: relative;top: 5px;">
+											<div class="progress-bar progress-bar-info" role="progressbar" aria-valuenow="70" aria-valuemin="0" aria-valuemax="100" style="width:100px;">
+											  
+											</div>
+										</div>
+									</td>
+								</tr>
+								<tr style="display:none;visibility:hidden;">
+									<td valign="center"><label > Backup </label></td>
+									<td style="width:200px;"  align="center" valign="center">
+										<div class="progress progressBarAlterante" style="width:200px;position: relative;top: 5px;"  ng-show="device.node_backup_percent!=undefined && device.node_backup_percent!=null">
+											<div class="progress-bar" role="progressbar" aria-valuenow="{{dec(device.node_backup_percent)}}" aria-valuemin="0" aria-valuemax="100" ng-style="{'width':widthPercentage(device.node_backup_percent)}">
+											</div>
+										</div>
+										<label ng-show="!(device.node_backup_percent!=undefined && device.node_backup_percent!=null)" >Off</label>
+									</td>
+								</tr>
+								<tr style="padding-top:10px;">
+									<td valign="center"><label> Location </label></td>
+									<td align="center" style="max-width:200px;width:200px;word-wrap:break-word;" valign="center">
+										{{dec(device.node_backuppath)}}
+									</td>
+								</tr>
+								<tr>
+									<td colspan="2">&nbsp;</td>
+								</tr>
+							</table>
+						</div>
+					</td>
+				</tr>	
+			</table>
+			</td></tr>
+			</table>
+			</div>
+		</div>
+		
+		<div class="row center-block" align="center">
+			<div class="row machineBox" style="width:330px;cursor:pointer;"  ng-click="addRule()">
+				<i class="glyphicon glyphicon-plus" style="font-size:40px;color:gray;"></i>
+			</div>
+		</div>
+	</div>

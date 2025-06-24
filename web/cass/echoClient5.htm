@@ -1,0 +1,777 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html>
+<head>
+    <base target="_self"/>         
+    <title>Alterante</title>
+    <link href="bootstrap/css/bootstrap.min.css" rel="stylesheet" media="screen"/>
+    <link href="buttons.css" type="text/css" rel="stylesheet" media="screen"/>
+    <script type="text/javascript" src="tags.js"></script>
+    <script type="text/javascript" src="loading.js"></script>
+    <script type="text/javascript" src="search.js"></script>
+ <style>
+  @font-face {
+    font-family: "My Font";
+    src: local("My Font"), url("fonts/glyphicons-regular.svg#glyphiconsregular") format("svg");
+  }
+</style>
+
+</head>
+
+<script type="text/javascript" src="jquery.min.js"></script>
+<script src="bootstrap/js/bootstrap.min.js"></script>
+
+<script type="text/javascript">
+	
+	function checkUncheck(sNamer){
+		$('Input[name=\"'+sNamer+'\"]').each(
+			function(){
+				if(!this.checked){
+					$('#box'+sNamer).css({'background-color':'#0088cc'});
+					$('#box'+sNamer).attr('sel','S');
+				}else{
+					$('#box'+sNamer).css({'background-color':'white'});
+					$('#box'+sNamer).attr('sel','N');
+				}
+				$(this).prop("checked",!this.checked?'checked':false);
+				
+			}
+		);
+	}
+	function checkUncheckToggle(sNamer){
+		$('Input[name=\"'+sNamer+'\"]').each(
+			function(){
+				if(this.checked){
+					$('#box'+sNamer).css({'background-color':'#0088cc'});
+					$('#box'+sNamer).attr('sel','S');
+                    $("#select"+sNamer).show();
+				}else{
+					$('#box'+sNamer).css({'background-color':'white'});
+					$('#box'+sNamer).attr('sel','N');
+                    $("#select"+sNamer).hide();
+				}
+			}
+		);
+	}
+	
+	
+	
+	function checkUncheckBG(sNamer){
+		$('Input[name=\"'+sNamer+'\"]').each(
+			function(){
+				if(this.checked){
+					$('#box'+sNamer).css({'background-color':'#0088cc'});
+					$('#box'+sNamer).attr('sel','S');
+				}else{
+					$('#box'+sNamer).css({'background-color':'white'});
+					$('#box'+sNamer).attr('sel','N');
+				}
+			}
+		);
+	}
+	
+	function link(linkObject){
+		window.location.href=$(linkObject).attr('hreff');
+	}
+
+	function newTabCommand(url){
+	
+		window.open('/cass/'+url);
+	}
+	
+	function silentCommand(url){
+	
+		$('#ifhidden').attr('src','/cass/'+url);
+		$('#ifhidden').show();
+		$('#ifhidden').hide();
+	}
+
+	function expCont(sNamer,elElement, elExpCont,hCont){
+		
+			
+		if($("#"+elElement).attr('expCont')=='OFF'){
+			$("#"+elElement).css({position:'relative','z-index':'11000', height:'auto',width:'auto','overflow-wrap':'break-word','overflow':'auto'});
+			$("#"+elExpCont).html('-');
+			$("#"+elElement).attr('expCont','ON');
+			
+		}else{
+			$("#"+elElement).css({position:'relative',height:hCont+'px',width:'100%','overflow':'hidden'});
+			$("#"+elExpCont).html('+');
+			$("#"+elElement).attr('expCont','OFF');
+			
+		}
+	}
+
+	function showButtons(sNamer){
+	
+		$("[id*='"+sNamer+"']").show();
+	}
+	
+	function hideButtons(sNamer){
+	
+		$("[id*='"+sNamer+"']").hide();
+	}
+	
+	function showButtonsTile(sNamer){
+        $('#bnts'+sNamer).find('button').show();
+
+       $('#bnts'+sNamer).css({position:'absolute',top:$('#name'+sNamer).position().top-$('#name'+sNamer).height()-$('#bnts'+sNamer).height(),left:$('#name'+sNamer).position().left});
+
+		$('#bnts'+sNamer).show();
+
+		$('#openlnk'+sNamer).show();
+		$('#folderlnk'+sNamer).show();
+		$('#sendlnk'+sNamer).show();
+		$('#viewlnk'+sNamer).show();
+		$('#serverlnk'+sNamer).show();
+
+	}
+	
+	function hideButtonsTile(sNamer){
+	
+		$('#bnts'+sNamer).hide();
+		
+	}
+
+    function showButtonsTile(sNamer, bVector){
+
+        if (!bVector){
+            $('#name'+sNamer).show();
+        }
+
+        $('#numCopies'+sNamer).show();
+        $('#tagsTbl'+sNamer).show();
+        
+        $('#bnts'+sNamer).find('button').show();
+
+        $('#bnts'+sNamer).css({position:'absolute',top:$('#name'+sNamer).position().top-$('#name'+sNamer).height()-$('#bnts'+sNamer).height(),left:$('#name'+sNamer).position().left});
+
+        $('#bnts'+sNamer).show();
+
+        $('#openlnk'+sNamer).show();
+        $('#folderlnk'+sNamer).show();
+        $('#sendlnk'+sNamer).show();
+        $('#viewlnk'+sNamer).show();
+        $('#serverlnk'+sNamer).show();
+
+        
+        posNameDiv(sNamer);
+    }
+    
+    function hideButtonsTile(sNamer, bVector){
+        $('#bnts'+sNamer).hide();
+        $('#numCopies'+sNamer).hide();
+        $('#tagsTbl'+sNamer).hide();
+
+        if (!bVector){
+            $('#name'+sNamer).hide();
+        }
+        posNameDiv(sNamer);
+    }
+
+    function showAllTags(sNamer){
+        $('#tagsTbl'+sNamer).css({height: '100%'});
+        $('#tagsTbl'+sNamer).find('i').attr("class", "icon-chevron-up");
+        posNameDiv(sNamer);
+        $('#tagsTbl'+sNamer).find('button').unbind("click");
+        $("#tagsTbl"+sNamer).find('button').click(function(e) {
+            hideAllTags(sNamer);
+            e.stopPropagation();
+        });
+    }
+
+    function hideAllTags(sNamer){
+        $("#tagsTbl"+sNamer).css({height: '28px'});
+        $('#tagsTbl'+sNamer).find('i').removeClass("icon-chevron-up");
+        $('#tagsTbl'+sNamer).find('i').addClass("icon-chevron-down");
+        $('#tagsTbl'+sNamer).find('button').unbind("click");
+        $("#tagsTbl"+sNamer).find('button').click(function(e) {
+            showAllTags(sNamer);
+            e.stopPropagation();
+        });
+        posNameDiv(sNamer);
+    }
+
+    function posTagsDiv(sNamer, isVector ){
+        $("#name"+sNamer).show();
+        var height = $("#tagsTbl"+sNamer).height();
+        if (!isVector)
+            $("#name"+sNamer).hide();
+        if (height > 30) {
+            $("#tagsTbl"+sNamer).css({height: '28px'});
+            if ($("#tagsTbl"+sNamer).find('.showAllTags').length == 0) {
+                $("#tagsTbl"+sNamer).prepend("<div class=\"showAllTags\" style=\"  float: left; margin-left: 0.3em; margin-right: 0.5em\" ><button type=\"button\"  style=\"border-radius:5px;color:#000; background-color:#FCF0AD;height: 25px; margin-top: 2px\" TYPE=\"submit\"><i class=\"icon-chevron-down\"></i></button></div>");
+                $("#tagsTbl"+sNamer).find('button').click(function(e) {
+                    showAllTags(sNamer);
+                    e.stopPropagation();
+                });
+            }
+        }
+    }
+
+    function checkElement(sNamer){
+        var id = event.target.id;
+        if ((id != null) && (id.indexOf('tag') != 0)){
+            $("#select"+sNamer).show();
+
+            if ($("#select"+sNamer).find('input:checked').val() == null){
+                $("#select"+sNamer).find('input').prop("checked", true) ;
+            }
+            else {
+                $("#select"+sNamer).hide();
+                $("#select"+sNamer).find('input').prop("checked", false) ;
+            }
+        }
+    }
+
+    function posNameDiv(sNamer){
+        var margintop = $("#name"+sNamer).height();
+        $("#name"+sNamer).css( "margin-top", -margintop );
+    }
+
+        function golink_music(inputString, queryString, isButtonClick) {
+            //alert(queryString);
+            //alert($('#inputString').valueOf());
+            //$('#inputString').val("hello");
+            
+            window.parent.RBAR.location = inputString;                
+
+            $('h1', window.parent.SIDEBAR.document).remove();
+			
+            if(typeof isButtonClick === "undefined") {
+                console.log("isbuttonclick undefined.");
+                query2 = decodeURIComponent(queryString);
+                $('#inputString', window.parent.SIDEBAR.document).val(query2);                
+            } else {
+                console.log("isbuttonclick defined.");
+            }
+        }
+        
+    function golink(inputString, queryString, isButtonClick) {
+            //alert(queryString);
+            //alert($('#inputString').valueOf());
+            //$('#inputString').val("hello");
+            
+            window.location = inputString;                
+
+            $('h1', window.parent.SIDEBAR.document).remove();
+			
+            if(typeof isButtonClick === "undefined") {
+                console.log("isbuttonclick undefined.");
+                query2 = decodeURIComponent(queryString);
+                $('#inputString', window.parent.SIDEBAR.document).val(query2);                
+            } else {
+                console.log("isbuttonclick defined.");
+            }
+        }
+        
+    function golink_old(inputString, queryString) {
+            //alert(queryString);
+            //alert($('#inputString').valueOf());
+            $('#inputString').val("hello");
+            
+            window.location = inputString;
+
+            $('h1', window.parent.SIDEBAR.document).remove();
+			
+            $('#inputString', window.parent.SIDEBAR.document).val(queryString);
+        }
+
+        function clicker() {
+            //alert('clicker');
+            $('#dosubmit', window.parent.SIDEBAR.document).val("");
+            $('#suggestions', window.parent.SIDEBAR.document).hide();
+        }
+        
+        function togglesel(status) {
+                if ($("#chk0").is(':checked')) {
+                    $("#chk0").attr('checked',false);                
+                    togglechk(false);
+                } else {                    
+                    //alert($("chk0").is(':checked'));
+                    $("#chk0").attr('checked',true);                                    
+                    //togglechk($("#chk0").is(":checked"));
+                    togglechk(true);
+                }
+                //$("#chk0").attr('checked',status);
+                //$("#chk0").prop("checked",status?'checked':status);
+        }
+
+        function togglechk(status) {
+     		$("Input[type=checkbox]").prop("checked",status?'checked':status);
+
+			$('Input[type=checkbox]').each(
+
+				function(){checkUncheckToggle(this.name);}
+			);
+        }
+        
+        function togglechk2() {
+            //alert('hello');
+            $("#chk").prop("checked",status?'checked':status);
+            togglechk(status);
+        }
+
+       function getUrlVars()
+        {
+           var vars = [], hash;
+            var hashes = window.location.href.slice(window.location.href.indexOf('?') + 1).split('&');
+            for(var i = 0; i < hashes.length; i++)
+            {
+                hash = hashes[i].split('=');
+                vars.push(hash[0]);
+                vars[hash[0]] = hash[1];
+            }
+            return vars;
+        }
+        
+        function lookup(inputString) {
+            
+                $('#dosubmit').val("1");
+                
+		if(inputString.length == 0) {
+			// Hide the suggestion box.
+			$('#suggestions').hide();
+		} else {
+			$.post("rpc.php", {queryString: ""+inputString+""}, function(data){
+				if(data.length >0) {
+					$('#suggestions').show();
+					$('#autoSuggestionsList').html(data);
+				}
+			});
+                        $('#datestr').val("");
+                }
+	} // lookup
+       		
+
+        function searchclick() {
+            //alert('hello');
+            //$('#frm1').submit();
+            mysubmit();
+        }
+        
+        function fill(thisValue) {
+                $('#inputString').val(thisValue);
+		var ds = $('#dosubmit').val();
+                //alert(ds);
+		setTimeout("$('#suggestions').hide();", 200);
+                if (ds == "1") {
+                    //setTimeout(mysubmit, 200);
+                    mysubmit();
+                }
+	}
+        
+        function dowait() {
+            CursorToHourglass();
+            $('#plw', window.parent.SIDEBAR.document).css('background', 'rgb(252,240,173)');
+            $('#plw', window.parent.SIDEBAR.document).css('color', 'black');            
+        }
+        
+        function CursorToHourglass()
+            {
+                    $('*', window.parent.parent.NAVBAR.document).css("cursor", "wait");
+                    $('*', window.parent.SIDEBAR.document).css("cursor", "wait");
+                    $('*', window.parent.MAIN.document).css("cursor", "wait");
+                    $('*', window.parent.parent.MAIN1.document).css("cursor", "wait");
+            }
+        
+        function mysubmit() {
+                //alert("mysubmit!!!");
+                dowait();
+                searchstring = $('#inputString').val();
+				
+                if ($('#inputView').val() == 'detail') {
+                        //alert("detail!!!");
+                        $('#inputNumCol').val("1");					
+                }
+                var pVal = getUrlVars()["view"];                
+                //alert(pVal);
+                if ($('#inputView').val() == 'tile' && pVal == 'detail') {
+                        //alert("detail!!!");
+                        $('#inputNumCol').val("5");					
+                }
+                //alert(searchstring);
+                $('#inputString', window.parent.SIDEBAR.document).val(searchstring); 
+
+                clearFilters();
+
+
+                $('#frm1').submit();
+                //document.getElemenById("frm1").submit();
+                //this.form.submit();                
+	}
+        
+        function submit_tag() {
+            //alert("submit tag");
+            $('#frm2').submit();
+        }
+        
+        function view_detail() {
+            //alert("view_detail");
+            $('#inputView').val("detail");
+            $('#inputNumCol').val("1");
+            $('#frm1').submit();
+        }
+        function view_tile() {
+            //alert("view_tile");
+            $('#inputView').val("tile");
+            $('#inputNumCol').val("5");
+            $('#frm1').submit();
+        }
+        function view_show() {
+            //alert("view_tile");
+            $('#inputView').val("show");
+            $('#inputNumCol').val("5");
+            $('#frm1').submit();
+        }
+
+        function clearFilters() {
+            $('#inputType', window.parent.SIDEBAR.document).val(".all"); 
+            $('#typ1', window.parent.SIDEBAR.document).addClass("active");
+            $('#typ2', window.parent.SIDEBAR.document).removeClass("active");
+            $('#typ3', window.parent.SIDEBAR.document).removeClass("active");
+            $('#typ4', window.parent.SIDEBAR.document).removeClass("active");
+            $('#typ5', window.parent.SIDEBAR.document).removeClass("active");
+            $('#typ6', window.parent.SIDEBAR.document).removeClass("active");
+            $('#typ7', window.parent.SIDEBAR.document).removeClass("active");
+            $('#typ8', window.parent.SIDEBAR.document).removeClass("active");
+            $('#typ9', window.parent.SIDEBAR.document).removeClass("active");
+
+            $('#inputNumDays', window.parent.SIDEBAR.document).val(""); 
+            $('#timeall', window.parent.SIDEBAR.document).addClass("active");     
+            $('#time24h', window.parent.SIDEBAR.document).removeClass("active");
+            $('#time3d', window.parent.SIDEBAR.document).removeClass("active");
+            $('#time7d', window.parent.SIDEBAR.document).removeClass("active");
+            $('#time14d', window.parent.SIDEBAR.document).removeClass("active");
+            $('#time30d', window.parent.SIDEBAR.document).removeClass("active");
+            $('#time365d', window.parent.SIDEBAR.document).removeClass("active");            
+        }
+        
+</script>
+
+<script type="text/javascript">
+    
+  $(document).ready(function() {
+                      
+                $('#plw', window.parent.SIDEBAR.document).css("background", "#EEEEEE");
+                $('#plw', window.parent.SIDEBAR.document).css("color", "#EEEEEE");
+
+		$('*', window.parent.parent.NAVBAR.document).css("cursor", "auto");
+		$('*', window.parent.SIDEBAR.document).css("cursor", "auto");
+		$('*', window.parent.MAIN.document).css("cursor", "auto");
+		$('*', window.parent.parent.MAIN1.document).css("cursor", "auto");                
+                
+                //$('#n_photo', window.parent.SIDEBAR.document).html('4');
+                updatecounters();
+
+	  
+        $('#suggestions', window.parent.SIDEBAR.document).hide();
+
+        var pVal2 = getUrlVars()["foo"];
+        var query = "";
+        if (typeof pVal2 != "undefined") {
+	        pVal = "";
+                if (pVal2.length > 0) {
+	            var pVal = decodeURIComponent(pVal2);
+                }
+                query = pVal.replace(/\+/g, ' ');
+        };
+
+        $('#inputString').val(query);
+
+        var pVal = getUrlVars()["ftype"];
+        $('#inputType').val(pVal);
+
+        var pVal = getUrlVars()["view"];
+        $('#inputView').val(pVal);
+
+        var pVal = getUrlVars()["numobj"];
+        $('#inputNumObj').val(pVal);
+        $('#numobj').val(pVal);
+        $('#inputNumObj', window.parent.SIDEBAR.document).val(pVal);
+        $('#res50', window.parent.SIDEBAR.document).addClass("active");
+
+        var pVal = getUrlVars()["numcol"];
+        $('#inputNumCol').val(pVal);
+
+        var pVal = getUrlVars()["days"];
+        $('#inputNumDays').val(pVal);
+
+        var pVal2 = getUrlVars()["date"];
+        var pVal3 = decodeURIComponent(pVal2);
+        //alert(pVal3);
+        var pVal4 = pVal3.replace("+", " ");
+        var pVal = pVal4.replace("+", " ");
+        //alert(pVal);
+        $('#datestr', window.parent.SIDEBAR.document).val(pVal);
+
+
+        //move he last list item before the first item. The purpose of this is if the user clicks to slide left he will be able to see the last item.
+        $('#carousel_ul li:first').before($('#carousel_ul li:last')); 
+        
+        
+        //when user clicks the image for sliding right        
+        $('#right_scroll img').click(function(){
+        
+            //get the width of the items ( i like making the jquery part dynamic, so if you change the width in the css you won't have o change it here too ) '
+            var item_width = $('#carousel_ul li').outerWidth() + 10;
+            
+            //calculae the new left indent of the unordered list
+            var left_indent = parseInt($('#carousel_ul').css('left')) - item_width;
+            
+            //make the sliding effect using jquery's anumate function '
+            $('#carousel_ul:not(:animated)').animate({'left' : left_indent},500,function(){    
+                
+                //get the first list item and put it after the last list item (that's how the infinite effects is made) '
+                $('#carousel_ul li:last').after($('#carousel_ul li:first')); 
+                
+                //and get the left indent to the default -210px
+                $('#carousel_ul').css({'left' : '-210px'});
+            }); 
+        });
+        
+        //when user clicks the image for sliding left
+        $('#left_scroll img').click(function(){
+            
+            var item_width = $('#carousel_ul li').outerWidth() + 10;
+            
+            /* same as for sliding right except that it's current left indent + the item width (for the sliding right it's - item_width) */
+            var left_indent = parseInt($('#carousel_ul').css('left')) + item_width;
+            
+            $('#carousel_ul:not(:animated)').animate({'left' : left_indent},500,function(){    
+            
+            /* when sliding to left we are moving the last item before the first list item */            
+            $('#carousel_ul li:first').before($('#carousel_ul li:last')); 
+            
+            /* and again, when we make that change we are setting the left indent of our unordered list to the default -210px */
+            $('#carousel_ul').css({'left' : '-210px'});
+            });
+            
+            
+        });
+        
+       // $('a').click(function() {
+       //      var a = $(this).attr('id');
+             /* alert(a); */
+             /* window.open(this.href,'name','options'); */
+        //     window.open($(this).attr('href'));
+        //     return false;
+        //});
+		
+		$('td[id*="box"]').mouseover(
+			function(){
+				if($(this).attr('sel')=='N')
+					$(this).css({'background-color':'#e5e5e5'});
+			}
+		);
+		$('td[id*="box"]').mouseout(
+			function(){
+				if($(this).attr('sel')=='N')
+					$(this).css({'background-color':'white'});
+			}
+		);
+		
+		
+		$('[ck="1"]').click(
+			function(){
+				checkUncheck($(this).attr('sNamer'));
+			}
+		);
+		$('[ck="1"]').each(
+			function(){
+				$(this).css({cursor:'pointer'});
+			}
+		);
+		
+    	$('.jqueryhidden').hide();
+		$('.jquerycursorpointer').css({cursor:'pointer'});
+		$('#ifhidden').hide();
+        
+  });
+</script>
+
+<style type="text/css">
+
+.affix {
+    position: fixed;
+    top: 0px;
+    width: 100%;
+    height: 80px;
+    left: auto;
+    right: auto;
+    background-color: #EEEEEE;
+}
+
+/* tags */
+.affix2 {
+    position: fixed;
+    top: 45px;   
+    left: 10px;
+    background-color: #EEEEEE;
+    z-index:inherit;   
+    font-size: 13px;
+}
+
+/* displaying */
+.affix6 {       
+    background-color: #EEEEEE;
+    font-size: 13px;
+}
+
+/* combo boxes */
+.affix3 {
+    position: fixed;
+    top: 5px;    
+    right: 10px;
+    background-color: #EEEEEE;
+}
+
+/* view buttons */
+.affix4 {
+    position: fixed;
+    top: 45px;
+    left: 15px;
+    background-color: #EEEEEE;       
+}
+
+/* navigation */
+.affix7 {
+    position: fixed;
+    top: 45px;    
+    right: 10px;
+    background-color: #EEEEEE;
+}
+
+/* search box */
+.affix5 {
+    width: 20%;
+    background-color: #EEEEEE;
+}
+
+
+
+
+
+
+.pull-center {
+    display: table;
+    margin-left: auto;
+    margin-right: auto;
+}
+    
+#carousel_inner {
+float:left; /* important for inline positioning */
+width:1050px; /* important (this width = width of list item(including margin) * items shown */ 
+overflow: hidden;  /* important (hide the items outside the div) */
+/* non-important styling bellow */
+background: #F0F0F0;
+}
+
+#carousel_ul {
+position:relative;
+left:-210px; /* important (this should be negative number of list items width(including margin) */
+list-style-type: none; /* removing the default styling for unordered list items */
+margin: 0px;
+padding: 0px;
+width:9999px; /* important */
+/* non-important styling bellow */
+padding-bottom:10px;
+}
+
+#carousel_ul li{
+float: left; /* important for inline positioning of the list items */                                    
+width:200px;  /* fixed width, important */
+/* just styling bellow*/
+padding:0px;
+height:200px;
+background: #000000;
+margin-top:10px;
+margin-bottom:10px; 
+margin-left:5px; 
+margin-right:5px; 
+}
+
+#carousel_ul li img {
+margin-bottom:-4px; /* IE is making a 4px gap bellow an image inside of an anchor (<a href...>) so this is to fix that*/
+/* styling */
+cursor:pointer;
+cursor: hand; 
+border:0px; 
+}
+#left_scroll, #right_scroll{
+float:left; 
+height:220px; 
+width:15px; 
+background: #C0C0C0; 
+}
+#left_scroll img, #right_scroll img{
+/*styling*/
+cursor: pointer;
+cursor: hand;
+}
+	
+	h3 {
+		margin: 0px;
+		padding: 0px;	
+	}
+
+	.suggestionsBox {
+		position: relative;
+		left: 30px;
+		margin: 10px 0px 0px 0px;
+		width: 200px;
+		background-color: #212427;
+		-moz-border-radius: 7px;
+		-webkit-border-radius: 7px;
+		border: 2px solid #000;	
+		color: #fff;
+	}
+	
+	.suggestionList {
+		margin: 0px;
+		padding: 0px;
+	}
+	
+	.suggestionList li {
+                list-style-type: none;		
+		margin: 0px 0px 3px 0px;
+		padding: 3px;
+		cursor: pointer;
+	}
+	
+	.suggestionList li:hover {
+		background-color: #659CD8;
+	}
+</style>
+
+<body style="background-color:white;">
+<iframe id='ifhidden' height="0px" style='visibility:hidden'></iframe>
+
+<div name="abc " id="abc" onclick="clicker();">
+<script type="text/javascript">
+function updatecounters() {
+$('#n_alltime', window.parent.SIDEBAR.document).html('1');
+$('#n_past24h', window.parent.SIDEBAR.document).html('');
+$('#n_past3d', window.parent.SIDEBAR.document).html('');
+$('#n_past7d', window.parent.SIDEBAR.document).html('');
+$('#n_past14d', window.parent.SIDEBAR.document).html('');
+$('#n_past30d', window.parent.SIDEBAR.document).html('');
+$('#n_past365d', window.parent.SIDEBAR.document).html('');
+$('#n_total', window.parent.SIDEBAR.document).html('1');
+$('#n_photo', window.parent.SIDEBAR.document).html('');
+$('#n_music', window.parent.SIDEBAR.document).html('1');
+$('#n_video', window.parent.SIDEBAR.document).html('');
+$('#n_docu', window.parent.SIDEBAR.document).html('');
+$('#n_doc', window.parent.SIDEBAR.document).html('');
+$('#n_xls', window.parent.SIDEBAR.document).html('');
+$('#n_ppt', window.parent.SIDEBAR.document).html('');
+$('#n_pdf', window.parent.SIDEBAR.document).html('');
+$('#inputString', window.parent.SIDEBAR.document).val('mus1');
+}
+bindEnterSearchBar();
+</script>
+<span class="affix" style="z-index: 200; background-color:#EEEEEE;color:black;border-bottom:1px solid lightgrey"><form class="form-search" style="z-index:100" id="frm1" action="echoClient5.htm" method="get" onsubmit="showLoading();"><INPUT TYPE="hidden" NAME="ftype" id="ftype" VALUE=".all"><INPUT TYPE="hidden" NAME="days" id="ndays" VALUE=""><INPUT TYPE="hidden" NAME="foo" VALUE="mus1"><INPUT id="formView" TYPE="hidden" NAME="view" VALUE="tile"><INPUT TYPE="hidden" NAME="numobj" VALUE="25"><INPUT id="formCol" TYPE="hidden" NAME="numcol" VALUE="5"><INPUT TYPE="hidden" NAME="pw" VALUE="xyzzy2011"><input type="hidden" name="dosubmit" value="1" id="dosubmit"/><span class="affix7">&nbsp</span><span class="affix3"><select class=span2 style="display:none;" onchange="searchclick();" name="view" id="inputView"><option value="detail">Detailed View</option><option value="show">Slideshow</option><option value="show2">Slideshow2</option><option value="tile" selected>Tile View</option><option value="polar">Polar View</option><option value="caro">Carousel View</option></select>&nbsp#Columns:&nbsp<select style="top:5px; font-size:10px;width:45px;" onchange="searchclick();" name="numcol" id="inputNumCol"><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option><option value="7">7</option><option value="9">9</option></select>&nbsp&nbsp&nbspResults:&nbsp<select style="font-size:10px;width:60px;" class=span1 onchange="searchclick();" name="numobj" id="inputNumObj"><option value="25">25</option><option value="50">50</option><option value="100">100</option><option value="250">250</option><option value="500">500</option></select></span><span style="top:5px; margin-left: 1em" class=""><div style="font-size:11px;margin-right: 1em;   width: 60%" class="input-append"><input style="font-size:9px; margin-left: 1em; " type="checkbox" id="checkk" onClick="togglesel(this.checked);"/><label onclick="var chek = document.getElementById('checkk'); togglesel(chek.checked);">&nbspSelect All&nbsp&nbsp</label><div style="font-size:11px; top:5px; position:relative; width:40%" class="input-append"><INPUT style="font-size:11px; position: relative; width: 40% "  TYPE="text" class="search-query" NAME="tag" ID="tag-search" oninput="$('#tag').val($('#tag-search').val());"  autocomplete="off" placeholder="Enter tags here."/><button style="font-size:11px;" type=button class="btn btn-primary" onClick="submit_tag();"><i class="icon-white icon-tags  "></i>&nbspApply </button></div><script type="text/javascript">$('#tag-search').keydown(function (e) {if (e.keyCode == 13) { e.preventDefault();$('#frm2').submit();}}); </script><div class="input-append" style="top:5px; margin;left: 1em; font-size:13px; position: relative; width: 65% "><input type="text" class="search-query" style="margin;left: 1em; font-size:13px; position: relative; width: 65% "  name ="foo" id="inputString" onKeypress="" onkeyup="lookup(this.value);" autocomplete="off" placeholder="Search"/><button class="btn btn-primary" onclick="searchclick();clearFilters(); clearFiltersVar();"><i class="icon-search icon-white" ></i>&nbspSearch</button></div><div><div style="width: 210px; float:left;">&nbsp</div><div class="suggestionsBox" id="suggestions" style="font-size:13px;float:left;margin-left: 10%; width: 40%; display: none; overflow: visible"><div class="suggestionList" id="autoSuggestionsList">&nbsp;</div></div></div><div class="affix6 pull-center"><br>Displaying 1-1 of 1 results.</div></div><span class="affix4"><button type="submit" class="btn btn-primary" onclick="view_tile();"><i class="icon-th icon-white"></i></button><button type="submit" class="btn" onclick="view_detail();"><i class="icon-list"></i></button><button type="submit" class="btn" onclick="view_show();"><i class="icon-picture"></i></button></span></span></form></span><form class="form-search"   id="frm2" action="bulker.php" method=get autocomplete="off" onsubmit="showLoading();" ><INPUT style="font-size:11px; position: relative; width: 20% "  TYPE="hidden" class="search-query" NAME="tag" ID="tag" autocomplete="off" placeholder="Enter tags here."/><span class="affix2"><INPUT TYPE="hidden" NAME="ftype" id="ftype" VALUE=".all"><INPUT TYPE="hidden" NAME="days" id="ndays" VALUE=""><INPUT TYPE="hidden" NAME="foo" VALUE="mus1"><INPUT TYPE="hidden" NAME="view" VALUE="tile"><INPUT TYPE="hidden" NAME="numobj" VALUE="25"><INPUT TYPE="hidden" NAME="numcol" VALUE="5"><INPUT TYPE="hidden" ID="date" NAME="date" VALUE=""><INPUT TYPE="hidden" ID="DeleteTag" NAME="DeleteTag" VALUE=""><input id="chk0" style="display:none" type="checkbox" onClick="togglechk(this.checked);">&nbsp</span><br><br><br><br><div><div style='border: 1px solid #ccc; float: left; margin-left: 0.3em; margin-top: 0.3em'  onmouseout='hideButtonsTile("0008072b9e03eaa3f3d9b300e2160552", true);' onmouseover='showButtonsTile("0008072b9e03eaa3f3d9b300e2160552", true)' ><div id='div0008072b9e03eaa3f3d9b300e2160552' class='jquerycursorpointer'   hreff ='test4.php?foo=0008072b9e03eaa3f3d9b300e2160552&pw=xyzzy2011&view=tile&ftype=.all&days=&numcol=5&numobj=25' ondblclick='link(this)' style='box-sizing:border-box;-moz-box-sizing:border-box;-webkit-box-sizing:border-box; z-index: -1;display:table; width: 200px; height: 200px; background-color: rgb(204,204,204); text-align: center' "><font class='jquerycursorpointer'  style="display:table-cell; vertical-align:middle; font-family: 'My Font'; font-size:100px">&#xe018;</font></div> <div id='name0008072b9e03eaa3f3d9b300e2160552' ondblclick="window.location.href=$('#div0008072b9e03eaa3f3d9b300e2160552').attr('hreff')" style=" background-color: rgba(82, 82, 82, 0.7); text-align: center; z-index: 100; font-size: 0.8em; color: white;position: absolute; margin-top: -50px; width: 200px; overflow: hidden;  text-shadow: 0.1em 0.1em #333;">Subway <br> Weekend Players   <div>       <div id='numCopies0008072b9e03eaa3f3d9b300e2160552' style='float: right;display: none; margin-right: 0.2em; margin-bottom: 0.2em'><font class='jquerycursorpointer'  style='cursor:pointer;background-color:#314;color:white;'>&nbsp1&nbsp</font>&nbsp<font class='jquerycursorpointer'    style='cursor:pointer;background-color:#08c;color:white;'>&nbsp1&nbsp</font>&nbsp<font class='jquerycursorpointer'  style='cursor:pointer;background-color:red;color:white;'>&nbsp1&nbsp</font>       </div>   <div expCont='OFF'  id='tagsTbl0008072b9e03eaa3f3d9b300e2160552' style='display: none; float: left;width:auto;overflow:hidden; width: 100%'><div style='margin-left: 0.3em; float: left; margin-top: 0.2em'><INPUT TYPE=button value="mus1" id='tagmus10008072b9e03eaa3f3d9b300e2160552' 0008072b9e03eaa3f3d9b300e2160552=0008072b9e03eaa3f3d9b300e2160552 onclick="showLoading(); golink('echoClient5.htm?foo=mus1&view=tile&ftype=.all&days=&numcol=5&numobj=25&pw=xyzzy2011','mus1')" style="border-radius:5px;color:#000;height: 25px;background-color:#FCF0AD;font-size:100%"/><INPUT TYPE='submit' style="border-radius:5px;height: 25px;color:#000;background-color:#FCF0AD;" id='tagDelmus10008072b9e03eaa3f3d9b300e2160552' 0008072b9e03eaa3f3d9b300e2160552=0008072b9e03eaa3f3d9b300e2160552 value='x' onclick='getElementById("tag").value="mus1";getElementById("DeleteTag").value="0008072b9e03eaa3f3d9b300e2160552";' /></div></div>   </div></div><div id='select0008072b9e03eaa3f3d9b300e2160552' ondblclick="window.location.href=$('#div0008072b9e03eaa3f3d9b300e2160552').attr('hreff')" style='box-sizing:border-box;-moz-box-sizing:border-box;-webkit-box-sizing:border-box;display: none; z-index: 90; margin-top: -200px; position: relative; width: 100%;border:5px solid rgb(0,136,204); height: 200px; top: 0px'>   <input type ='checkbox' class='checkbox' style='display: none' name='0008072b9e03eaa3f3d9b300e2160552'> <div style='float: right;width: 20px; height: 20px; background-color: rgb(0,136,204); padding-left: 0.2em'><i class="icon-ok icon-white"></i></div></div><script type='text/javascript'>posTagsDiv('0008072b9e03eaa3f3d9b300e2160552', true); posNameDiv('0008072b9e03eaa3f3d9b300e2160552'); $("#div0008072b9e03eaa3f3d9b300e2160552").click(function(e) {    checkElement('0008072b9e03eaa3f3d9b300e2160552');   e.stopPropagation();});$("#name0008072b9e03eaa3f3d9b300e2160552").click(function(e) {    checkElement('0008072b9e03eaa3f3d9b300e2160552');   e.stopPropagation();});$("#select0008072b9e03eaa3f3d9b300e2160552").click(function(e) {    checkElement('0008072b9e03eaa3f3d9b300e2160552');   e.stopPropagation();});</script><div  style='z-index: 150;width: 200px; ' class='jqueryhidden'  id='bnts0008072b9e03eaa3f3d9b300e2160552' ><div align="left" style='margin-bottom: 0.5em; width: 100%;' ><BUTTON style="" type="button" class="buttonElement" id_ onclick="golink_music('/cass/viewimg2.htm?sNamer=0008072b9e03eaa3f3d9b300e2160552','mus1',1,1);"><i class="icon-eye-open icon-white"></i>&nbsp;Play</BUTTON><BUTTON TYPE=button style=" type="button" class="buttonElement" id_ onclick="silentCommand('openfile.htm?sNamer=0008072b9e03eaa3f3d9b300e2160552&sFileName=0008072b9e03eaa3f3d9b300e2160552.mp3');"><i class="icon-download-alt icon-white"></i>&nbsp;Open</BUTTON><BUTTON TYPE=button style=" type="button" class="buttonElement" id_ onclick="silentCommand('openfolder.htm?sNamer=0008072b9e03eaa3f3d9b300e2160552&sFileName=0008072b9e03eaa3f3d9b300e2160552.mp3');"><i class="icon-folder-open icon-white"></i>&nbsp;Folder</BUTTON></div></div></div></form></div><div style='clear:both; margin-top: 3em'>**Total time: 43 ms Index time: = 15 ms t1=1ms t2=23ms t3=16ms t5=1ms t17=1ms  Initialize=4ms  LoadNodes=6ms mapdb=0ms filer=4ms  while=0ms  SortByValue=0ms  IsBNewQuery=0ms  beforefor=0ms For-CopyCheck=0ms For-HiddenCheck=0ms For-Datacheck=0ms For-ReadRowHash=0ms afterfor=0ms </div><script type='text/javascript'>
+$('#loop_tags', window.parent.SIDEBAR.document).html('xxx');
+$('#tags_all', window.parent.SIDEBAR.document).html('<INPUT TYPE=button value="prueba1 (4)"  onclick="clearFilters(); search_query(&#39;prueba1&#39;);" style="color:#000;background-color:#FCF0AD;margin-bottom: 0.2em;display:block;max-width:90%;word-wrap:break-word;font-size:100%"/><INPUT TYPE=button value="mus1 (1)"  onclick="clearFilters(); search_query(&#39;mus1&#39;);" style="color:#000;background-color:#FCF0AD;margin-bottom: 0.2em;display:block;max-width:90%;word-wrap:break-word;font-size:100%"/>');
+</script></div></body></html>

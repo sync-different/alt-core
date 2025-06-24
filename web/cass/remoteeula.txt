@@ -1,0 +1,46 @@
+<b>Privacy Policy</b><br><br>
+
+We at ALTERANTE, Inc., ("we" or the "Company") respect user privacy and value the relationship we have with our users.
+
+AlteranteTM needs to collect some personally identifiable information from you, solely to operate the Service as described in the "How We Use Your User Information" section below. We do not sell any information to any third party, including advertisers or spammers. We will only share the information we collect from you as described in the section below entitled "When We Share Your Information."
+
+This Privacy Policy is designed to show you what information about you we collect through the Alterante software application running on your personal computer (the "Desktop Application"), the related mobile device software application (the "Mobile Application") and the Alterante backend servers running at alterante.com for the Remote File Access service (together with the Desktop Application and the Mobile Application, the "Service"), and how we use and share any information that is collected. <br><br>
+
+<b>Information We Collect ("User Information")</b> - Important Note: Remote File access is an optional service feature. This feature is disabled by default and needs to be explicitly activated on Desktop Application. If you only wish to access your files from Mobile devices when both devices are connected to the same private network (e.g. your WIFI network at home or office), then Remote File Service is NOT required.
+
+Our Service allows you to remotely access the files on your computer from any remote location on the Internet (outside your computer network) using an authenticated mobile device (e.g. your tablet, smartphone). When you use the Service, we need to collect some information ("User Information") in order to establish a secure connection between your mobile device on the Internet and the Desktop Application that running on your remote PC. The information collected includes:<br>
+- Computer IP Address<br>
+- Computer Name<br>
+
+When using Remote Access, we also need to collect your mobile device's unique identifier and Mobile device IP address ("Mobile Information"). The Mobile Information is required in order to establish a secure, authenticated connection between your mobile device and your remote computer that is running the Desktop Application.
+When you use the Remote Access, your file data flows through the computer memory (RAM) in our servers, but is never collected or stored to disk. In order to protect the privacy and confidentiality of your data while in transit through the Internet, a secure HTTPS/SSL connection is established between the device endpoint (your mobile device, your PC) and our servers. HTTPS/SSL is a proven technology that secures most transactions over the Internet, including most banking and e-commerce transactions.
+
+Our website may also collect your Email address. Your email is optionally submitted by you during registration, or when you request support..<br><br>
+
+<b>Mobile Log-In Information</b> - To access your files remotely, you must input on Mobile Application your Alterante username and password, which you created on your Desktop Application during Setup process. This login information passes through our servers, but is not stored permanently in our servers. The users and passwords are stored in encrypted form in your own computer, and used by the Desktop Application to authenticate incoming mobile login connections. 
+We highly encourage using strong passwords, of length 16 or longer, using combination of numbers, upper/lowercase letters, and special characters.<br><br>
+
+<b>How We Use Your Information</b><br>
+- The Company will only use User Information solely for the following purposes:<br>
+- Your IP address: To enable you to use our Service (access your remote files on your mobile device via the Internet)<br>
+- Your email: To provide technical support and to respond to your inquiries and product feedback<br>
+- Your email: To communicate new build releases, new features, or new promotions<br><br>
+
+<b>When We Share Your Information</b> - We will only share your information under the following circumstances:<br>
+- As Required by Law: We may disclose any User Information we deem necessary, in our sole discretion, to comply with any applicable law, regulation, legal process or governmental request.<br>
+- To Prevent Harm or Loss: We may disclose User Information when we believe, in our sole discretion, disclosure is necessary or appropriate to prevent physical harm or financial loss or in connection with suspected or actual illegal activity.<br>
+- In Connection With a Sale of Our Business: We also reserve the right to transfer User Information in the event we sell or transfer all or a portion of our business or assets. Should such a sale or transfer occur, we will use reasonable efforts to direct the transferee to use the User Information in a manner that is consistent with this Privacy Policy. Following such a sale or transfer, you may contact the entity to which we transferred the User Information with any inquiries concerning the processing of that information.<br><br>
+
+<b>How We Protect Your User Information</b> - We maintain administrative, technical and physical safeguards designed to protect the User Information that we collect against accidental, unlawful or unauthorized destruction, loss, alteration, access, disclosure or use. While we cannot guarantee that no accidental, unlawful or unauthorized destruction, loss, alteration, access, disclosure or use of your information will occur, we will try to prevent such occurrences.<br><br>
+
+<b>Transfers of User Information to Other Countries</b> - To provide a continuous, fault-tolerant and non-stop service, the Company reserves the right to utilize servers in datacenters located in different jurisdictions. We may transfer User Information we collect about you to our databases outside your country of residence. Even if the laws in the country to which the information is transferred do not require us to provide adequate protection for your data, we will nevertheless seek to ensure that information transferred to such country is adequately protected.<br><br>
+
+<b>Your Privacy Rights and Choices</b> - Remote File access is an optional service, which is disabled by default and needs to be explicitly activated on Desktop Application. If you only wish to access your files from your Mobile devices within your own private network (e.g. WIFI network at home or office), Service is NOT required.
+
+You may stop the Remote File Service from using and collecting User Information at any time by doing any of the following:
+(i) disabling the Remote Access feature on your Desktop Application (located in the Settings/Network panel)
+(ii) completely uninstalling the Desktop Application on your computer.<br><br>
+
+<b>Updates to This Privacy Policy</b> - This Privacy Policy may be updated periodically and without prior notice to you to reflect changes in our information processing practices or for any other purpose. We will post a notice at the top of the Privacy Policy when it was most recently updated.<br><br>
+
+<b>How to Contact Us</b> - If you have any questions or comments about this Privacy Policy, please contact us by email at support AT Alterante DOT com. You also may write to us at Alterante, Inc., P.O. Box 2701, Menlo Park CA 94025. Questions or comments submitted through other means, such as Facebook Wall posts, may not be received or addressed.<br><br>

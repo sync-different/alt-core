@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <title>Bootstrap, from Twitter</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="">
+    <meta name="author" content="">
+
+    <!-- Le styles -->
+    <link href="bootstrap/css/bootstrap.css" rel="stylesheet">
+    <style type="text/css">
+      body {
+        padding-top: 60px;
+        padding-bottom: 40px;
+      }
+    </style>
+    <link href="bootstrap/css/bootstrap-responsive.css" rel="stylesheet">
+
+    <!-- HTML5 shim, for IE6-8 support of HTML5 elements -->
+    <!--[if lt IE 9]>
+      <script src="http://html5shim.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+
+    <!-- Fav and touch icons -->
+    <link rel="shortcut icon" href="bootstrap/ico/favicon.ico">
+    <link rel="apple-touch-icon-precomposed" sizes="144x144" href="bootstrap/ico/apple-touch-icon-144-precomposed.png">
+    <link rel="apple-touch-icon-precomposed" sizes="114x114" href="bootstrap/ico/apple-touch-icon-114-precomposed.png">
+    <link rel="apple-touch-icon-precomposed" sizes="72x72" href="bootstrap/ico/apple-touch-icon-72-precomposed.png">
+    <link rel="apple-touch-icon-precomposed" href="bootstrap/ico/apple-touch-icon-57-precomposed.png">
+  </head>
+
+  <script type="text/javascript" src="jquery.min.js"></script>
+  
+  <style type="text/css">
+
+.affix {
+    position: fixed;
+    top: 0px;
+    width: 100%;
+    left: auto;
+    right: auto;
+    background-color: #EEEEEE;
+}   
+    
+    .suggestionsBox {
+		position: relative;
+		left: 30px;
+		margin: 10px 0px 0px 0px;
+		width: 200px;
+		background-color: #212427;
+		-moz-border-radius: 7px;
+		-webkit-border-radius: 7px;
+		border: 2px solid #000;	
+		color: #fff;
+	}
+	
+	.suggestionList {
+		margin: 0px;
+		padding: 0px;
+	}
+	
+	.suggestionList li {
+                list-style-type: none;		
+		margin: 0px 0px 3px 0px;
+		padding: 3px;
+		cursor: pointer;
+	}
+	
+	.suggestionList li:hover {
+		background-color: #659CD8;
+	}
+    </style>
+
+  <body>
+      
+      <script>
+          
+              function searchclick() {
+                  alert('hello');
+                  //$('#frm1').submit();
+                  mysubmit();
+              }
+              
+              function mysubmit() {
+                dowait();
+                searchstring = $('#inputString').val();
+                //alert(searchstring);
+                $('#inputString', window.parent.SIDEBAR.document).val(searchstring); 
+                $('#frm1').submit();
+                //document.getElemenById("frm1").submit();
+                //this.form.submit();                
+	      }
+              
+              function fill(thisValue) {
+                $('#inputString').val(thisValue);
+		var ds = $('#dosubmit').val();
+                //alert(ds);
+		setTimeout("$('#suggestions').hide();", 200);
+                if (ds == "1") {
+                    //setTimeout(mysubmit, 200);
+                    mysubmit();
+                }
+              }
+              
+              function CursorToHourglass()
+            {
+                    $('*', window.parent.parent.NAVBAR.document).css("cursor", "wait");
+                    $('*', window.parent.SIDEBAR.document).css("cursor", "wait");
+                    $('*', window.parent.MAIN.document).css("cursor", "wait");
+                    $('*', window.parent.parent.MAIN1.document).css("cursor", "wait");
+            }
+              
+            function dowait() {
+                CursorToHourglass();
+                $('#plw', window.parent.SIDEBAR.document).css('background', '#FCF0AD');
+                $('#plw', window.parent.SIDEBAR.document).css('color', 'black');            
+            }
+          
+                function clearFilters() {
+                    
+                }
+                
+                function lookup(inputString) {
+            
+                    $('#dosubmit').val("1");
+
+                    if(inputString.length == 0) {
+                            // Hide the suggestion box.
+                            $('#suggestions').hide();
+                    } else {
+                            $.post("rpc.php", {queryString: ""+inputString+""}, function(data){
+                                    if(data.length >0) {
+                                            $('#suggestions').show();
+                                            $('#autoSuggestionsList').html(data);
+                                    }
+                            });
+                            $('#datestr').val("");
+                    }
+                 } // lookup
+                               
+                 $(document).ready(function() {
+                     
+                    $('#pp').bind('click', function(e)
+                    {
+                        console.log("bind 1");
+                        e.preventDefault();
+                        getContent('systeminfo.fn');
+                    });
+                    
+                    var interval = 30000;   //number of mili seconds between each call
+                    var refresh = function() {
+                        $.ajax({
+                            url: "systeminfo.fn",
+                            cache: false,
+                            beforeSend: function() {
+                                $('#res').html('<img src="ajax-loader.gif" />');
+                            },
+                            success: function(html) {
+                                $('#res').html(html);
+                                setTimeout(function() {
+                                    refresh();
+                                }, interval);
+                            }
+                        });
+                    };
+                    refresh();
+ 
+                    
+                 });
+                 
+                function getContent(filename)
+                    {
+                        console.log("START AJAX");
+                        $.ajax({
+                            url: filename,
+                            type: 'GET',
+                            dataType: 'html',
+                            beforeSend: function() {
+                                $('#res').html('<img src="ajax-loader.gif" />');
+                            },
+                            success: function(data, textStatus, xhr) {
+
+                                console.log("success AJAX");
+ 
+                                if (filename == 'test3.html')
+                                {
+                                    setTimeout( function() {
+                                        $('#res').html(data);
+                                    }, 2000);
+                                }
+                                else
+                                {
+                                    $('#res').html(data);
+                                }
+                            },
+                            error: function(xhr, textStatus, errorThrown) {
+                                $('#res').html(textStatus);
+                            }
+                        });
+                    };
+ 
+ 
+                function reset() 
+                {
+                    $('#pp').html('Content will appear here.');
+                    $('#pp').hide();
+                };
+                
+            function view_detail() {
+            $('#formView').val("detail");
+            $('#formCol').val("1");
+            $('#frm1').submit();
+            }
+            function view_tile() {
+                $('#formView').val("tile");
+                $('#formCol').val("5");
+                $('#frm1').submit();
+            }
+            function clearFilters() {
+                $('#inputType', window.parent.SIDEBAR.document).val(".all"); 
+                $('#typ1', window.parent.SIDEBAR.document).addClass("active");
+                $('#typ2', window.parent.SIDEBAR.document).removeClass("active");
+                $('#typ3', window.parent.SIDEBAR.document).removeClass("active");
+                $('#typ4', window.parent.SIDEBAR.document).removeClass("active");
+                $('#typ5', window.parent.SIDEBAR.document).removeClass("active");
+                $('#typ6', window.parent.SIDEBAR.document).removeClass("active");
+                $('#typ7', window.parent.SIDEBAR.document).removeClass("active");
+                $('#typ8', window.parent.SIDEBAR.document).removeClass("active");
+                $('#typ9', window.parent.SIDEBAR.document).removeClass("active");
+
+                $('#inputNumDays', window.parent.SIDEBAR.document).val(""); 
+                $('#timeall', window.parent.SIDEBAR.document).addClass("active");     
+                $('#time24h', window.parent.SIDEBAR.document).removeClass("active");
+                $('#time3d', window.parent.SIDEBAR.document).removeClass("active");
+                $('#time7d', window.parent.SIDEBAR.document).removeClass("active");
+                $('#time14d', window.parent.SIDEBAR.document).removeClass("active");
+                $('#time30d', window.parent.SIDEBAR.document).removeClass("active");
+                $('#time365d', window.parent.SIDEBAR.document).removeClass("active");
+            }
+                        
+                
+          </script>
+          
+<body "background-color:#EEEEEE;">
+<form id="frm1" action="echoClient5.htm" method=get>
+<div style="background-color:#EEEEEE;color:black;border-bottom:1px solid lightgrey">
+                <INPUT TYPE="hidden" NAME="ftype" VALUE=".all">
+                <INPUT TYPE="hidden" NAME="days" VALUE="">
+                <INPUT TYPE="hidden" NAME="fop" VALUE="">
+                <INPUT id="formView" TYPE="hidden" NAME="view" VALUE="tile">
+                <INPUT TYPE="hidden" NAME="numobj" VALUE="25">
+                <INPUT id="formCol" TYPE="hidden" NAME="numcol" VALUE="5">
+                <INPUT TYPE="hidden" NAME="pw" VALUE="xyzzy2011">
+                <input type="hidden" name="dosubmit" value="1" id="dosubmit"/>
+
+                <span class="affix">
+                                
+                <div class="input-append">   
+                    <br>
+                    <input type="text" autocomplete="off" class="search-query span6" name ="foo" onsubmit="searchclick();" onformchange="searchclick();" id="inputString" onKeypress="clearFilters();" onkeyup="lookup(this.value);" placeholder="Search"/>
+                    <span class="add-on btn btn-primary"><i class="icon-search icon-white" onclick="searchclick();"></i></span>
+                </div>
+                
+                <div class="suggestionsBox" id="suggestions" style="display: none; overflow: visible">
+                     <div class="suggestionList" id="autoSuggestionsList">
+                &nbsp
+                </div>
+                </div>                     
+                
+                <div class="pull-right">
+                <button type="submit" class="btn btn-primary" onclick="view_tile();">
+                <i class="icon-th icon-white"></i>Tile
+                </button>
+                
+                &nbsp&nbsp
+
+                <button type="submit" class="btn" onclick="view_detail();">
+                    <i class="icon-list"></i>Detail
+                </button>
+                </div>
+                
+                </span>
+</div>                
+                </form>
+
+<div class="container">
+        <legend>Welcome to Alterante.</legend>
+        <div class="demoarea" id="ajax">
+            <div id="res" class="contentarea" style="border:1px solid orange;padding:10px;margin-bottom:5px;">Content will appear here.</div>
+            <button id="pp" class="content1 btn">Refresh</button> 
+        </div>
+  </div> 
+
+ <p>Welcome back, admin.<br><br>Scan in progress. Files will start appearing in your searches.</p>

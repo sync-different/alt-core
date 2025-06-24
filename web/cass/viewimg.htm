@@ -1,0 +1,258 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
+<html>
+<head>
+<title>Alterante</title>
+<script type="text/javascript" src="jquery.min.js"></script>
+
+<script type="text/javascript">
+
+       function getUrlVars()
+        {
+           var vars = [], hash;
+            var hashes = window.location.href.slice(window.location.href.indexOf('?') + 1).split('&');
+            for(var i = 0; i < hashes.length; i++)
+            {
+                hash = hashes[i].split('=');
+                vars.push(hash[0]);
+                vars[hash[0]] = hash[1];
+            }
+            return vars;
+        }
+       
+	function lookup(inputString) {
+            
+		if(inputString.length == 0) {
+			// Hide the suggestion box.
+			$('#suggestions').hide();
+		} else {
+			$.post("rpc.php", {queryString: ""+inputString+""}, function(data){
+				if(data.length >0) {
+					$('#suggestions').show();
+					$('#autoSuggestionsList').html(data);
+				}
+			});
+		}
+	} // lookup
+	
+	function fill(thisValue) {
+		$('#inputString').val(thisValue);
+		setTimeout("$('#suggestions').hide();", 200);
+	}
+</script>
+
+<script type="text/javascript">
+    
+  $(document).ready(function() {
+      
+        var pVal = getUrlVars()["subject"];
+        $('#inputSubject').val(pVal);
+
+        var pVal = getUrlVars()["message"];
+        $('#inputMessage').val(pVal);
+
+        var pHost = getUrlVars()["host"];
+        var pPort = getUrlVars()["port"];
+
+        var pVal = getUrlVars()["file"];
+        var pVal2 = decodeURIComponent(pVal);
+        
+        var pHeight = getUrlVars()["height"];
+        var pWidth = getUrlVars()["width"];
+        
+        var pMD5 = getUrlVars()["md5"];
+
+        $('#inputFile').val(pVal2);
+		
+		//$(window).height() Funciona bien en chrome pero no en firefox por eso el uso de window.innerHeight
+		//Ademas se debe averiguar el tamaño de pantalla antes de cargar la imagen porque si es grande ya hace que la pantalla sea mas
+		//grande y el innerHeight retorna un valor mayor al visible sin scroll
+		var winHeight=($(window).height()<window.innerHeight?window.innerHeight:$(window).height())*0.9-$('#viewImageTitle').height();
+		var winWidth= ($(window).width()<window.innerWidth?window.innerWidth:$(window).width())*0.9;
+		
+        //$('#inputImage').attr("src", 'http://' + pHost + ':' + pPort + '/' + pVal2 + '.jpg');
+	$('#inputImage').attr("src", 'getfile.fn?sNamer=' + pMD5);
+        
+        //$('#inputImage').attr("height", pHeight);
+        //$('#inputImage').attr("width", pWidth);
+	
+		var ratioHeight=1;
+		var ratioWidth=1;
+		if(pHeight>winHeight){
+			//pHeight - 100%
+			//winHeight - x%
+			//x=winHeight*100/pHeight
+			ratioHeight=winHeight/pHeight;
+		}
+		if(pWidth>winWidth){
+			//pHeight - 100%
+			//winHeight - x%
+			//x=winHeight*100/pHeight
+			ratioWidth=winWidth/pWidth;
+		}
+		var ratio = Math.min(ratioHeight,ratioWidth);
+		var imgHeigh=pHeight*ratio;
+		var imgWidth=pWidth*ratio;
+		
+        $('#inputImage').attr("height",imgHeigh);
+        $('#inputImage').attr("width", imgWidth);
+        
+        
+        //move he last list item before the first item. The purpose of this is if the user clicks to slide left he will be able to see the last item.
+        $('#carousel_ul li:first').before($('#carousel_ul li:last')); 
+        
+        
+        //when user clicks the image for sliding right        
+        $('#right_scroll img').click(function(){
+        
+            //get the width of the items ( i like making the jquery part dynamic, so if you change the width in the css you won't have o change it here too ) '
+            var item_width = $('#carousel_ul li').outerWidth() + 10;
+            
+            //calculae the new left indent of the unordered list
+            var left_indent = parseInt($('#carousel_ul').css('left')) - item_width;
+            
+            //make the sliding effect using jquery's anumate function '
+            $('#carousel_ul:not(:animated)').animate({'left' : left_indent},500,function(){    
+                
+                //get the first list item and put it after the last list item (that's how the infinite effects is made) '
+                $('#carousel_ul li:last').after($('#carousel_ul li:first')); 
+                
+                //and get the left indent to the default -210px
+                $('#carousel_ul').css({'left' : '-210px'});
+            }); 
+        });
+        
+        //when user clicks the image for sliding left
+        $('#left_scroll img').click(function(){
+            
+            var item_width = $('#carousel_ul li').outerWidth() + 10;
+            
+            /* same as for sliding right except that it's current left indent + the item width (for the sliding right it's - item_width) */
+            var left_indent = parseInt($('#carousel_ul').css('left')) + item_width;
+            
+            $('#carousel_ul:not(:animated)').animate({'left' : left_indent},500,function(){    
+            
+            /* when sliding to left we are moving the last item before the first list item */            
+            $('#carousel_ul li:first').before($('#carousel_ul li:last')); 
+            
+            /* and again, when we make that change we are setting the left indent of our unordered list to the default -210px */
+            $('#carousel_ul').css({'left' : '-210px'});
+            });
+            
+            
+        });
+        
+        $('a').click(function() {
+             var a = $(this).attr('id');
+             /* alert(a); */
+             /* window.open(this.href,'name','options'); */
+             window.open($(this).attr('href'));
+             return false;
+        });
+        
+        
+  });
+</script>
+<style type="text/css">
+
+#carousel_inner {
+float:left; /* important for inline positioning */
+width:1050px; /* important (this width = width of list item(including margin) * items shown */ 
+overflow: hidden;  /* important (hide the items outside the div) */
+/* non-important styling bellow */
+background: #F0F0F0;
+}
+
+#carousel_ul {
+position:relative;
+left:-210px; /* important (this should be negative number of list items width(including margin) */
+list-style-type: none; /* removing the default styling for unordered list items */
+margin: 0px;
+padding: 0px;
+width:9999px; /* important */
+/* non-important styling bellow */
+padding-bottom:10px;
+}
+
+#carousel_ul li{
+float: left; /* important for inline positioning of the list items */                                    
+width:200px;  /* fixed width, important */
+/* just styling bellow*/
+padding:0px;
+height:200px;
+background: #000000;
+margin-top:10px;
+margin-bottom:10px; 
+margin-left:5px; 
+margin-right:5px; 
+}
+
+#carousel_ul li img {
+margin-bottom:-4px; /* IE is making a 4px gap bellow an image inside of an anchor (<a href...>) so this is to fix that*/
+/* styling */
+cursor:pointer;
+cursor: hand; 
+border:0px; 
+}
+#left_scroll, #right_scroll{
+float:left; 
+height:220px; 
+width:15px; 
+background: #C0C0C0; 
+}
+#left_scroll img, #right_scroll img{
+/*styling*/
+cursor: pointer;
+cursor: hand;
+}
+	body {
+		font-family: Helvetica;
+		font-size: 11px;
+		color: #000;
+	}
+	
+	h3 {
+		margin: 0px;
+		padding: 0px;	
+	}
+
+	.suggestionsBox {
+		position: relative;
+		left: 30px;
+		margin: 10px 0px 0px 0px;
+		width: 200px;
+		background-color: #212427;
+		-moz-border-radius: 7px;
+		-webkit-border-radius: 7px;
+		border: 2px solid #000;	
+		color: #fff;
+	}
+	
+	.suggestionList {
+		margin: 0px;
+		padding: 0px;
+	}
+	
+	.suggestionList li {
+		
+		margin: 0px 0px 3px 0px;
+		padding: 3px;
+		cursor: pointer;
+	}
+	
+	.suggestionList li:hover {
+		background-color: #659CD8;
+	}
+</style>
+
+</head>
+<body>
+    
+    
+<h1 style='color:black' id='viewImageTitle'>View picture</h1>
+
+
+ <div>     
+     <img id ="inputImage"/>
+ </div>
+
+</body></html>
