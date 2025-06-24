@@ -49,4 +49,4 @@ $./build.sh
 ```
 
 ## License
-Distributed under the AGPL v3 License. See ``LICENSE.md`` for more information.
+Distributed under the AGPL v3 License. See ``LICENSE`` file for more information.
