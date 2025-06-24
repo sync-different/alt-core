@@ -6,20 +6,17 @@ alterante core base platform
 ```
 project
 │   README.md
-│   file001.txt    
 │
-└───folder1
-│   │   file011.txt
-│   │   file012.txt
+└───scrubber 
+│   │   src
 │   │
-│   └───subfolder1
+│   └───config
 │       │   file111.txt
 │       │   file112.txt
 │       │   ...
 │   
-└───folder2
-    │   file021.txt
-    │   file022.txt
+└───web
+│   └───cass
 ```
 
 ## steps to build (maven)
