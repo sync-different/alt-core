@@ -1,12 +1,12 @@
 # alt-core
 alterante core base platform
 
-## folder structure
+## repo structure
 
-[ ] 
- | rtserver - web server config
- | scrubber - main folder
- | web - web app
+- 
+ - rtserver - web server config
+ - scrubber - main folder
+ - web - web app
 
 ## steps to build (maven)
 ```
