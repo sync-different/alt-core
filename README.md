@@ -60,6 +60,8 @@ $./build.sh
 ```
 $cd target
 $java -jar my-app-1.0-SNAPSHOT.jar
+$#launch the browser
+$open http://localhost:8081/cass/uiv3/indexv2.htm
 ```
 
 ## License
