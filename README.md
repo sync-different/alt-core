@@ -15,7 +15,7 @@ Step 2 - Clone this repo and follow steps to build below
 
 Step 3 - Check out the discussion board to understand the roadmap and ideas WIP <a href="https://github.com/orgs/sync-different/discussions">discussions</a>
 
-Step 4 - Join the discord community to chat live with team 
+Step 4 - Join the discord community to chat live with team <a href="https://discord.com/invite/Gjw9sqYuUY">join discord</a>
 
 ## repo structure
 
