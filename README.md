@@ -49,10 +49,10 @@ alt-core
 ## steps to build (maven)
 ```
 $cd scrubber
-$#install JAR dependencies in local maven repo
-#./install.sh
-#
-#$build alt uber JAR
+$# install JAR dependencies in local maven repo
+$./install.sh
+$#
+$# build alt uber JAR (stored in target directory)
 $./build.sh
 ```
 
@@ -60,7 +60,7 @@ $./build.sh
 ```
 $cd target
 $java -jar my-app-1.0-SNAPSHOT.jar
-$#launch the browser
+$# launch the web app on browser
 $open http://localhost:8081/cass/uiv3/indexv2.htm
 ```
 
