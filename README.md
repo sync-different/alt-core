@@ -4,16 +4,20 @@ alterante core base platform
 ## repo structure
 
 ```
-project
+alt-core
 │   README.md
+│   LICENSE.md
 │
 └───scrubber 
 │   │   src
 │   │
 │   └───config
-│       │   file111.txt
-│       │   file112.txt
-│       │   ...
+│   |   │   www-bridge.properties
+│   |   │   www-processor.properties
+│   |   │   www-rtbackup.properties
+│   |   │   www-server.properties
+│   |
+│   └───data
 │   
 └───web
 │   └───cass
