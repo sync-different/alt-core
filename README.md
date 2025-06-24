@@ -52,7 +52,7 @@ $#install JAR dependencies in local maven repo
 $./build.sh
 ```
 
-## steps to run (maven)
+## steps to run
 ```
 $cd target
 $java -jar my-app-1.0-SNAPSHOT.jar
