@@ -45,6 +45,10 @@ alt-core
 ## steps to build (maven)
 ```
 $cd scrubber
+$#install JAR in local maven repo
+#./install.sh
+#
+#$build alt JAR
 $./build.sh
 ```
 
