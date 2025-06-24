@@ -9,6 +9,8 @@
 
 ## Get started
 
+Step 1 - Familiarize yourself with the technical documentation in the companion repo <a href="https://github.com/sync-different/alt-core-docs">alt-core-docs</a>
+
 ## repo structure
 
 ```
