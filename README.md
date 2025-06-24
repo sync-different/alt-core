@@ -1,5 +1,6 @@
 # alt-core
 alterante core base platform
 
-## steps to build
-```cd scrubber```
+## steps to build (maven)
+```$cd scrubber```
+```#./build.sh```
