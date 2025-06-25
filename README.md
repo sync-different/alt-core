@@ -27,6 +27,12 @@ alt-core
 │   README.md - this file
 │   LICENSE - license file (AGPL v3)
 │
+└───rtserver
+│   └───config - config files
+|  
+└───rtserver-maven
+│   └───src - source files
+|  
 └───scrubber 
 │   └───src - source files
 │   └───repo - JAR dependency files
@@ -48,6 +54,10 @@ alt-core
 
 ## steps to build (maven)
 ```
+$cd rtserver-maven
+$# make rtserver.jar
+$./make.sh
+
 $cd scrubber
 $# install JAR dependencies in local maven repo
 $./install.sh
@@ -57,10 +67,14 @@ $./build.sh
 ```
 
 ## steps to run
+
+1. launch the server
 ```
-$cd target
-$java -jar my-app-1.0-SNAPSHOT.jar
-$# launch the web app on browser
+$java -cp target/my-app-1.0-SNAPSHOT.jar com.mycompany.app.App
+```
+
+2. launch the web app on browser
+```
 $open http://localhost:8081/cass/uiv3/indexv2.htm
 ```
 
