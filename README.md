@@ -54,6 +54,10 @@ alt-core
 
 ## steps to build (maven)
 ```
+$cd rtserver-maven
+$# make rtserver.jar
+$./make.sh
+
 $cd scrubber
 $# install JAR dependencies in local maven repo
 $./install.sh
