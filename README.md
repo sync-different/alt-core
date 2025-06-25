@@ -57,15 +57,16 @@ alt-core
 ## steps to build (maven)
 run the script ``build_all.sh`` in the root project folder
 ```
-$cd alt-core
-$./build_all.sh
+$ cd alt-core
+$ ./build_all.sh
 ```
 
 ## steps to run
 
 1. launch the server
 ```
-$java -cp target/my-app-1.0-SNAPSHOT.jar com.mycompany.app.App
+$ cd scrubber
+$ java -cp target/my-app-1.0-SNAPSHOT.jar com.mycompany.app.App
 ```
 
 2. launch the web app on browser
