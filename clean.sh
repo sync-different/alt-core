@@ -8,6 +8,7 @@ rm -r ./rtserver/incoming/*
 rm -r ./rtserver/logs/*
 rm -r ./rtserver/streaming/*
 rm -r ./rtserver/tmp/*
+rm -r ./rtserver/batch*.idx
 
 rm -r ./scrubber/testdb*
 
@@ -24,6 +25,7 @@ rm -r ./scrubber/data/localdb/Super2/hashes/*
 rm -r ./scrubber/data/localdb/Super2/hashesm/*
 rm -r ./scrubber/data/localdb/Super2/paths/*
 rm -r ./scrubber/logs/*
+rm -r ./scrubber/outgoing/*
 
 rm -r ./scrubber/data/localdb/Standard1/.*
 
