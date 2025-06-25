@@ -1,3 +1,10 @@
 /scrubber/target
 /rtserver-maven/target
 /scrubber/target
+rtserver-maven/.DS_Store
+rtserver-maven/src/.DS_Store
+rtserver-maven/src/main/.DS_Store
+rtserver-maven/src/main/java/.DS_Store
+scrubber/.DS_Store
+scrubber/target/.DS_Store
+web/.DS_Store
