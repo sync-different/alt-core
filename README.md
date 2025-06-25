@@ -27,11 +27,13 @@ alt-core
 │   README.md - this file
 │   LICENSE - license file (AGPL v3)
 │
-└───rtserver
-│   └───config - config files
-|  
+└───cass-server-maven
+│   └───src - source files
+│
 └───rtserver-maven
 │   └───src - source files
+└───rtserver
+│   └───config - config files
 |  
 └───scrubber 
 │   └───src - source files
