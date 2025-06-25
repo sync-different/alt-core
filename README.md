@@ -55,17 +55,9 @@ alt-core
 - A modern web browser (to run the web app)
 
 ## steps to build (maven)
+run the script ``build_all.sh``
 ```
-$cd rtserver-maven
-$# make rtserver.jar
-$./make.sh
-
-$cd scrubber
-$# install JAR dependencies in local maven repo
-$./install.sh
-$#
-$# build alt uber JAR (stored in target directory)
-$./build.sh
+$./build_all.sh
 ```
 
 ## steps to run
