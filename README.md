@@ -14,7 +14,7 @@ Welcome aboard! Follow these steps to get started.
 
 Step 1 - Familiarize yourself with the technical documentation in the companion repo <a href="https://github.com/sync-different/alt-core-docs">alt-core-docs</a>
 
-Step 2 - Clone this repo and follow steps to build below
+Step 2 - Clone this repo and follow steps to build & run alt-core (instructions below)
 
 Step 3 - Check out the discussion board to understand the roadmap and ideas WIP <a href="https://github.com/orgs/sync-different/discussions">discussions</a>
 
@@ -29,7 +29,7 @@ alt-core
 │
 └───scrubber 
 │   └───src - source files
-│   │
+│   └───repo - JAR dependency files
 │   └───config - config files
 │   |   │   www-bridge.properties
 │   |   │   www-processor.properties
@@ -41,11 +41,27 @@ alt-core
 └───web
 │   └───cass - web app files (angularJS)
 ```
+## Requirements
+- JDK (recommended OpenJDK v17 or later)
+- Maven (recommended v3.9.x or later)
+- A modern web browser (to run the web app)
 
 ## steps to build (maven)
 ```
 $cd scrubber
+$# install JAR dependencies in local maven repo
+$./install.sh
+$#
+$# build alt uber JAR (stored in target directory)
 $./build.sh
+```
+
+## steps to run
+```
+$cd target
+$java -jar my-app-1.0-SNAPSHOT.jar
+$# launch the web app on browser
+$open http://localhost:8081/cass/uiv3/indexv2.htm
 ```
 
 ## License
