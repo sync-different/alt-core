@@ -63,10 +63,14 @@ $./build.sh
 ```
 
 ## steps to run
+
+1. launch the server
 ```
-$cd target
-$java -jar my-app-1.0-SNAPSHOT.jar
-$# launch the web app on browser
+$java -cp target/my-app-1.0-SNAPSHOT.jar com.mycompany.app.App
+```
+
+2. launch the web app on browser
+```
 $open http://localhost:8081/cass/uiv3/indexv2.htm
 ```
 
