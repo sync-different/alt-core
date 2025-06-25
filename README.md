@@ -27,6 +27,9 @@ alt-core
 │   README.md - this file
 │   LICENSE - license file (AGPL v3)
 │
+└───rtserver-maven
+│   └───src - source files
+|  
 └───scrubber 
 │   └───src - source files
 │   └───repo - JAR dependency files
