@@ -1,0 +1,30 @@
+@,Documents,
+.doc,Word document,thumb/glyph/glyphicons_036_file@2x.png
+.docx,Word document,thumb/glyph/glyphicons_036_file@2x.png
+.pdf,PDF document,thumb/glyph/glyphicons_071_book@2x.png
+.ppt,Powerpoint document,thumb/glyph/glyphicons_040_stats@2x.png
+.pptx,Powerpoint document,thumb/glyph/glyphicons_040_stats@2x.png
+.xls,Excel document,thumb/glyph/glyphicons_041_charts@2x.png
+.xlsx,Excel document,thumb/glyph/glyphicons_041_charts@2x.png
+@,Video Files,
+.mov,Quicktime Movie,thumb/glyph/glyphicons_008_film@2x.png
+.mpg,MPEG Movie,thumb/glyph/glyphicons_008_film@2x.png
+.mmv,Windows Media Video,thumb/glyph/glyphicons_008_film@2x.png
+@,Audio Files,
+.mp3,MP3 Audio,thumb/glyph/glyphicons_017_music@2x.png
+.mp4,Advanced Audio Coding,thumb/img_mp4.png
+.m4a,Audio,thumb/img_mp3.png
+.wav,Wave sound file,thumb/img_wav.png
+.wma,Windows Media Audio,thumb/img_wav.png
+@,Image Files,
+.jpg,JPEG Image,thumb/img_jpg.jpg
+.jpeg,JPEG Image,thumb/img_jpg.jpg
+.gif,GIF Image file,thumb/img_gif.jpg
+.png,PNG Image file,thumb/img_png.jpg
+@,Other,
+.zip,ZIP file,thumb/img_zip.png
+.dll,Dynamic Link Library,thumb/glyph/glyphicons_137_cogwheels@2x.png
+.exe,Executable file,thumb/glyph/glyphicons_136_cogwheel@2x.png
+.html,HTML file,thumb/img_html.png
+.txt,Plan Text file,thumb/glyph/glyphicons_029_notes_2@2x.png
+.java,Java source file,thumb/glyph/glyphicons_294_coffe_cup@2x.png

@@ -1,0 +1,30 @@
+@,Documents,
+.doc,Word document,thumb/img_doc.png
+.docx,Word document,thumb/img_doc.png
+.pdf,PDF document,thumb/img_pdf.png
+.ppt,Powerpoint document,thumb/img_ppt.png
+.pptx,Powerpoint document,thumb/img_ppt.png
+.xls,Excel document,thumb/img_xls.png
+.xlsx,Excel document,thumb/img_xls.png
+@,Video Files,
+.mov,Quicktime Movie,thumb/img_mov.png
+.mpg,MPEG Movie,thumb/img_mov.png
+.mmv,Windows Media Video,thumb/img_mov.png
+@,Audio Files,
+.mp3,MP3 Audio,thumb/img_mp3.png
+.mp4,Advanced Audio Coding,thumb/img_mp4.png
+.m4a,Audio,thumb/img_mp3.png
+.wav,Wave sound file,thumb/img_wav.png
+.wma,Windows Media Audio,thumb/img_wav.png
+@,Image Files,
+.jpg,JPEG Image,thumb/img_jpg.jpg
+.jpeg,JPEG Image,thumb/img_jpg.jpg
+.gif,GIF Image file,thumb/img_gif.jpg
+.png,PNG Image file,thumb/img_png.jpg
+@,Other,
+.zip,ZIP file,thumb/img_zip.png
+.dll,Dynamic Link Library,thumb/img_dll.png
+.exe,Executable file,thumb/img_exe.png
+.html,HTML file,thumb/img_html.png
+.txt,Plan Text file,thumb/img_txt.png
+.java,Java source file,thumb/img_java.png

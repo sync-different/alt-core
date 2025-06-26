@@ -1,0 +1,30 @@
+@,Documents,
+.doc,Word document,&#xe037;
+.docx,Word document,&#xe037;
+.pdf,PDF document,&#xe002;
+.ppt,Powerpoint document,&#xe043;
+.pptx,Powerpoint document,&#xe043;
+.xls,Excel document,&#xe042;
+.xlsx,Excel document,&#xe042;
+@,Video Files,
+.mov,Quicktime Movie,&#xe009;
+.mpg,MPEG Movie,&#xe009;
+.mmv,Windows Media Video,&#xe009;
+@,Audio Files,
+.mp3,MP3 Audio,&#xe005;
+.mp4,Advanced Audio Coding,&#xe005;
+.m4a,Audio,&#xe005;
+.wav,Wave sound file,&#xe005;
+.wma,Windows Media Audio,&#xe005;
+@,Image Files,
+.jpg,JPEG Image,&#xe006;
+.jpeg,JPEG Image,thumb&#xe006;
+.gif,GIF Image file,&#xe007;
+.png,PNG Image file,&#xe007;
+@,Other,
+.zip,ZIP file,&#xe008;
+.dll,Dynamic Link Library,&#xe138;
+.exe,Executable file,&#xe137;
+.html,HTML file,&#xe010;
+.txt,Plan Text file,&#xe030;
+.java,Java source file,&#xe295;

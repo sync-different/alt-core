@@ -1,0 +1,359 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 
+         http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <groupId>com.alterante</groupId>
+    <artifactId>scrubber</artifactId>
+    <version>1.0.0-SNAPSHOT</version>
+    <packaging>jar</packaging>
+
+    <name>Scrubber</name>
+    <description>Scrubber application for file processing and management</description>
+
+    <properties>
+        <maven.compiler.source>11</maven.compiler.source>
+        <maven.compiler.target>11</maven.compiler.target>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <maven.compiler.plugin.version>3.11.0</maven.compiler.plugin.version>
+        <maven.jar.plugin.version>3.3.0</maven.jar.plugin.version>
+        <maven.shade.plugin.version>3.4.1</maven.shade.plugin.version>
+    </properties>
+
+    <dependencies>
+
+        <dependency>
+            <groupId>com.alterante</groupId>
+            <artifactId>jaudiotagger</artifactId>
+            <version>2.2.0</version>
+            <scope>system</scope>
+            <systemPath>${project.basedir}/lib/jaudiotagger-2.2.0-20130321.162819-3.jar</systemPath>
+        </dependency>
+
+        <dependency>
+            <groupId>com.sun.pdfview</groupId>
+            <artifactId>pdf-renderer</artifactId>
+            <version>0.9.1</version>
+            <scope>system</scope>
+            <systemPath>${project.basedir}/lib/PDFRenderer-0.9.1.jar</systemPath>
+            <optional>true</optional>
+        </dependency>
+
+        <dependency>
+            <groupId>com.alterante</groupId>
+            <artifactId>winrun4j</artifactId>
+            <version>1.0</version>
+            <scope>system</scope>
+            <systemPath>${project.basedir}/lib/WinRun4J.jar</systemPath>
+        </dependency>
+
+        <dependency>
+            <groupId>com.alterante</groupId>
+            <artifactId>restFB</artifactId>
+            <version>1.0</version>
+            <scope>system</scope>
+            <systemPath>${project.basedir}/lib/restfb-1.18.1.jar</systemPath>
+        </dependency>
+
+        <!-- Apache Cassandra Thrift -->
+        <dependency>
+            <groupId>org.apache.cassandra</groupId>
+            <artifactId>cassandra-thrift</artifactId>
+            <version>1.2.0</version>
+        </dependency>
+
+        <!-- Apache Commons -->
+        <dependency>
+            <groupId>commons-codec</groupId>
+            <artifactId>commons-codec</artifactId>
+            <version>1.15</version>
+        </dependency>
+
+        <dependency>
+            <groupId>commons-httpclient</groupId>
+            <artifactId>commons-httpclient</artifactId>
+            <version>3.1</version>
+        </dependency>
+
+        <dependency>
+            <groupId>commons-logging</groupId>
+            <artifactId>commons-logging</artifactId>
+            <version>1.2</version>
+        </dependency>
+
+        <!-- DOM4J -->
+        <dependency>
+            <groupId>org.dom4j</groupId>
+            <artifactId>dom4j</artifactId>
+            <version>2.1.4</version>
+        </dependency>
+
+        <!-- Apache HttpClient 5 -->
+        <dependency>
+            <groupId>org.apache.httpcomponents.client5</groupId>
+            <artifactId>httpclient5</artifactId>
+            <version>5.2.1</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.apache.httpcomponents.core5</groupId>
+            <artifactId>httpcore5</artifactId>
+            <version>5.2.2</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.apache.httpcomponents.core5</groupId>
+            <artifactId>httpcore5-h2</artifactId>
+            <version>5.2.2</version>
+        </dependency>
+
+        <!-- JAudioTagger -->
+        <dependency>
+            <groupId>org</groupId>
+            <artifactId>jaudiotagger</artifactId>
+            <version>2.0.3</version>
+        </dependency>
+
+        <!-- JSON Smart -->
+        <dependency>
+            <groupId>net.minidev</groupId>
+            <artifactId>json-smart</artifactId>
+            <version>2.4.10</version>
+        </dependency>
+
+        <!-- Apache Thrift -->
+        <dependency>
+            <groupId>org.apache.thrift</groupId>
+            <artifactId>libthrift</artifactId>
+            <version>0.7.0</version>
+        </dependency>
+
+        <!-- MapDB -->
+        <dependency>
+            <groupId>org.mapdb</groupId>
+            <artifactId>mapdb</artifactId>
+            <version>1.0.9</version>
+        </dependency>
+
+        <!-- Apache POI -->
+        <dependency>
+            <groupId>org.apache.poi</groupId>
+            <artifactId>poi</artifactId>
+            <version>5.2.4</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.apache.poi</groupId>
+            <artifactId>poi-ooxml</artifactId>
+            <version>5.2.4</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.apache.poi</groupId>
+            <artifactId>poi-ooxml-schemas</artifactId>
+            <version>4.1.2</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.apache.poi</groupId>
+            <artifactId>poi-scratchpad</artifactId>
+            <version>5.2.4</version>
+        </dependency>
+
+        <!-- SLF4J -->
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-api</artifactId>
+            <version>2.0.7</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-simple</artifactId>
+            <version>2.0.7</version>
+        </dependency>
+
+        <!-- Thumbnailator -->
+        <dependency>
+            <groupId>net.coobird</groupId>
+            <artifactId>thumbnailator</artifactId>
+            <version>0.4.19</version>
+        </dependency>
+
+        <!-- PDF Renderer -->
+        <dependency>
+            <groupId>com.github.jai-imageio</groupId>
+            <artifactId>jai-imageio-core</artifactId>
+            <version>1.4.0</version>
+        </dependency>
+
+        <!-- JavaMail -->
+        <dependency>
+            <groupId>com.sun.mail</groupId>
+            <artifactId>javax.mail</artifactId>
+            <version>1.6.2</version>
+        </dependency>
+
+        <dependency>
+            <groupId>jakarta.activation</groupId>
+            <artifactId>jakarta.activation-api</artifactId>
+            <version>2.1.2</version>
+        </dependency>
+
+        <!-- RestFB for Facebook integration -->
+        <dependency>
+            <groupId>com.restfb</groupId>
+            <artifactId>restfb</artifactId>
+            <version>2023.12.0</version>
+        </dependency>
+
+        <!-- XBean - commented out as not available in Maven Central -->
+        <!--
+        <dependency>
+            <groupId>org.apache.xbean</groupId>
+            <artifactId>xbean-core</artifactId>
+            <version>4.21</version>
+        </dependency>
+        -->
+
+        <!-- Note: WinRun4J and PDFRenderer dependencies are commented out -->
+        <!-- as they are not available in Maven Central and the JAR files -->
+        <!-- are not found in the expected location. -->
+        <!-- To use these dependencies, you would need to: -->
+        <!-- 1. Install them to your local Maven repository, or -->
+        <!-- 2. Copy the JAR files to the correct location, or -->
+        <!-- 3. Use alternative libraries -->
+        
+        <!--
+        <dependency>
+            <groupId>org.boris</groupId>
+            <artifactId>winrun4j</artifactId>
+            <version>0.4.5</version>
+            <scope>system</scope>
+            <systemPath>${project.basedir}/../lib/WinRun4J.jar</systemPath>
+            <optional>true</optional>
+        </dependency>
+
+        <dependency>
+            <groupId>com.sun.pdfview</groupId>
+            <artifactId>pdf-renderer</artifactId>
+            <version>0.9.1</version>
+            <scope>system</scope>
+            <systemPath>${project.basedir}/../lib/PDFRenderer-0.9.1.jar</systemPath>
+            <optional>true</optional>
+        </dependency>
+        -->
+
+        <!-- Project dependencies (if they exist) -->
+        <!-- Uncomment and adjust paths if these projects are available -->
+        <!--
+        <dependency>
+            <groupId>com.alterante</groupId>
+            <artifactId>cass-server</artifactId>
+            <version>1.0.0</version>
+            <scope>system</scope>
+            <systemPath>${project.basedir}/../cass-server/dist/cass-server.jar</systemPath>
+        </dependency>
+
+        <dependency>
+            <groupId>com.alterante</groupId>
+            <artifactId>cloudbackup</artifactId>
+            <version>1.0.0</version>
+            <scope>system</scope>
+            <systemPath>${project.basedir}/../CloudBackup/dist/CloudBackup.jar</systemPath>
+        </dependency>
+        -->
+    </dependencies>
+
+    <build>
+        <finalName>scrubber</finalName>
+        
+        <plugins>
+            <!-- Maven Compiler Plugin -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <version>${maven.compiler.plugin.version}</version>
+                <configuration>
+                    <source>11</source>
+                    <target>11</target>
+                    <encoding>UTF-8</encoding>
+                </configuration>
+            </plugin>
+
+            <!-- Maven JAR Plugin -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-jar-plugin</artifactId>
+                <version>${maven.jar.plugin.version}</version>
+                <configuration>
+                    <archive>
+                        <manifest>
+                            <addClasspath>true</addClasspath>
+                            <mainClass>main.Main</mainClass>
+                        </manifest>
+                    </archive>
+                </configuration>
+            </plugin>
+
+            <!-- Maven Shade Plugin for creating fat JAR -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-shade-plugin</artifactId>
+                <version>${maven.shade.plugin.version}</version>
+                <executions>
+                    <execution>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>shade</goal>
+                        </goals>
+                        <configuration>
+                            <transformers>
+                                <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
+                                    <mainClass>main.Main</mainClass>
+                                </transformer>
+                            </transformers>
+                            <filters>
+                                <filter>
+                                    <artifact>*:*</artifact>
+                                    <excludes>
+                                        <exclude>META-INF/*.SF</exclude>
+                                        <exclude>META-INF/*.DSA</exclude>
+                                        <exclude>META-INF/*.RSA</exclude>
+                                    </excludes>
+                                </filter>
+                            </filters>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <!-- Maven Resources Plugin -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-resources-plugin</artifactId>
+                <version>3.3.1</version>
+                <configuration>
+                    <encoding>UTF-8</encoding>
+                </configuration>
+            </plugin>
+        </plugins>
+
+        <resources>
+            <resource>
+                <directory>config</directory>
+                <targetPath>config</targetPath>
+            </resource>
+        </resources>
+    </build>
+
+    <repositories>
+        <repository>
+            <id>central</id>
+            <name>Central Repository</name>
+            <url>https://repo1.maven.org/maven2</url>
+        </repository>
+    </repositories>
+</project>

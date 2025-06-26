@@ -1,0 +1,3 @@
+#os
+#Wed Nov 25 10:33:14 ART 2015
+scandir=c%3A%5CUsers%5Cfcarriqiry%5CDesktop%5CAlterante%5C;c%3A%5CDesarrollo%5CAlterante%5Calt2013%5Csrc%5Crtserver%5Cmobilebackup%5C
