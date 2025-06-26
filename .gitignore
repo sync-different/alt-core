@@ -51,3 +51,5 @@ rtserver/sharedb*
 
 /rtserver/config/*-multicluster.properties
 
+/web/cass/getfile*.tmp
+
