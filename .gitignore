@@ -15,5 +15,6 @@ scrubber/target/.DS_Store
 /scrubber-maven/target
 .DS_Store
 **/.DS_Store
-
 *.class
+/scrubber/target/*
+
