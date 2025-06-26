@@ -80,8 +80,9 @@ $ java -cp target/my-app-1.0-SNAPSHOT.jar com.mycompany.app.App
 
 2. launch the web app on browser
 ```
-$open http://localhost:8081/cass/uiv3/indexv2.htm
+$ open http://localhost:8081/cass/uiv3/indexv2.htm
 ```
+use login credentials ``user:admin`` ``password:valid``
 
 ## License
 Distributed under the AGPL v3 License. See ``LICENSE`` file for more information.
