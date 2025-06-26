@@ -40,4 +40,14 @@ scrubber/data/records.db
 
 rtserver/dbname.txt
 rtserver/dbver.txt
+rtserver/dbshare*
+
 *id_sec*
+/scrubber/data/localdb/NodeInfo
+rtserver/sharedb*
+
+/scrubber/data/localdb/BackupJobs
+/scrubber/temp*
+
+/rtserver/config/*-multicluster.properties
+
