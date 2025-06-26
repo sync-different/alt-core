@@ -81,17 +81,20 @@ e.g.
 root=/Users/ale/Development/GitHub/alt-core/web
 ```
 
-3. launch the server
+2. launch the server
 ```
 $ cd scrubber
 $ java -cp target/my-app-1.0-SNAPSHOT.jar com.mycompany.app.App
 ```
 
-2. launch the web app on browser
+3. launch the web app on browser
 ```
 $ open http://localhost:8081/cass/uiv3/indexv2.htm
 ```
-use login credentials ``user:admin`` ``password:valid``
+
+4. login credentials ``user:admin`` ``password:valid``
+
+after login, change your password in Settings!
 
 ## License
 Distributed under the AGPL v3 License. See ``LICENSE`` file for more information.
