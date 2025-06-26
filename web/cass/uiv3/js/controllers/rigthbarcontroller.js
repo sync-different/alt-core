@@ -188,6 +188,9 @@ angular.module('app.controllers').controller('RightBarController', function (Con
 				success:function(){
 					$scope.alerts.splice(0,$scope.alerts.length);
 					$scope.alerts.push({type:'success',msg:'Clear all messages on server.'});
+					$scope.msgs = [];
+            		$scope.lastComment = 0;
+            		$scope.$applyAsync(); 
 				}
 			});
 	}

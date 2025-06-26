@@ -475,7 +475,7 @@
 												  <i class="fas fa-heart me-1 text-dark" style="cursor: pointer;" ng-click="like()"></i>
 												  <label class="text-dark">{{likes}}</label>
 											  </td>
-											  <td class="text-center" style="border-right: inset rgb(240,242,246);" ng-class="{activeTab: showComments == 'comment'}">
+											  <td class="text-center" ng-click="showComments='comment'" style="border-right: inset rgb(240,242,246);" ng-class="{activeTab: showComments == 'comment'}">
 												  <i class="fas fa-comments text-dark"></i>
 											  </td>
 											  <td class="text-center" ng-click="showComments='tags';" ng-class="{activeTab: showComments == 'tags'}">
@@ -619,6 +619,10 @@
 					aria-valuemin="0" aria-valuemax="100">
 					{{downloadProgress | number:0}}%
 				</div>
+			  </div>
+			  <div ng-show="!downloadComplete" style="margin-top: 10px; font-size: 0.9em;">
+				<p><strong>Speed:</strong> {{ downloadSpeed | number:1 }} KB/s</p>
+				<p><strong>Estimated time left:</strong> {{ estimatedTimeRemaining | number:0 }} sec</p>
 			  </div>
 			  <button type="button" class="btn btn-secondary" style="margin-top: 15px;" ng-click="cancelDownload()">
 				{{ downloadComplete ? 'Close' : 'Cancel' }}

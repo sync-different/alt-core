@@ -11,6 +11,8 @@ angular.module('app.controllers').controller('MyFilesController', function (Conf
 	$scope.isCloud=document.location.href.indexOf("web.alterante.com")>=0;
 
 	$scope.downloadComplete = false;
+	$scope.downloadSpeed = 0;
+	$scope.estimatedTimeRemaining = 0;
 	const CHUNK_SIZE = 10 * 1024 * 1024;
 	
 	$scope.scrollToThumbnail = function (activeIndex) {
@@ -1916,10 +1918,19 @@ angular.module('app.controllers').controller('MyFilesController', function (Conf
 			xhr.open('GET', url, true);
 			xhr.responseType = 'blob';
 	
+			let startTime = Date.now();
+	
 			xhr.onprogress = function(event) {
 				if (event.lengthComputable) {
 					const percentComplete = Math.round((event.loaded / event.total) * 100);
+					const elapsedTimeSec = (Date.now() - startTime) / 1000;
+					const speedKBps = (event.loaded / 1024) / elapsedTimeSec;
+					const remainingBytes = event.total - event.loaded;
+					const estimatedTimeSec = remainingBytes / (speedKBps * 1024);
+	
 					$scope.updateProgress(percentComplete);
+					$scope.downloadSpeed = speedKBps;
+					$scope.estimatedTimeRemaining = estimatedTimeSec;
 					$scope.$applyAsync();
 				}
 			};
@@ -1960,7 +1971,7 @@ angular.module('app.controllers').controller('MyFilesController', function (Conf
 			$scope.hideDownloadModal();
 			$scope.$applyAsync();
 		}
-	};
+	};	
 	
 	$scope.cancelDownload = function() {
 		$scope.isDownloadCancelled = true;
@@ -2031,7 +2042,11 @@ angular.module('app.controllers').controller('MyFilesController', function (Conf
 	
 			$scope.showDownloadModal();
 			$scope.updateProgress(0);
+			$scope.downloadSpeed = 0;
+			$scope.estimatedTimeRemaining = 0;
 			$scope.$applyAsync();
+	
+			const startTime = Date.now();
 	
 			for (let i = 0; i < totalChunks; i++) {
 				if ($scope.isDownloadCancelled) {
@@ -2046,6 +2061,11 @@ angular.module('app.controllers').controller('MyFilesController', function (Conf
 			
 				downloadedBytes += chunk.size;
 			
+				const elapsedTimeSec = (Date.now() - startTime) / 1000;
+				const speedKBps = (downloadedBytes / 1024) / elapsedTimeSec;
+				const remainingBytes = totalSize - downloadedBytes;
+				const estimatedTimeSec = remainingBytes / (speedKBps * 1024);
+	
 				const targetProgress = Math.min(100, Math.round((downloadedBytes / totalSize) * 100));
 				let currentProgress = $scope.downloadProgress;
 				const steps = 30;
@@ -2060,6 +2080,8 @@ angular.module('app.controllers').controller('MyFilesController', function (Conf
 					}
 					await new Promise(resolve => setTimeout(resolve, 20));
 					$scope.updateProgress(Math.round(currentProgress + stepSize * j));
+					$scope.downloadSpeed = speedKBps;
+					$scope.estimatedTimeRemaining = estimatedTimeSec;
 					$scope.$applyAsync();
 				}
 			}
