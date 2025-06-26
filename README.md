@@ -72,7 +72,16 @@ $ ./build_all.sh
 
 ## steps to run
 
-1. launch the server
+1. set web ``root`` path in ``scrubber/config/www-server.properties``
+
+full path required
+e.g.
+
+```
+root=/Users/ale/Development/GitHub/alt-core/web
+```
+
+3. launch the server
 ```
 $ cd scrubber
 $ java -cp target/my-app-1.0-SNAPSHOT.jar com.mycompany.app.App
