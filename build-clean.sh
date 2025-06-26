@@ -1,0 +1,2 @@
+rm -r scrubber/target/*
+
