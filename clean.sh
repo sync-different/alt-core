@@ -9,6 +9,7 @@ rm -r ./rtserver/logs/*
 rm -r ./rtserver/streaming/*
 rm -r ./rtserver/tmp/*
 rm -r ./rtserver/batch*.idx
+rm -r ./rtserver/config/*-multicluster.properties
 
 rm -r ./scrubber/testdb*
 
