@@ -24,30 +24,39 @@ Step 4 - Join the discord and introduce yourself to the community <a href="https
 
 ```
 alt-core
-│   README.md - this file
-│   LICENSE - license file (AGPL v3)
+│  └─── README.md - this file
+│  └─── LICENSE - license file (AGPL v3)
+|  └─── build-all.sh - build script
+|  └─── build-clean.sh - clean build script
+|  └─── clean.sh - data clean script (fresh install)
+|  └─── run.sh - launch script
 │
-└───cass-server-maven
-│   └───src - source files
+└─── cass-server-maven
+│   └─── src - source files
 │
 └───rtserver-maven
-│   └───src - source files
+│   └─── src - source files
+|
+└───scrubber-maven
+│   └─── src - source files
+|
 └───rtserver
-│   └───config - config files
-|  
+│   └─── config - config files  
+|
 └───scrubber 
-│   └───src - source files
-│   └───repo - JAR dependency files
-│   └───config - config files
+│   └─── src - source files
+│   └─── repo - JAR dependency files
+│   └─── config - config files
 │   |   │   www-bridge.properties
 │   |   │   www-processor.properties
 │   |   │   www-rtbackup.properties
 │   |   │   www-server.properties
 │   |
-│   └───data - data files
+|   └─── data - data files
 │   
 └───web
-│   └───cass - web app files (angularJS)
+│   └─── cass - web app files (angularJS)
+
 ```
 ## Requirements
 - JDK (recommended OpenJDK v17 or later)
@@ -71,8 +80,9 @@ $ java -cp target/my-app-1.0-SNAPSHOT.jar com.mycompany.app.App
 
 2. launch the web app on browser
 ```
-$open http://localhost:8081/cass/uiv3/indexv2.htm
+$ open http://localhost:8081/cass/uiv3/indexv2.htm
 ```
+use login credentials ``user:admin`` ``password:valid``
 
 ## License
 Distributed under the AGPL v3 License. See ``LICENSE`` file for more information.
