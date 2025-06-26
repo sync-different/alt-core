@@ -8,3 +8,11 @@ rtserver-maven/src/main/java/.DS_Store
 scrubber/.DS_Store
 scrubber/target/.DS_Store
 web/.DS_Store
+scrubber/.DS_Store
+scrubber/target/.DS_Store
+/cass-server-maven/target
+/scrubber/target
+/scrubber-maven/target
+.DS_Store
+**/.DS_Store
+
