@@ -29,6 +29,7 @@ alt-core
 |  └─── build-all.sh - build script
 |  └─── build-clean.sh - clean build script
 |  └─── clean.sh - data clean script (fresh install)
+|  └─── run.sh - launch script
 │
 └─── cass-server-maven
 │   └─── src - source files
