@@ -87,7 +87,7 @@ $ cd scrubber
 $ java -cp target/my-app-1.0-SNAPSHOT.jar com.mycompany.app.App
 ```
 
-3. launch the web app on browser
+3. open the web app on browser
 ```
 $ open http://localhost:8081/cass/uiv3/indexv2.htm
 ```
