@@ -15,7 +15,7 @@ public class RTServerService implements Runnable {
         public void run () {
             while (!mTerminated) {
                 WebServer mymain = new WebServer();
-                String[] myargs = new String[]{"8081"};
+                String[] myargs = new String[]{""};
 
                 try {
                     mymain.main(myargs);

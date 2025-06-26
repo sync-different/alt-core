@@ -170,7 +170,7 @@ public class WebServer extends AbstractService {
 
         if (bConsole) {
             long threadID = Thread.currentThread().getId();
-            System.out.println("[" + threadID + "] " + s);
+            System.out.println("[WebServer-" + threadID + "] " + s);
         }
     }
 
@@ -960,7 +960,8 @@ public class WebServer extends AbstractService {
         (new Thread(new HttpUploadServer(nettyport_post))).start();
         
         //int port = 8080;
-        if (a.length > 0) {
+        p("*********** a = " + a[0].length());
+        if (a[0] != null && a[0].length() > 0) {
             port = Integer.parseInt(a[0]);
         }
         
