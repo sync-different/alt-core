@@ -63,29 +63,25 @@ alt-core
 - Maven (recommended v3.9.x or later)
 - A modern web browser (to run the web app)
 
-## steps to build (maven)
+## Steps to build alt-core (maven)
 run the script ``build_all.sh`` in the root project folder
 ```
 $ cd alt-core
 $ ./build_all.sh
 ```
 
-## steps to run
+## Steps to run alt-core
 
 1. set web ``root`` path in ``scrubber/config/www-server.properties``
 
-full path required
-e.g.
-
+full path required - e.g.
 ```
 root=/Users/ale/Development/GitHub/alt-core/web
 ```
 
 2. set file scan directory paths in ``scrubber/config/scan1.txt``
 
-full paths required, URL encoded format
-
-e.g.
+full paths required, URL encoded format - e.g.
 ```
 scandir=%2FVolumes%2FMacintosh%20HD%2FUsers%2Falejandro%2Falterante%2F;
 ```
