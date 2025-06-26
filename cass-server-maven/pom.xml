@@ -35,9 +35,10 @@
             <systemPath>${project.basedir}/lib/jaudiotagger-2.2.0-20130321.162819-3.jar</systemPath>
         </dependency>
 
+        <!-- https://mvnrepository.com/artifact/com.sun.pdfview/PDFRenderer -->
         <dependency>
-            <groupId>com.alterante</groupId>
-            <artifactId>pdfrender</artifactId>
+            <groupId>com.sun.pdfview</groupId>
+            <artifactId>PDFRenderer</artifactId>
             <version>0.9.1</version>
             <scope>system</scope>
             <systemPath>${project.basedir}/lib/PDFRenderer-0.9.1.jar</systemPath>

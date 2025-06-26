@@ -91,11 +91,10 @@
     </dependency>
     <dependency>
       <groupId>com.sun.pdfview</groupId>
-      <artifactId>pdf-renderer</artifactId>
+      <artifactId>PDFRenderer</artifactId>
       <version>0.9.1</version>
       <scope>system</scope>
       <systemPath>${project.basedir}/lib/PDFRenderer-0.9.1.jar</systemPath>
-      <optional>true</optional>
     </dependency>
     <dependency>
       <groupId>com.alterante</groupId>
