@@ -81,7 +81,16 @@ e.g.
 root=/Users/ale/Development/GitHub/alt-core/web
 ```
 
-2. launch the server
+2. set file scan directory paths in ``scrubber/config/scan1.txt``
+
+full paths required, URL encoded format
+
+e.g.
+```
+scandir=%2FVolumes%2FMacintosh%20HD%2FUsers%2Falejandro%2Falterante%2F;
+```
+
+3. launch the server
 ```
 $ cd scrubber
 $ java -cp target/my-app-1.0-SNAPSHOT.jar com.mycompany.app.App
