@@ -85,19 +85,24 @@ full paths required, URL encoded format - e.g.
 ```
 scandir=%2FVolumes%2FMacintosh%20HD%2FUsers%2Falejandro%2Falterante%2F;
 ```
+3. run the first time setup script
 
-3. launch the server
+```
+$ ./setup.sh
+```
+
+4. launch the server
 ```
 $ cd scrubber
 $ java -cp target/my-app-1.0-SNAPSHOT.jar com.mycompany.app.App
 ```
 
-4. open the web app on browser
+5. open the web app on browser
 ```
 $ open http://localhost:8081/cass/uiv3/indexv2.htm
 ```
 
-5. login credentials ``user:admin`` ``password:valid``
+6. login credentials ``user:admin`` ``password:valid``
 
 after login, change your password in Settings!
 
