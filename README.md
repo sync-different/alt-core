@@ -72,8 +72,9 @@ $ ./build_all.sh
 
 ## Steps to run alt-core
 
-1. set web ``root`` path in ``scrubber/config/www-server.properties``
+1. set the root path
 
+set web ``root`` path in ``scrubber/config/www-server.properties``
 full path required - e.g.
 ```
 root=/Users/ale/Development/GitHub/alt-core/web
