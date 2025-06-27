@@ -80,8 +80,9 @@ full path required - e.g.
 root=/Users/ale/Development/GitHub/alt-core/web
 ```
 
-2. set file scan directory paths in ``scrubber/config/scan1.txt``
+2. set file scan directory paths 
 
+edit the file ``scrubber/config/scan1.txt``
 full paths required, URL encoded format 
 e.g. to specify path ``/Volumes/Macintosh/Users/alejandro/alterante/``
 ```
