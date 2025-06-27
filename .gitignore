@@ -53,3 +53,4 @@ rtserver/sharedb*
 
 /web/cass/getfile*.tmp
 
+/scrubber/data/localdb/Standard2
