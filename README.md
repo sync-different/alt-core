@@ -55,7 +55,7 @@ alt-core
 |   └─── data - data files
 │   
 └───web
-│   └─── cass - web app files (angularJS)
+    └─── cass - web app files (angularJS)
 
 ```
 ## Requirements
@@ -81,7 +81,8 @@ root=/Users/ale/Development/GitHub/alt-core/web
 
 2. set file scan directory paths in ``scrubber/config/scan1.txt``
 
-full paths required, URL encoded format - e.g.
+full paths required, URL encoded format 
+e.g. to specify path ``/Volumes/Macintosh/Users/alejandro/alterante/``
 ```
 scandir=%2FVolumes%2FMacintosh%20HD%2FUsers%2Falejandro%2Falterante%2F;
 ```
