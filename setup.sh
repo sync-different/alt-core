@@ -13,4 +13,5 @@ mkdir scrubber/data/localdb/Super2/paths
 mkdir scrubber/outgoing
 mkdir scrubber/log
 mkdir web/cass/pic
+mkdir rtserver/incoming
 
