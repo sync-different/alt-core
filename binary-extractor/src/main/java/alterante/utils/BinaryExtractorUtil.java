@@ -1,4 +1,4 @@
-package com.mycompany.app;
+package com.alterante.utils;
 
 import java.io.*;
 import java.nio.file.Files;
