@@ -476,9 +476,11 @@ public class ProcessorService implements Runnable{
                     if (filename.endsWith(".p")) {
                         ign = 3;
                     }
-                    for (int i = 2; i < filenametokens.length-ign; i++) 
+                    for (int i = 2; i < filenametokens.length-ign; i++) {
+                        p("filenametokens[" + i + "] = " + filenametokens[i]);
                         name = name += "." + filenametokens[i];
-                    
+                    }
+
                     p("Name of file = " + name);
                     //String name = filenametokens[1] + "." + filenametokens[2];
 
@@ -496,8 +498,15 @@ public class ProcessorService implements Runnable{
                     }else{
                         // case .p
                         p("Case Partial");
-                        int totalparts = Integer.parseInt(filenametokens[3]);
-                        int nropart = Integer.parseInt(filenametokens[4]);
+                        p("filenametokens len: " + filenametokens.length);
+                        int totalparts = 0;
+                        int nropart = 0;
+                        try {
+                            totalparts = Integer.parseInt(filenametokens[filenametokens.length-3]);
+                            nropart = Integer.parseInt(filenametokens[filenametokens.length-2]);
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                        }
                         if(totalparts == nropart){
                             //final part arrived, time to build large file
                             File ofile = new File(mScanDirectory + "/" + deviceid + "." + name + ".b");
