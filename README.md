@@ -55,7 +55,7 @@ alt-core
 |   └─── data - data files
 │   
 └───web
-│   └─── cass - web app files (angularJS)
+    └─── cass - web app files (angularJS)
 
 ```
 ## Requirements
@@ -63,26 +63,51 @@ alt-core
 - Maven (recommended v3.9.x or later)
 - A modern web browser (to run the web app)
 
-## steps to build (maven)
+## Steps to build alt-core (maven)
 run the script ``build_all.sh`` in the root project folder
 ```
 $ cd alt-core
 $ ./build_all.sh
 ```
 
-## steps to run
+## Steps to run alt-core
 
-1. launch the server
+1. set the root path
+
+set web ``root`` path in ``scrubber/config/www-server.properties``
+full path required - e.g.
+```
+root=/Users/ale/Development/GitHub/alt-core/web
+```
+
+2. set file scan directory paths 
+
+edit the file ``scrubber/config/scan1.txt``
+full paths required, URL encoded format 
+e.g. to specify path ``/Volumes/Macintosh/Users/alejandro/alterante/``
+```
+scandir=%2FVolumes%2FMacintosh%20HD%2FUsers%2Falejandro%2Falterante%2F;
+```
+3. run the first time setup script
+
+```
+$ ./setup.sh
+```
+
+4. launch the server
 ```
 $ cd scrubber
 $ java -cp target/my-app-1.0-SNAPSHOT.jar com.mycompany.app.App
 ```
 
-2. launch the web app on browser
+5. open the web app on browser
 ```
 $ open http://localhost:8081/cass/uiv3/indexv2.htm
 ```
-use login credentials ``user:admin`` ``password:valid``
+
+6. login credentials ``user:admin`` ``password:valid``
+
+after login, change your password in Settings!
 
 ## License
 Distributed under the AGPL v3 License. See ``LICENSE`` file for more information.

@@ -37,24 +37,46 @@ angular.module('app.controllers').controller('FilterController', function (Conf,
 	var previewNode = document.querySelector("#template");
 	var previewTemplate = previewNode.parentNode.innerHTML;
 	previewNode.parentNode.removeChild(previewNode);
-	
+	var chunkSize=1024 * 1024*10;
 	var fileupload=new Dropzone("#my-dropzone",
 		{	
 			url:'/cass/file',
 			previewTemplate: previewTemplate,
 			clickable: ".fileinput-button",
 			uploadMultiple:false,
-			init: function() {
+			chunking: true,
+            forceChunking: true,
+            chunkSize: chunkSize, // 100MB per chunk
+            maxFilesize:1024 * 1024 * 1024*5000,// 1000GB per chunk
+            parallelChunkUploads: false,
+            retryChunks: true,
+            retryChunksLimit: 3,
+            init: function() {
+                var chunkIndex=0;
+                this.on("sending", function(file, xhr, formData) {
+                  // Change the file name sent to the server
+                    var lasIndex= Math.ceil(file.size/chunkSize);
+                    this.options.paramName="upload."+file.name+'.'+lasIndex+'.'+(++chunkIndex)+".p";
+                    var parser = document.createElement('a');
+                    parser.href = document.location.href;
+                    if (parser.protocol == "http:")
+                        this.options.url = "http://"+parser.hostname+":"+netty_port_post+"/formpost";//+file.name;
+                    else
+                        this.options.url = "https://"+parser.hostname+"/"+this.options.paramName;
+                });
+
 				this.on("processing", function(file) {
+                    chunkIndex=0;
+					var lasIndex= Math.ceil(file.size/chunkSize);
+                    this.options.paramName="upload."+file.name+'.'+lasIndex+'.'+(++chunkIndex)+".p";
+                    this.options.header="Access-Control-Allow-Origin: https://web.alterante.com";
 					var parser = document.createElement('a');
 					parser.href = document.location.href;
 				    if (parser.protocol == "http:")
-				    //if (parser.hostname == "localhost")
-						this.options.url = "http://"+parser.hostname+":"+netty_port_post+"/formpost";//+file.name;
+				    	this.options.url = "http://"+parser.hostname+":"+netty_port_post+"/formpost";//+file.name;
 					else
-						this.options.url = "https://"+parser.hostname+"/"+file.name;
-				    this.options.paramName="upload."+file.name+".b";
-					this.options.header="Access-Control-Allow-Origin: https://web.alterante.com";
+						this.options.url = "https://"+parser.hostname+"/"+this.options.paramName;
+
 				});
 			}
 	});

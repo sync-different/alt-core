@@ -27,6 +27,10 @@ rm -r ./scrubber/data/localdb/Super2/hashesm/*
 rm -r ./scrubber/data/localdb/Super2/paths/*
 rm -r ./scrubber/logs/*
 rm -r ./scrubber/outgoing/*
+rm -r ./scrubber/mobilebackup/upload/*
 
 rm -r ./scrubber/data/localdb/Standard1/.*
+
+rm -r ./scrubber/mobilebackup/upload
+rm -r ./scrubber/mobilebackup
 

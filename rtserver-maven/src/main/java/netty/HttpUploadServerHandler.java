@@ -280,7 +280,7 @@ public class HttpUploadServerHandler extends SimpleChannelInboundHandler<HttpObj
                     // fileUpload.isInMemory();// tells if the file is in Memory
                     // or on File
                     
-                    File dest = new File("incoming" + File.separator + fileUpload.getName());
+                    File dest = new File("../rtserver/incoming" + File.separator + fileUpload.getName());
                     System.out.println("incoming getFileName () (netty): " + fileUpload.getFilename());
                     System.out.println("incoming getName() (netty): " + fileUpload.getName());
                     try {

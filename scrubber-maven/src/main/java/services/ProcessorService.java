@@ -461,7 +461,7 @@ public class ProcessorService implements Runnable{
                         e.printStackTrace();
                     }                      
                 } else if (filename.endsWith(".b") || filename.endsWith(".p")) {//.b
-                    File dMobileBackup = new File("../rtserver/mobilebackup");
+                    File dMobileBackup = new File("../scrubber/mobilebackup");
                     if(!dMobileBackup.exists()){
                         dMobileBackup.mkdir();
                         addMobileBackupFolder();
@@ -472,9 +472,15 @@ public class ProcessorService implements Runnable{
                     String name = "";
                     p("size of array:" + filenametokens.length);
                     name = filenametokens[1];
-                    for (int i = 2; i < filenametokens.length-1; i++) 
+                    int ign = 1;
+                    if (filename.endsWith(".p")) {
+                        ign = 3;
+                    }
+                    for (int i = 2; i < filenametokens.length-ign; i++) {
+                        p("filenametokens[" + i + "] = " + filenametokens[i]);
                         name = name += "." + filenametokens[i];
-                    
+                    }
+
                     p("Name of file = " + name);
                     //String name = filenametokens[1] + "." + filenametokens[2];
 
@@ -490,32 +496,54 @@ public class ProcessorService implements Runnable{
                             Logger.getLogger(ProcessorService.class.getName()).log(Level.SEVERE, null, ex);
                         }
                     }else{
-                        int totalparts = Integer.parseInt(filenametokens[3]);
-                        int nropart = Integer.parseInt(filenametokens[4]);
+                        // case .p
+                        p("Case Partial");
+                        p("filenametokens len: " + filenametokens.length);
+                        int totalparts = 0;
+                        int nropart = 0;
+                        try {
+                            totalparts = Integer.parseInt(filenametokens[filenametokens.length-3]);
+                            nropart = Integer.parseInt(filenametokens[filenametokens.length-2]);
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                        }
                         if(totalparts == nropart){
-                                                      
+                            //final part arrived, time to build large file
                             File ofile = new File(mScanDirectory + "/" + deviceid + "." + name + ".b");
+
+                            p("output large file = " + ofile.getAbsolutePath());
+                            p("name = '" + name + "'");
+
                             FileOutputStream fos;
                             FileInputStream fis;
                             byte[] fileBytes;
                             try {
                                 fos = new FileOutputStream(ofile,true);
                                 for (int i = 1; i<=totalparts; i++) {
-                                    File filePart = new File(mScanDirectory + "/" + deviceid + "." + name + "." + totalparts + "." + i + ".p");
-                                    fis = new FileInputStream(filePart);
-                                    fileBytes = new byte[(int) filePart.length()];
-                                    fis.read(fileBytes, 0,(int)  filePart.length());
-                                    fos.write(fileBytes);
-                                    fos.flush();
-                                    fileBytes = null;
-                                    fis.close();
-                                    fis = null;
-                                    filePart.delete();
+                                    String filePartName = mScanDirectory + "/" + deviceid + "." + name + "." + totalparts + "." + i + ".p";
+                                    p("file part name: " + filePartName);
+                                    File filePart = new File(filePartName);
+                                    if (filePart.exists()) {
+                                        p("file exists: " + filePart.getAbsolutePath());
+                                        fis = new FileInputStream(filePart);
+                                        fileBytes = new byte[(int) filePart.length()];
+                                        fis.read(fileBytes, 0,(int)  filePart.length());
+                                        fos.write(fileBytes);
+                                        fos.flush();
+                                        fileBytes = null;
+                                        fis.close();
+                                        fis = null;
+                                        filePart.delete();
+                                    } else {
+                                        p("WARNING: file part does not exist: " + filePart.getAbsolutePath());
+                                    }
                                 }
+                                p("Finalizing file merge. Full file at: " + ofile.getAbsolutePath());
                                 fos.close();
                                 fos = null;
-                            }catch (Exception exception){
+                            }catch (Exception exception){                                
                                 exception.printStackTrace();
+                                p("WARNING - there was an exception merging the file." + ofile.getAbsolutePath());
                             }
                         }
                     }
@@ -618,7 +646,10 @@ public class ProcessorService implements Runnable{
     public static boolean isWindows() {
         return (System.getProperty("os.name").toLowerCase().contains("win"));
     }
-    
+    public static boolean isMac() {
+        return (System.getProperty("os.name").toLowerCase().contains("mac"));
+    }
+
     int addMobileBackupFolder() {
         try {
             
@@ -632,26 +663,38 @@ public class ProcessorService implements Runnable{
                     
                     String r = props.getProperty("scandir");                
                     if (r != null){
-                        String s = "../rtserver/mobilebackup/";
+                        String s = "../scrubber/mobilebackup/";
                         File f2 = new File(s);
                         f2.mkdir();                       
                         String sPathw = f2.getCanonicalPath() + File.separator;                        
                         String sPath = sPathw;
-                        if (!isWindows()) {                            
-                            File volumes=new File("/Volumes/");
-                            if(volumes.exists()){
-                                for(File f3:volumes.listFiles()){
-                                    if(f3.isDirectory()){
+                        if (isMac()) {
+                            File volumes = new File("/Volumes/");
+                            if (volumes.exists()) {
+                                for (File f3 : volumes.listFiles()) {
+                                    if (f3.isDirectory()) {
                                         sPath = f3.getPath() + sPathw;
                                         File f4 = new File(sPath);
                                         if (f4.exists()) {
-                                            p ("path: '" + sPath + "' exists"); 
+                                            p("path: '" + sPath + "' exists");
                                             break;
                                         } else {
-                                            p ("path: " + sPath + "' NOT exists");                                             
+                                            p("path: " + sPath + "' NOT exists");
                                         }
                                     }
                                 }
+                            }
+                        } else {
+                            if (isWindows()) {
+                                p("**** Case Windows *********");
+                                p("sPath = '" + sPath + "'");
+                                p("**** End Case Windows *****");
+                                //case Windows
+                            } else {
+                                //case Linux and others
+                                p("**** Case Linux *********");
+                                p("sPath = '" + sPath + "'");
+                                p("**** End Case Linux *****");
                             }
                         }
                         
@@ -1212,7 +1255,7 @@ public class ProcessorService implements Runnable{
             ret_code += c8.insert_column(keyspace, "Standard1", key, "keywords", _record.dbe_keywords, true);  
             
         }
-        if(abspath.contains("/rtserver/mobilebackup")) {
+        if(abspath.contains("/scrubber/mobilebackup")) {
             //DateFormat sdf = new SimpleDateFormat("yyyy.MM.dd HH:mm:ss.SSS z");
             //String sDateFile = sdf.format(new Date());                     
             //c8.insert_hashtag(keyspace, key, "mobilebackup", true, sdf.format(new Date()));            
@@ -2000,7 +2043,7 @@ public class ProcessorService implements Runnable{
             String sStorePath = "updateNumberofCopies.txt";
             //int nres = NetUtils.getfile(urlStr, sStorePath, 1, 500, 10000);  //1 try, timeout10s    
             
-            File fh = new File("../rtserver/batch_" + _batchid + ".idx");
+            File fh = new File("../scrubber/batch_" + _batchid + ".idx");
             FileWriter fw = new FileWriter(fh, true);
             fw.write("done");
             fw.close();
