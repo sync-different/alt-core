@@ -49,11 +49,16 @@ public class BinaryExtractorTest {
         System.out.println("\n=== Testing File-to-File Extraction ===");
         
         try {
+            //boolean success = BinaryExtractorUtil.extractBinarySection(
+            //    "test-multipart.dat",
+            //    "extracted-binary.bin"
+            //);
+
             boolean success = BinaryExtractorUtil.extractBinarySection(
-                "test-multipart.dat", 
-                "extracted-binary.bin"
+                    "4k_thetestdata.mp4..txt",
+                    "extracted-binary2.bin"
             );
-            
+
             if (success) {
                 System.out.println("✓ Binary extraction successful!");
                 
