@@ -8732,7 +8732,7 @@ class Worker extends WebServer implements HttpConstants, Runnable {
             if (sFileName.trim().endsWith(".c")) {
                 sFileNew = appendage + "../scrubber/config" + File.separator + sFileName.substring(1,sFileName.length()).trim();                                        
             } else {
-                if (w2.endsWith(".p")) {
+                if (w2.trim().endsWith(".p")) {
                     sFileNew = incoming.getPath() + File.separator + "upload." + w2.substring(1, w2.length()).trim();
                 } else {
                     sFileNew = incoming.getPath() + File.separator + "upload." + w2.substring(1, w2.length()).trim() + ".b";
