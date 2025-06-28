@@ -472,7 +472,11 @@ public class ProcessorService implements Runnable{
                     String name = "";
                     p("size of array:" + filenametokens.length);
                     name = filenametokens[1];
-                    for (int i = 2; i < filenametokens.length-1; i++) 
+                    int ign = 1;
+                    if (filename.endsWith(".p")) {
+                        ign = 3;
+                    }
+                    for (int i = 2; i < filenametokens.length-ign; i++) 
                         name = name += "." + filenametokens[i];
                     
                     p("Name of file = " + name);
@@ -490,32 +494,47 @@ public class ProcessorService implements Runnable{
                             Logger.getLogger(ProcessorService.class.getName()).log(Level.SEVERE, null, ex);
                         }
                     }else{
+                        // case .p
+                        p("Case Partial");
                         int totalparts = Integer.parseInt(filenametokens[3]);
                         int nropart = Integer.parseInt(filenametokens[4]);
                         if(totalparts == nropart){
-                                                      
+                            //final part arrived, time to build large file
                             File ofile = new File(mScanDirectory + "/" + deviceid + "." + name + ".b");
+
+                            p("output large file = " + ofile.getAbsolutePath());
+                            p("name = '" + name + "'");
+
                             FileOutputStream fos;
                             FileInputStream fis;
                             byte[] fileBytes;
                             try {
                                 fos = new FileOutputStream(ofile,true);
                                 for (int i = 1; i<=totalparts; i++) {
-                                    File filePart = new File(mScanDirectory + "/" + deviceid + "." + name + "." + totalparts + "." + i + ".p");
-                                    fis = new FileInputStream(filePart);
-                                    fileBytes = new byte[(int) filePart.length()];
-                                    fis.read(fileBytes, 0,(int)  filePart.length());
-                                    fos.write(fileBytes);
-                                    fos.flush();
-                                    fileBytes = null;
-                                    fis.close();
-                                    fis = null;
-                                    filePart.delete();
+                                    String filePartName = mScanDirectory + "/" + deviceid + "." + name + "." + totalparts + "." + i + ".p";
+                                    p("file part name: " + filePartName);
+                                    File filePart = new File(filePartName);
+                                    if (filePart.exists()) {
+                                        p("file exists: " + filePart.getAbsolutePath());
+                                        fis = new FileInputStream(filePart);
+                                        fileBytes = new byte[(int) filePart.length()];
+                                        fis.read(fileBytes, 0,(int)  filePart.length());
+                                        fos.write(fileBytes);
+                                        fos.flush();
+                                        fileBytes = null;
+                                        fis.close();
+                                        fis = null;
+                                        filePart.delete();
+                                    } else {
+                                        p("WARNING: file part does not exist: " + filePart.getAbsolutePath());
+                                    }
                                 }
+                                p("Finalizing file merge. Full file at: " + ofile.getAbsolutePath());
                                 fos.close();
                                 fos = null;
-                            }catch (Exception exception){
+                            }catch (Exception exception){                                
                                 exception.printStackTrace();
+                                p("WARNING - there was an exception merging the file." + ofile.getAbsolutePath());
                             }
                         }
                     }
@@ -658,15 +677,15 @@ public class ProcessorService implements Runnable{
                             }
                         } else {
                             if (isWindows()) {
-                                p("**** Case Windows *********")
+                                p("**** Case Windows *********");
                                 p("sPath = '" + sPath + "'");
-                                p("**** End Case Windows *****")
+                                p("**** End Case Windows *****");
                                 //case Windows
                             } else {
                                 //case Linux and others
-                                p("**** Case Linux *********")
+                                p("**** Case Linux *********");
                                 p("sPath = '" + sPath + "'");
-                                p("**** End Case Linux *****")
+                                p("**** End Case Linux *****");
                             }
                         }
                         
