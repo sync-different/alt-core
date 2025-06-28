@@ -8733,7 +8733,7 @@ class Worker extends WebServer implements HttpConstants, Runnable {
                 sFileNew = appendage + "../scrubber/config" + File.separator + sFileName.substring(1,sFileName.length()).trim();                                        
             } else {
                 if (w2.trim().endsWith(".p")) {
-                    sFileNew = incoming.getPath() + File.separator + "upload." + w2.substring(1, w2.length()).trim();
+                    sFileNew = incoming.getPath() + File.separator + w2.substring(1, w2.length()).trim();
                 } else {
                     sFileNew = incoming.getPath() + File.separator + "upload." + w2.substring(1, w2.length()).trim() + ".b";
                 }
@@ -8746,10 +8746,24 @@ class Worker extends WebServer implements HttpConstants, Runnable {
         if (foundBridge) {
             sFileNew = "bridge.clusterdummyfile";
         }
-                
-        FileOutputStream outFile = new FileOutputStream(sFileNew);
-        outFile.write(buf,end,nread-end);
-        outFile.close();
+        if(sFileName.endsWith(".p")){
+
+            String data = new String(buf, end, nread - end, "UTF-8");
+            int iInitialIndex=data.indexOf("-----WebKitFormBoundary");
+            int iContentType=data.substring(iInitialIndex).indexOf("Content-Type");
+            int iContentTypeEnd=data.substring(iContentType).indexOf("\r\n\r\n");
+            int eIndex=data.substring(iContentType,iContentTypeEnd).indexOf("\r\n------WebKitFormBoundary");
+
+            byte[] fileContent = data.substring(iContentTypeEnd,eIndex-("\r\n------WebKitFormBoundary".length())).getBytes("UTF-8");
+
+            FileOutputStream outFile = new FileOutputStream(sFileNew);
+            outFile.write(fileContent);
+            outFile.close();
+        }else {
+            FileOutputStream outFile = new FileOutputStream(sFileNew);
+            outFile.write(buf, end, nread - end);
+            outFile.close();
+        }
         buf2 = new byte[BUF_SIZE< nread-end?BUF_SIZE: nread-end];
         System.arraycopy(buf, end, buf2, 0, BUF_SIZE< nread-end?BUF_SIZE: nread-end);
         String sString2 = new String(buf2);

@@ -61,8 +61,20 @@ angular.module('app.controllers').controller('FilterController', function (Conf,
                     parser.href = document.location.href;
                     if (parser.protocol == "http:")
                         this.options.url = "http://"+parser.hostname+":"+netty_port_post+"/formpost";//+file.name;
-                    else
+                    else{
                         this.options.url = "https://"+parser.hostname+"/"+this.options.paramName;
+                        // Suppose 'formData' is your FormData instance
+                        formData.delete('dzchunkindex');
+                        formData.delete('dztotalfilesize');
+                        formData.delete('dzchunksize');
+                        formData.delete('dztotalchunkcount');
+                        formData.delete('dzchunkbyteoffset');
+                        formData.delete('WebKitFormBoundary5iwA0HqPfTOnv1OH');
+                        formData.delete(this.options.paramName);
+
+                        // Repeat for any other keys you want to remove
+                    }
+
                 });
 
 				this.on("processing", function(file) {
