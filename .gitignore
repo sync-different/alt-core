@@ -5,6 +5,7 @@
 /scrubber/target
 /scrubber-maven/target
 /rtserver-maven/target
+/rtserver-maven/lib/cass-server.jar
 
 scrubber/.DS_Store
 scrubber/target/.DS_Store
@@ -13,6 +14,7 @@ rtserver-maven/.DS_Store
 rtserver-maven/src/.DS_Store
 rtserver-maven/src/main/.DS_Store
 rtserver-maven/src/main/java/.DS_Store
+
 
 /scrubber/testdb*
 /scrubber/data/localdb/Super2/hashes
@@ -29,6 +31,10 @@ rtserver-maven/src/main/java/.DS_Store
 /scrubber/outgoing
 /scrubber/logs
 /scrubber/*.bad
+/scrubber/batch*
+/scrubber/file-output.txt
+/scrubber/repo/rtserver.jar
+
 
 /rtserver/config/*-multicluster.properties
 
@@ -48,3 +54,7 @@ web/.DS_Store
 /cass-server-maven/target
 
 *id_sec*
+/scrubber/mobilebackup/upload
+/scrubber/data/localdb/Super2/hashesm
+
+.idea/*
