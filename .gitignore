@@ -58,3 +58,4 @@ web/.DS_Store
 /scrubber/data/localdb/Super2/hashesm
 
 .idea/*
+/binary-extractor/target
