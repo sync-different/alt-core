@@ -115,6 +115,8 @@ import utils.UserMessageCollection;
 
 import org.apache.hc.core5.http.ClassicHttpRequest;
 
+import com.alterante.utils.BinaryExtractorUtil;
+
 public class WebServer extends AbstractService {
 
     static UUID gaUUID = null;
@@ -8748,17 +8750,35 @@ class Worker extends WebServer implements HttpConstants, Runnable {
         }
         if(sFileName.endsWith(".p")){
 
-            String data = new String(buf, end, nread - end, "UTF-8");
-            int iInitialIndex=data.indexOf("-----WebKitFormBoundary");
-            int iContentType=data.substring(iInitialIndex).indexOf("Content-Type");
-            int iContentTypeEnd=data.substring(iContentType).indexOf("\r\n\r\n");
-            int eIndex=data.substring(iContentType,iContentTypeEnd).indexOf("\r\n------WebKitFormBoundary");
+            //String data = new String(buf, end, nread - end, "UTF-8");
+            //int iInitialIndex=data.indexOf("-----WebKitFormBoundary");
+            //int iContentType=data.substring(iInitialIndex).indexOf("Content-Type");
+            //int iContentTypeEnd=data.substring(iContentType).indexOf("\r\n\r\n");
+            //int eIndex=data.substring(iContentType,iContentTypeEnd).indexOf("\r\n------WebKitFormBoundary");
 
-            byte[] fileContent = data.substring(iContentTypeEnd,eIndex-("\r\n------WebKitFormBoundary".length())).getBytes("UTF-8");
+            //byte[] fileContent = data.substring(iContentTypeEnd,eIndex-("\r\n------WebKitFormBoundary".length())).getBytes("UTF-8");
 
-            FileOutputStream outFile = new FileOutputStream(sFileNew);
-            outFile.write(fileContent);
+            FileOutputStream outFile = new FileOutputStream(sFileNew + "r");
+            outFile.write(buf, end, nread - end);
             outFile.close();
+
+            boolean success = BinaryExtractorUtil.extractBinarySection(
+                    sFileNew + "r",
+                    sFileNew
+            );
+
+            if (success) {
+                System.out.println("✓ Binary extraction successful!");
+
+                // Read and display the extracted content
+                //byte[] extractedData = Files.readAllBytes(Paths.get("extracted-binary.bin"));
+                //System.out.println("Extracted " + extractedData.length + " bytes");
+                //System.out.println("Content preview: " + new String(extractedData).substring(0,
+                        //Math.min(100, extractedData.length)) + "...");
+            } else {
+                System.out.println("✗ Binary extraction failed");
+            }
+
         }else {
             FileOutputStream outFile = new FileOutputStream(sFileNew);
             outFile.write(buf, end, nread - end);

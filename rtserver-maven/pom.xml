@@ -25,6 +25,14 @@
         <!-- Local JARs -->
         <dependency>
             <groupId>com.alterante</groupId>
+            <artifactId>binary-extractor</artifactId>
+            <version>1.0</version>
+            <scope>system</scope>
+            <systemPath>${project.basedir}/lib/binary-extractor-1.0-SNAPSHOT.jar</systemPath>
+        </dependency>
+
+        <dependency>
+            <groupId>com.alterante</groupId>
             <artifactId>cass-server</artifactId>
             <version>1.0</version>
             <scope>system</scope>
