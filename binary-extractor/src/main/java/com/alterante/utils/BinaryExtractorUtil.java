@@ -167,15 +167,35 @@ public class BinaryExtractorUtil {
     }
     
     /**
-     * Finds the start of the closing boundary.
+     * Finds the start of the closing boundary, excluding any preceding newline characters.
      */
     private static int findClosingBoundary(byte[] data, int startPos) {
         // Look for any of the boundary patterns
         for (String pattern : BOUNDARY_PATTERNS) {
             int boundaryPos = indexOf(data, pattern.getBytes(), startPos);
             if (boundaryPos != -1) {
-                logger.info("Found closing boundary at position: " + boundaryPos);
-                return boundaryPos;
+                // Check if there are newline characters immediately before the boundary
+                // and exclude them from the binary data
+                int adjustedPos = boundaryPos;
+                
+                // Check for \r\n before boundary
+                if (adjustedPos >= 2 && 
+                    data[adjustedPos - 2] == '\r' && 
+                    data[adjustedPos - 1] == '\n') {
+                    adjustedPos -= 2;
+                } 
+                // Check for single \n before boundary
+                else if (adjustedPos >= 1 && data[adjustedPos - 1] == '\n') {
+                    adjustedPos -= 1;
+                }
+                // Check for single \r before boundary
+                else if (adjustedPos >= 1 && data[adjustedPos - 1] == '\r') {
+                    adjustedPos -= 1;
+                }
+                
+                logger.info("Found closing boundary at position: " + boundaryPos + 
+                           ", adjusted to exclude newlines: " + adjustedPos);
+                return adjustedPos;
             }
         }
         
