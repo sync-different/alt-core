@@ -77,12 +77,28 @@ public class BinaryExtractorUtil {
                 return false;
             }
             
-            // Check if the last byte of the binary payload is a newline and remove it
+            // Check if the last bytes of the binary payload are newlines and remove them
             int adjustedBinaryEnd = binaryEnd;
-            if (binaryLength > 0 && fileData[binaryEnd - 1] == '\n') {
+            
+            // Check for \r\n at the end
+            if (binaryLength >= 2 && 
+                fileData[binaryEnd - 2] == '\r' && 
+                fileData[binaryEnd - 1] == '\n') {
+                adjustedBinaryEnd -= 2;
+                binaryLength -= 2;
+                logger.info("Removed trailing \\r\\n from binary payload");
+            }
+            // Check for single \n at the end
+            else if (binaryLength > 0 && fileData[binaryEnd - 1] == '\n') {
                 adjustedBinaryEnd--;
                 binaryLength--;
-                logger.info("Removed trailing newline from binary payload");
+                logger.info("Removed trailing \\n from binary payload");
+            }
+            // Check for single \r at the end
+            else if (binaryLength > 0 && fileData[binaryEnd - 1] == '\r') {
+                adjustedBinaryEnd--;
+                binaryLength--;
+                logger.info("Removed trailing \\r from binary payload");
             }
             
             if (binaryLength <= 0) {
@@ -141,10 +157,24 @@ public class BinaryExtractorUtil {
                 return null;
             }
             
-            // Check if the last byte of the binary payload is a newline and remove it
-            if (binaryLength > 0 && fileData[binaryEnd - 1] == '\n') {
+            // Check if the last bytes of the binary payload are newlines and remove them
+            
+            // Check for \r\n at the end
+            if (binaryLength >= 2 && 
+                fileData[binaryEnd - 2] == '\r' && 
+                fileData[binaryEnd - 1] == '\n') {
+                binaryLength -= 2;
+                logger.info("Removed trailing \\r\\n from binary payload");
+            }
+            // Check for single \n at the end
+            else if (binaryLength > 0 && fileData[binaryEnd - 1] == '\n') {
                 binaryLength--;
-                logger.info("Removed trailing newline from binary payload");
+                logger.info("Removed trailing \\n from binary payload");
+            }
+            // Check for single \r at the end
+            else if (binaryLength > 0 && fileData[binaryEnd - 1] == '\r') {
+                binaryLength--;
+                logger.info("Removed trailing \\r from binary payload");
             }
             
             if (binaryLength <= 0) {
