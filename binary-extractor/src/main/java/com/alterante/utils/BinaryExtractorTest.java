@@ -19,7 +19,7 @@ public class BinaryExtractorTest {
         testBinaryExtraction();
         
         // Clean up test files
-        cleanupTestFiles();
+        //cleanupTestFiles();
     }
     
     /**
