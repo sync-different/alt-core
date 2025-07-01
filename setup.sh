@@ -11,7 +11,7 @@ mkdir scrubber/data/localdb/Super2/hashes
 mkdir scrubber/data/localdb/Super2/hashesm
 mkdir scrubber/data/localdb/Super2/paths
 mkdir scrubber/outgoing
-mkdir scrubber/log
+mkdir scrubber/logs
 mkdir web/cass/pic
 mkdir rtserver/incoming
 
