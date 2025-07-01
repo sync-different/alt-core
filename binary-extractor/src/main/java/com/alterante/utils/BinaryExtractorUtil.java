@@ -77,11 +77,20 @@ public class BinaryExtractorUtil {
                 return false;
             }
             
-            // Check if the last bytes of the binary payload are newlines and remove them
+            // Check if the last bytes of the binary payload are newlines or boundary markers and remove them
             int adjustedBinaryEnd = binaryEnd;
             
+            // Check for \r\n- pattern at the end (0x0D 0x0A 0x2D)
+            if (binaryLength >= 3 && 
+                fileData[binaryEnd - 3] == '\r' && 
+                fileData[binaryEnd - 2] == '\n' && 
+                fileData[binaryEnd - 1] == '-') {
+                adjustedBinaryEnd -= 3;
+                binaryLength -= 3;
+                logger.info("Removed trailing \\r\\n- pattern from binary payload");
+            }
             // Check for \r\n at the end
-            if (binaryLength >= 2 && 
+            else if (binaryLength >= 2 && 
                 fileData[binaryEnd - 2] == '\r' && 
                 fileData[binaryEnd - 1] == '\n') {
                 adjustedBinaryEnd -= 2;
@@ -157,10 +166,18 @@ public class BinaryExtractorUtil {
                 return null;
             }
             
-            // Check if the last bytes of the binary payload are newlines and remove them
+            // Check if the last bytes of the binary payload are newlines or boundary markers and remove them
             
+            // Check for \r\n- pattern at the end (0x0D 0x0A 0x2D)
+            if (binaryLength >= 3 && 
+                fileData[binaryEnd - 3] == '\r' && 
+                fileData[binaryEnd - 2] == '\n' && 
+                fileData[binaryEnd - 1] == '-') {
+                binaryLength -= 3;
+                logger.info("Removed trailing \\r\\n- pattern from binary payload");
+            }
             // Check for \r\n at the end
-            if (binaryLength >= 2 && 
+            else if (binaryLength >= 2 && 
                 fileData[binaryEnd - 2] == '\r' && 
                 fileData[binaryEnd - 1] == '\n') {
                 binaryLength -= 2;
