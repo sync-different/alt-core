@@ -59,3 +59,4 @@ web/.DS_Store
 
 .idea/*
 /binary-extractor/target
+web/temp_post.txt
