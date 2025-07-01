@@ -77,6 +77,19 @@ public class BinaryExtractorUtil {
                 return false;
             }
             
+            // Check if the last byte of the binary payload is a newline and remove it
+            int adjustedBinaryEnd = binaryEnd;
+            if (binaryLength > 0 && fileData[binaryEnd - 1] == '\n') {
+                adjustedBinaryEnd--;
+                binaryLength--;
+                logger.info("Removed trailing newline from binary payload");
+            }
+            
+            if (binaryLength <= 0) {
+                logger.warning("No binary data found after removing trailing newline");
+                return false;
+            }
+            
             byte[] binaryData = new byte[binaryLength];
             System.arraycopy(fileData, binaryStart, binaryData, 0, binaryLength);
             
@@ -124,6 +137,16 @@ public class BinaryExtractorUtil {
             }
             
             int binaryLength = binaryEnd - binaryStart;
+            if (binaryLength <= 0) {
+                return null;
+            }
+            
+            // Check if the last byte of the binary payload is a newline and remove it
+            if (binaryLength > 0 && fileData[binaryEnd - 1] == '\n') {
+                binaryLength--;
+                logger.info("Removed trailing newline from binary payload");
+            }
+            
             if (binaryLength <= 0) {
                 return null;
             }
