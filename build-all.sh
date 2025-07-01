@@ -1,5 +1,11 @@
+echo "building extractor"
+cd binary-extractor
+mvn clean
+mvn compile
+mvn package
+cd ..
+
 echo "-------------------building cass-server.jar"
-cass-server.jar
 cd cass-server-maven
 mvn clean
 mvn compile
@@ -10,6 +16,7 @@ cp cass-server-maven/target/cass-server-1.0.0.jar ./rtserver-maven/lib/cass-serv
 echo "-------------------building rtserver.jar"
 rtserver.jar
 cd rtserver-maven
+./sync.sh
 mvn clean
 mvn compile
 mvn package

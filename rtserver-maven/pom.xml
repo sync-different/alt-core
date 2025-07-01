@@ -24,7 +24,7 @@
     <dependencies>
         <!-- Local JARs -->
         <dependency>
-            <groupId>com.alterante</groupId>
+            <groupId>com.alterante.utils</groupId>
             <artifactId>binary-extractor</artifactId>
             <version>1.0</version>
             <scope>system</scope>
