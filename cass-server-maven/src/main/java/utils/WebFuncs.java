@@ -44,6 +44,10 @@ import org.apache.hc.core5.http.ClassicHttpRequest;
 
 import java.util.Map;
 
+import java.util.Date;
+import java.util.Calendar;
+import java.text.SimpleDateFormat;
+
 public class WebFuncs {
 
         static Map mapBatches = new java.util.HashMap();
@@ -174,8 +178,19 @@ class UpdateCheck implements Runnable {
             
         }
     }
-    
-    public void run() {     
+
+      /* print to stdout */
+      protected void p(String s) {
+          Date ts_start = Calendar.getInstance().getTime();
+          SimpleDateFormat sdf = new SimpleDateFormat("yyyy/MM/dd hh:mm:ss");
+          String sDate = sdf.format(ts_start);
+
+          long threadID = Thread.currentThread().getId();
+          System.out.println(sDate+ " [DEBUG] [WebFuncsCS_" + threadID + "] " + s);
+      }
+
+
+      public void run() {
         try {      
             refcount++;
             Stopwatch tt = new Stopwatch();

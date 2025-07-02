@@ -187,31 +187,46 @@ public class TransferService implements Runnable {
     public static final String ANSI_RESET = "\u001B[0m";
 
     protected static void pw(String s) {
+        Date ts_start = Calendar.getInstance().getTime();
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy/MM/dd hh:mm:ss");
+        String sDate = sdf.format(ts_start);
+
         if (bConsole) {
             long threadID = Thread.currentThread().getId();
-            System.out.println(ANSI_YELLOW + "[WARNING] [TransferService-" + threadID + "] " + s + ANSI_RESET);
+            System.out.println(ANSI_YELLOW + sDate + " [WARNING] [TransferService-" + threadID + "] " + s + ANSI_RESET);
         }
     }
 
     protected static void pi(String s) {
+        Date ts_start = Calendar.getInstance().getTime();
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy/MM/dd hh:mm:ss");
+        String sDate = sdf.format(ts_start);
+
         if (bConsole) {
             long threadID = Thread.currentThread().getId();
-            System.out.println(ANSI_GREEN + "[INFO] [TramsferService-" + threadID + "] " + s + ANSI_RESET);
+            System.out.println(ANSI_GREEN + sDate + " [INFO] [TramsferService-" + threadID + "] " + s + ANSI_RESET);
         }
     }
 
     protected static void pe(String s) {
+        Date ts_start = Calendar.getInstance().getTime();
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy/MM/dd hh:mm:ss");
+        String sDate = sdf.format(ts_start);
+
         if (bConsole) {
             long threadID = Thread.currentThread().getId();
-            System.out.println(ANSI_RED + "[ERROR] [TransferService-" + threadID + "] " + s + ANSI_RESET);
+            System.out.println(ANSI_RED + sDate + " [ERROR] [TransferService-" + threadID + "] " + s + ANSI_RESET);
         }
     }
 
     /* print to stdout */
     protected void p(String s) {
+        Date ts_start = Calendar.getInstance().getTime();
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy/MM/dd hh:mm:ss");
+        String sDate = sdf.format(ts_start);
 
         long threadID = Thread.currentThread().getId();
-        System.out.println("[transfer_" + threadID + "] " + s);
+        System.out.println(sDate + " [DEBUG] [transfer_" + threadID + "] " + s);
     }
 
     /* print to the log file */
@@ -229,7 +244,7 @@ public class TransferService implements Runnable {
                     } 
                 else
                     pw("Log is null. Skipping Log Entry...");
-                pi(sDate + " " + _loglevel + " " + s);
+                pi(_loglevel + " " + s);
             } catch (Exception e) {
                 e.printStackTrace();
             }

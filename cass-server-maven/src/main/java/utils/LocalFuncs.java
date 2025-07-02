@@ -61,12 +61,12 @@ import static utils.Cass7Funcs.UTF8;
 import static utils.Cass7Funcs.getConfig;
 import static utils.Cass7Funcs.keyspace;
 //import static utils.Cass7Funcs.lf;
-import static utils.Cass7Funcs.p;
+//import static utils.Cass7Funcs.p;
 
 import static utils.Cass7Funcs.isNodeAvailable;
 import static utils.Cass7Funcs.getLocalAddress;
 //import static utils.Cass7Funcs.occurences_copies;
-import static utils.Cass7Funcs.p;
+//import static utils.Cass7Funcs.p;
 import static utils.NetUtils.getfile;
 
 import processor.FileDatabaseEntry;
@@ -234,6 +234,17 @@ public class LocalFuncs {
     
     static String appendage = "";
     static String appendageRW = "";
+
+    /* print to stdout */
+    static protected void p(String s) {
+        Date ts_start = Calendar.getInstance().getTime();
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy/MM/dd hh:mm:ss");
+        String sDate = sdf.format(ts_start);
+
+        long threadID = Thread.currentThread().getId();
+        System.out.println(sDate + " [DEBUG] [localfuncs_" + threadID + "] " + s);
+    }
+
 
     public LocalFuncs() {
         //constructor 

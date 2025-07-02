@@ -793,8 +793,12 @@ public class RelayVaultService implements Runnable {
     String LOG_NAME = "logs/vault.txt";
     
     protected void p(String s) {
+        Date ts_start = Calendar.getInstance().getTime();
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy/MM/dd hh:mm:ss");
+        String sDate = sdf.format(ts_start);
+
         long threadID = Thread.currentThread().getId();
-        System.out.println("[VAULT:" + threadID + "] " + s);
+        System.out.println(sDate + " [DEBUG] [RelayVaultService_" + threadID + "] " + s);
     }
     
     protected void log(String s, int _loglevel) {
@@ -808,7 +812,7 @@ public class RelayVaultService implements Runnable {
                 log.println(sDate + " " + _loglevel + " " + s);
                 log.flush();
             }    
-            p(sDate + " " + _loglevel + " " + s);        
+            p(_loglevel + " " + s);
         }        
     }
     

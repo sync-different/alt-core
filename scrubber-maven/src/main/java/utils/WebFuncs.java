@@ -34,13 +34,16 @@ import java.util.Properties;
 import utils.Stopwatch;
 
 import java.util.StringTokenizer;
-import static utils.Cass7Funcs.p;
+//import static utils.Cass7Funcs.p;
 
 import java.util.Iterator;
 import java.util.concurrent.ConcurrentNavigableMap;
 
 import org.apache.hc.core5.http.ClassicHttpRequest;
 
+import java.util.Date;
+import java.util.Calendar;
+import java.text.SimpleDateFormat;
 
 import java.util.Map;
 
@@ -55,9 +58,21 @@ public class WebFuncs {
         
         static int nErrors = 0;
 
-  
+    /* print to stdout */
+    static protected void p(String s) {
+        Date ts_start = Calendar.getInstance().getTime();
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy/MM/dd hh:mm:ss");
+        String sDate = sdf.format(ts_start);
 
-class MailProcessor implements Runnable {
+        long threadID = Thread.currentThread().getId();
+        System.out.println(sDate+ " [DEBUG] [WebFuncs_" + threadID + "] " + s);
+    }
+
+
+
+
+
+    class MailProcessor implements Runnable {
     
         MailProcessor() {
             Thread t = new Thread(this, "MailProcessor");
@@ -71,9 +86,19 @@ class MailProcessor implements Runnable {
 }
 
 class UpdateCheck implements Runnable {
-      
-      
-      String sVersionRunning = "";
+
+    /* print to stdout */
+    protected void p(String s) {
+        Date ts_start = Calendar.getInstance().getTime();
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy/MM/dd hh:mm:ss");
+        String sDate = sdf.format(ts_start);
+
+        long threadID = Thread.currentThread().getId();
+        System.out.println(sDate+ " [DEBUG] [WebFuncsCS_" + threadID + "] " + s);
+    }
+
+
+    String sVersionRunning = "";
       boolean bWindows = true;
       
       UpdateCheck() {
@@ -232,9 +257,9 @@ Thread.UncaughtExceptionHandler h = new Thread.UncaughtExceptionHandler() {
         System.exit(-1);
     }
 };
-       
 
-    public void run() {        
+
+      public void run() {
         try {
             p("copyloader run");
             //wf = new utils.WebFuncs(mLocalIP); 

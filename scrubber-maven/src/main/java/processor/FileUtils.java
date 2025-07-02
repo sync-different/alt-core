@@ -166,23 +166,35 @@ public class FileUtils {
     public static final String ANSI_RESET = "\u001B[0m";
 
     protected static void pw(String s) {
+        Date ts_start = Calendar.getInstance().getTime();
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy/MM/dd hh:mm:ss");
+        String sDate = sdf.format(ts_start);
+
         if (bConsole) {
             long threadID = Thread.currentThread().getId();
-            System.out.println(ANSI_YELLOW + "[WARNING] [FileUtils-" + threadID + "] " + s + ANSI_RESET);
+            System.out.println(ANSI_YELLOW + sDate + " [WARNING] [FileUtils-" + threadID + "] " + s + ANSI_RESET);
         }
     }
 
     protected static void pi(String s) {
+        Date ts_start = Calendar.getInstance().getTime();
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy/MM/dd hh:mm:ss");
+        String sDate = sdf.format(ts_start);
+
         if (bConsole) {
             long threadID = Thread.currentThread().getId();
-            System.out.println(ANSI_GREEN + "[INFO] [FileUtils-" + threadID + "] " + s + ANSI_RESET);
+            System.out.println(ANSI_GREEN + sDate + " [INFO] [FileUtils-" + threadID + "] " + s + ANSI_RESET);
         }
     }
 
     protected static void pe(String s) {
+        Date ts_start = Calendar.getInstance().getTime();
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy/MM/dd hh:mm:ss");
+        String sDate = sdf.format(ts_start);
+
         if (bConsole) {
             long threadID = Thread.currentThread().getId();
-            System.out.println(ANSI_RED + "[ERROR] [FileUtils-" + threadID + "] " + s + ANSI_RESET);
+            System.out.println(ANSI_RED + sDate + " [ERROR] [FileUtils-" + threadID + "] " + s + ANSI_RESET);
         }
     }
 
@@ -194,14 +206,17 @@ public class FileUtils {
         String sDate = sdf.format(ts_start);
         
         long threadID = Thread.currentThread().getId();
-        System.out.println("[scanner_" + threadID + "] " + sDate + " " + s);
+        System.out.println(sDate + "[DEBUG] [FileUtils_" + threadID + "] " + sDate + " " + s);
     }
     
     protected void pdebug(String s) {
+        Date ts_start = Calendar.getInstance().getTime();
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy/MM/dd hh:mm:ss");
+        String sDate = sdf.format(ts_start);
 
         if (mDEBUG_MODE) {
             long threadID = Thread.currentThread().getId();
-            System.out.println("[scanner_" + threadID + "] " + s);            
+            System.out.println("[FileUtils_" + threadID + "] " + s);
         }
     }
 

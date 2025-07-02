@@ -35,6 +35,7 @@ import static utils.Cass7Funcs.p;
 import java.nio.ByteBuffer;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
+import java.util.Date;
 
 import java.io.PrintWriter;
 
@@ -45,15 +46,17 @@ import java.io.PrintWriter;
 public class NetUtils {
     
     //static protected Properties props = new Properties();
-    
+
+    static boolean bConsole = true;
+
     public static InetAddress getLocalAddressNonLoopback2() throws SocketException {
     
         boolean bReachable = false;
         InetAddress addr_res = null;
 
-        System.out.println("get interfaces");
+        p("get interfaces");
         Enumeration<NetworkInterface> ifaces = NetworkInterface.getNetworkInterfaces();
-        System.out.println("done get interfaces");
+        p("done get interfaces");
         while (ifaces.hasMoreElements()) {
             NetworkInterface iface = ifaces.nextElement();
             Enumeration<InetAddress> addresses = iface.getInetAddresses();
@@ -76,7 +79,7 @@ public class NetUtils {
     
     boolean bReachable = false;
     InetAddress addr_res = null;
-    
+
     System.out.println("get interfaces");
     Enumeration<NetworkInterface> ifaces = NetworkInterface.getNetworkInterfaces();
     System.out.println("done get interfaces");
@@ -204,12 +207,53 @@ public class NetUtils {
         }
 
     }
-   
-   /* print to stdout */
+
+    public static final String ANSI_RED = "\u001B[31m";
+    public static final String ANSI_GREEN = "\u001B[32m";
+    public static final String ANSI_YELLOW = "\u001B[33m";
+    public static final String ANSI_RESET = "\u001B[0m";
+
+    protected static void pw(String s) {
+        Date ts_start = Calendar.getInstance().getTime();
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy/MM/dd hh:mm:ss");
+        String sDate = sdf.format(ts_start);
+
+        if (bConsole) {
+            long threadID = Thread.currentThread().getId();
+            System.out.println(ANSI_YELLOW + sDate + " [WARNING] [NetUtilsCS-" + threadID + "] " + s + ANSI_RESET);
+        }
+    }
+
+    protected static void pi(String s) {
+        Date ts_start = Calendar.getInstance().getTime();
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy/MM/dd hh:mm:ss");
+        String sDate = sdf.format(ts_start);
+
+        if (bConsole) {
+            long threadID = Thread.currentThread().getId();
+            System.out.println(ANSI_GREEN + sDate + " [INFO] [NetUtilsCS-" + threadID + "] " + s + ANSI_RESET);
+        }
+    }
+
+    protected static void pe(String s) {
+        Date ts_start = Calendar.getInstance().getTime();
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy/MM/dd hh:mm:ss");
+        String sDate = sdf.format(ts_start);
+
+        if (bConsole) {
+            long threadID = Thread.currentThread().getId();
+            System.out.println(ANSI_RED + sDate + " [ERROR] [NetUtilsCS-" + threadID + "] " + s + ANSI_RESET);
+        }
+    }
+
+    /* print to stdout */
     static protected void p(String s) {
+        Date ts_start = Calendar.getInstance().getTime();
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy/MM/dd hh:mm:ss");
+        String sDate = sdf.format(ts_start);
 
         long threadID = Thread.currentThread().getId();
-        System.out.println("[backup_client_" + threadID + "] " + s);
+        System.out.println(sDate + " [DEBUG] [netutils_" + threadID + "] " + s);
     }
     
     static public String getMode() {
@@ -357,13 +401,13 @@ public class NetUtils {
                     fis = new FileInputStream(f);
                     Scanner scanner2 = new Scanner(fis);
                     sUUID = scanner2.nextLine();                                    
-                    System.out.println("UUID exists = " + sUUID);
+                    p("UUID exists = " + sUUID);
                 } else {
                     fos = new FileOutputStream(f);
                     UUID newUUID = UUID.randomUUID();
                     sUUID = newUUID.toString();
                     fos.write(sUUID.getBytes());                                        
-                    System.out.println("saved new UUID = " + sUUID);
+                    p("saved new UUID = " + sUUID);
                 }
             } catch (Exception e) {
                 e.printStackTrace();

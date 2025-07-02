@@ -224,31 +224,46 @@ public class ProcessorService implements Runnable{
     public static final String ANSI_RESET = "\u001B[0m";
 
     protected static void pw(String s) {
+        Date ts_start = Calendar.getInstance().getTime();
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy/MM/dd hh:mm:ss");
+        String sDate = sdf.format(ts_start);
+
         if (bConsole) {
             long threadID = Thread.currentThread().getId();
-            System.out.println(ANSI_YELLOW + "[WARNING] [ProcessorService-" + threadID + "] " + s + ANSI_RESET);
+            System.out.println(ANSI_YELLOW + sDate + " [WARNING] [ProcessorService-" + threadID + "] " + s + ANSI_RESET);
         }
     }
 
     protected static void pi(String s) {
+        Date ts_start = Calendar.getInstance().getTime();
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy/MM/dd hh:mm:ss");
+        String sDate = sdf.format(ts_start);
+
         if (bConsole) {
             long threadID = Thread.currentThread().getId();
-            System.out.println(ANSI_GREEN + "[INFO] [ProcessorService-" + threadID + "] " + s + ANSI_RESET);
+            System.out.println(ANSI_GREEN + sDate + " [INFO] [ProcessorService-" + threadID + "] " + s + ANSI_RESET);
         }
     }
 
     protected static void pe(String s) {
+        Date ts_start = Calendar.getInstance().getTime();
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy/MM/dd hh:mm:ss");
+        String sDate = sdf.format(ts_start);
+
         if (bConsole) {
             long threadID = Thread.currentThread().getId();
-            System.out.println(ANSI_RED + "[ERROR] [ProcessorService-" + threadID + "] " + s + ANSI_RESET);
+            System.out.println(ANSI_RED + sDate + " [ERROR] [ProcessorService-" + threadID + "] " + s + ANSI_RESET);
         }
     }
 
     /* print to stdout */
     protected static void p(String s) {
+        Date ts_start = Calendar.getInstance().getTime();
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy/MM/dd hh:mm:ss");
+        String sDate = sdf.format(ts_start);
 
         long threadID = Thread.currentThread().getId();
-        System.out.println("[processor_" + threadID + "] " + s);
+        System.out.println(sDate+ "[DEBUG] [processor_" + threadID + "] " + s);
     }
 
       /* print to the log file */
@@ -267,7 +282,7 @@ public class ProcessorService implements Runnable{
                     } 
                 else
                     pw("Log is null. Skipping Log Entry...");
-                pi(sDate + " " + _loglevel + " " + s);
+                pi(_loglevel + " " + s);
             } catch (Exception e) {
                 e.printStackTrace();
             }

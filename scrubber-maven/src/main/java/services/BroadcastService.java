@@ -24,6 +24,9 @@ import java.util.Enumeration;
 import java.util.Properties;
 import utils.HTTPRequestPoster;
 import utils.NetUtils;
+import java.util.Calendar;
+import java.util.Date;
+import java.text.SimpleDateFormat;
 
 public class BroadcastService implements Runnable {
    
@@ -259,12 +262,15 @@ public class BroadcastService implements Runnable {
         p("clusteridUUID = " + clusteridUUID);
         return clusteridUUID;
     }
-    
+
     /* print to stdout */
     static protected void p(String s) {
+        Date ts_start = Calendar.getInstance().getTime();
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy/MM/dd hh:mm:ss");
+        String sDate = sdf.format(ts_start);
 
         long threadID = Thread.currentThread().getId();
-        System.out.println("[backup_client_" + threadID + "] " + s);
+        System.out.println(sDate + " [DEBUG] [BroadcastService_" + threadID + "] " + s);
     }
 
 }

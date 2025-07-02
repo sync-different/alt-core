@@ -71,7 +71,7 @@ public class FileUtils {
         private String key;
 
         public Key(String key) {
-            System.out.println("adding key: " + key) ;
+            p("adding key: " + key) ;
             this.key = key;
         }
 
@@ -79,7 +79,7 @@ public class FileUtils {
         public boolean equals(Object obj) {
 
             if (obj instanceof Key) {
-                System.out.println("key: " + key + " vs " + ((Key) obj ).key) ;
+                p("key: " + key + " vs " + ((Key) obj ).key) ;
                 return key.equals(((Key) obj).key);                
             }
             else
@@ -141,15 +141,15 @@ public class FileUtils {
     public void cleanup() {
         long freeMem = 0;
         
-        System.out.println("before: " + mFilesDatabase.size());
+        p("before: " + mFilesDatabase.size());
         Runtime r = Runtime.getRuntime();
         freeMem = r.freeMemory();
-        System.out.println("* free mem: " + freeMem);
+        p("* free mem: " + freeMem);
 
         mFilesDatabase.clear();
-        System.out.println("after: " + mFilesDatabase.size());
+        p("after: " + mFilesDatabase.size());
         freeMem = r.freeMemory();
-        System.out.println("* free mem: " + freeMem);
+        p("* free mem: " + freeMem);
         mFilesDatabase = null;
         mStorage = null;
         mDatabaseEntryPath = null;
@@ -166,43 +166,58 @@ public class FileUtils {
     public static final String ANSI_RESET = "\u001B[0m";
 
     protected static void pw(String s) {
+        Date ts_start = Calendar.getInstance().getTime();
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy/MM/dd hh:mm:ss");
+        String sDate = sdf.format(ts_start);
+
         if (bConsole) {
             long threadID = Thread.currentThread().getId();
-            System.out.println(ANSI_YELLOW + "[WARNING] [FileUtilsCS-" + threadID + "] " + s + ANSI_RESET);
+            System.out.println(ANSI_YELLOW + sDate + " [WARNING] [FileUtilsCS-" + threadID + "] " + s + ANSI_RESET);
         }
     }
 
     protected static void pi(String s) {
+        Date ts_start = Calendar.getInstance().getTime();
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy/MM/dd hh:mm:ss");
+        String sDate = sdf.format(ts_start);
+
         if (bConsole) {
             long threadID = Thread.currentThread().getId();
-            System.out.println(ANSI_GREEN + "[INFO] [FileUtilsCS-" + threadID + "] " + s + ANSI_RESET);
+            System.out.println(ANSI_GREEN + sDate + " [INFO] [FileUtilsCS-" + threadID + "] " + s + ANSI_RESET);
         }
     }
 
     protected static void pe(String s) {
+        Date ts_start = Calendar.getInstance().getTime();
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy/MM/dd hh:mm:ss");
+        String sDate = sdf.format(ts_start);
+
         if (bConsole) {
             long threadID = Thread.currentThread().getId();
-            System.out.println(ANSI_RED + "[ERROR] [FileUtilsCS-" + threadID + "] " + s + ANSI_RESET);
+            System.out.println(ANSI_RED + sDate + " [ERROR] [FileUtilsCS-" + threadID + "] " + s + ANSI_RESET);
         }
     }
 
 
     /* print to stdout */
-    protected void p(String s) {
+    static protected void p(String s) {
 
         Date ts_start = Calendar.getInstance().getTime();
         SimpleDateFormat sdf = new SimpleDateFormat("yyyy/MM/dd hh:mm:ss");
         String sDate = sdf.format(ts_start);
         
         long threadID = Thread.currentThread().getId();
-        System.out.println("[scanner_" + threadID + "] " + sDate + " " + s);
+        System.out.println(sDate + " [DEBUG] [FileUtilsCS" + threadID + "] " + s);
     }
     
     protected void pdebug(String s) {
+        Date ts_start = Calendar.getInstance().getTime();
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy/MM/dd hh:mm:ss");
+        String sDate = sdf.format(ts_start);
 
         if (mDEBUG_MODE) {
             long threadID = Thread.currentThread().getId();
-            System.out.println("[scanner_" + threadID + "] " + s);            
+            System.out.println(sDate + "[DEBUG] [FileUtilsCS_" + threadID + "] " + s);
         }
     }
 
@@ -272,8 +287,8 @@ public class FileUtils {
     
     void loadBackupProps() throws IOException {
     
-        //System.out.println(System.getProperty("java.home"));
-        System.out.println("loadBackkupProps()");
+        //p(System.getProperty("java.home"));
+        p("loadBackkupProps()");
         File f = new File(mCONFIG_PATH);
         if (f.exists()) {
             InputStream is =new BufferedInputStream(new
@@ -408,7 +423,7 @@ public class FileUtils {
 
                                 hDeletedObject.put(sKey, "");
 
-                                System.out.println("bres = " + bres);
+                                p("bres = " + bres);
 
                                 dbe = null;
                             }
@@ -428,7 +443,7 @@ public class FileUtils {
                 while (itDeletedObject.hasNext()) {
                     Map.Entry meEntry = (Map.Entry)itDeletedObject.next();
 
-                    System.out.println("key del HASH = " + meEntry.getKey().toString());
+                    p("key del HASH = " + meEntry.getKey().toString());
                     mFilesDatabase.remove(meEntry.getKey().toString());
                 }
             }
@@ -529,8 +544,8 @@ public class FileUtils {
     //                                Thread.sleep(mDelayTime);
     //                            }
 
-                                //System.out.println("File Name: '" + f.getName() + "'");    
-                                //System.out.println("File AbsolutePath" + f.getAbsolutePath());
+                                //p("File Name: '" + f.getName() + "'");
+                                //p("File AbsolutePath" + f.getAbsolutePath());
                                 if ( checkFileType(f.getName().toLowerCase()) ) {
                                     Date date_lastmodified = new Date(f.lastModified());
                                     String sMD5 = "";
@@ -642,11 +657,11 @@ public class FileUtils {
 
                                             if (dbe.dbe_action.equals("NEW")) {
                                                 Boolean bres = saveDatabaseEntry(dbe, "A");
-                                                System.out.println("bres = " + bres);                                             
+                                                p("bres = " + bres);
                                             } 
                                             if (dbe.dbe_action.equals("OOM-PDF")) {
                                                 Boolean bres = saveDatabaseEntry(dbe, "A");
-                                                System.out.println("bres = " + bres);                                             
+                                               p("bres = " + bres);
                                                 String sFile = URLEncoder.encode(f.getAbsolutePath());
                                                 log("WARNING: There was an OOM processing PDF file: '" + sFile + "'", 0);                                                        
                                             }
@@ -660,7 +675,7 @@ public class FileUtils {
                                                 //mFilesDatabase.remove(URLEncoder.encode(f.getAbsolutePath(),"UTF-8"));
                                                 //countrecords=mRecordsCount;
                                                 mTerminated=true;
-                                                System.out.println("EXITING THE FUNCTION at n=" + countrecords);
+                                                p("EXITING THE FUNCTION at n=" + countrecords);
                                                 oomcase = true;
                                                 return -1;
                                             }
@@ -679,7 +694,7 @@ public class FileUtils {
                                     }
 
                                     File altfolder = new File(projectsFolderPath);
-                                    System.out.println("ALT_PATH " + altfolder.getCanonicalPath());
+                                    p("ALT_PATH " + altfolder.getCanonicalPath());
                                     String filename = f.getName();
                                     String filetype = filename.substring(filename.lastIndexOf(".") + 1, filename.length());
                                     if (is_video(filetype.toLowerCase())){
@@ -838,7 +853,7 @@ public class FileUtils {
         String _directory = "";
         while (it.hasNext() && bCont) {
             Map.Entry pairs = (Map.Entry)it.next();           
-            //System.out.println(pairs.getKey() + " = " + pairs.getValue() + " = " + pairs.toString());
+            //p(pairs.getKey() + " = " + pairs.getValue() + " = " + pairs.toString());
             
             String theKey = (String)pairs.getKey();
             theKey = theKey.replace("\\", "/");
@@ -999,7 +1014,7 @@ public class FileUtils {
      */
     public boolean loadPendingFiles() {
         try {
-            System.out.println(mStorage);
+            p(mStorage);
             File storage = new File(mStorage);            
             if (!storage.exists())
                 return false;
@@ -1112,7 +1127,7 @@ public class FileUtils {
                 
                 String replaced = spath.replace("\"", "");
                 
-                System.out.println("Adding token '" + replaced + "'");
+                p("Adding token '" + replaced + "'");
                 mapBlackC.put(replaced, "");                                    
             }
             
@@ -1135,7 +1150,7 @@ public class FileUtils {
                 
                 String replaced = spath.replace("\"", "");
                 
-                System.out.println("Adding token '" + replaced + "'");
+                p("Adding token '" + replaced + "'");
                 mapBlack.put(replaced, "");                                    
             }
             

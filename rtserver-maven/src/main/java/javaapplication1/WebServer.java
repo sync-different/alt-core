@@ -170,8 +170,12 @@ public class WebServer extends AbstractService {
     protected static void p(String s) {
 
         if (bConsole) {
+            Date ts_start = Calendar.getInstance().getTime();
+            SimpleDateFormat sdf = new SimpleDateFormat("yyyy/MM/dd hh:mm:ss");
+            String sDate = sdf.format(ts_start);
+
             long threadID = Thread.currentThread().getId();
-            System.out.println("[WebServer-" + threadID + "] " + s);
+            System.out.println(sDate + " [DEBUG] [WebServer-" + threadID + "] " + s);
         }
     }
 
@@ -181,23 +185,35 @@ public class WebServer extends AbstractService {
     public static final String ANSI_RESET = "\u001B[0m";
 
     protected static void pw(String s) {
+        Date ts_start = Calendar.getInstance().getTime();
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy/MM/dd hh:mm:ss");
+        String sDate = sdf.format(ts_start);
+
         if (bConsole) {
             long threadID = Thread.currentThread().getId();
-            System.out.println(ANSI_YELLOW + "[WARNING] [WebServer-" + threadID + "] " + s + ANSI_RESET);
+            System.out.println(ANSI_YELLOW + sDate + " [WARNING] [WebServer-" + threadID + "] " + s + ANSI_RESET);
         }
     }
 
     protected static void pi(String s) {
+        Date ts_start = Calendar.getInstance().getTime();
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy/MM/dd hh:mm:ss");
+        String sDate = sdf.format(ts_start);
+
         if (bConsole) {
             long threadID = Thread.currentThread().getId();
-            System.out.println(ANSI_GREEN + "[INFO] [WebServer-" + threadID + "] " + s + ANSI_RESET);
+            System.out.println(ANSI_GREEN + sDate + " [INFO] [WebServer-" + threadID + "] " + s + ANSI_RESET);
         }
     }
 
     protected static void pe(String s) {
+        Date ts_start = Calendar.getInstance().getTime();
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy/MM/dd hh:mm:ss");
+        String sDate = sdf.format(ts_start);
+
         if (bConsole) {
             long threadID = Thread.currentThread().getId();
-            System.out.println(ANSI_RED + "[ERROR] [WebServer-" + threadID + "] " + s + ANSI_RESET);
+            System.out.println(ANSI_RED + sDate + " [ERROR] [WebServer-" + threadID + "] " + s + ANSI_RESET);
         }
     }
 

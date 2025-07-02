@@ -19,6 +19,9 @@ import java.io.PrintStream;
 import java.net.URLDecoder;
 import java.util.Properties;
 import processor.FileDatabase;
+import java.util.Calendar;
+import java.util.Date;
+import java.text.SimpleDateFormat;
 
 public class ScannerLauncher implements Runnable{
 
@@ -52,7 +55,19 @@ public class ScannerLauncher implements Runnable{
    static ScannerService ss = null;
    
    static int mLogLevel = 0;
-       
+
+   static boolean bConsole = true;
+
+    /* print to stdout */
+    static protected void p(String s) {
+        Date ts_start = Calendar.getInstance().getTime();
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy/MM/dd hh:mm:ss");
+        String sDate = sdf.format(ts_start);
+
+        long threadID = Thread.currentThread().getId();
+        System.out.println(sDate+ " [DEBUG] [ScannerLauncher_" + threadID + "] " + s);
+    }
+
     public ScannerLauncher( String _recordspath, 
                             String _hostname, 
                             long _delay, 
@@ -76,7 +91,7 @@ public class ScannerLauncher implements Runnable{
             
             // Create a new, second thread
             t = new Thread(this, "scanner");
-            System.out.println("Child thread: " + t);
+            p("Child thread: " + t);
             t.start(); // Start the thread
        } catch (Exception e) {
            e.printStackTrace();
@@ -103,13 +118,13 @@ public class ScannerLauncher implements Runnable{
                 is.close();
                 String r = props.getProperty(_name);
                 if (r != null ) {
-                    System.out.println("Old value = " + r);   
+                    p("Old value = " + r);
                     return r;
                 } else {
                     return "";
                 }
             } else {
-                System.out.println("File not found. exiting...");
+                p("File not found. exiting...");
                 return "";
             }
         } catch (Exception e) {
@@ -122,7 +137,7 @@ public class ScannerLauncher implements Runnable{
         while (!mTerminated) {
             String sScanNode = getConfig("scannode", mCONFIG_PATH);       
             if (sScanNode.equals("on")) {
-                System.out.println("ScannerService(core) launched.");
+                p("ScannerService(core) launched.");
                 ss = new ScannerService(mRECORDS_FILE_PATH, 
                                 mHostName, 
                                 mDelay, 
@@ -133,12 +148,12 @@ public class ScannerLauncher implements Runnable{
                                 mCONFIG_PATH,
                                 mLogLevel);
                 ss.run();
-                System.out.println("ScannerService(core) completed.");
+                p("ScannerService(core) completed.");
                 ss.cleanup();
-                System.out.println("ScannerService(core) cleaned up.");
+                p("ScannerService(core) cleaned up.");
                 ss = null;                
             } else {
-                System.out.println("**** SKIPPING SCAN ****");
+                p("**** SKIPPING SCAN ****");
                 try {
                     Thread.sleep((mDelay));
                 } catch (Exception e) {
@@ -155,7 +170,7 @@ public class ScannerLauncher implements Runnable{
                     e.printStackTrace();
                 }
                 if (mBACKUP_PATH.length() > 0) {
-                    System.out.println("ScannerService (backup) launched for PATH: " + mBACKUP_PATH);
+                    p("ScannerService (backup) launched for PATH: " + mBACKUP_PATH);
                     ss = new ScannerService(mRECORDS_FILE_PATH, 
                                             mHostName, 
                                             mDelay, 
@@ -166,13 +181,13 @@ public class ScannerLauncher implements Runnable{
                                             mCONFIG_PATH,
                                             mLogLevel);             
                     ss.run();
-                    System.out.println("ScannerService(backup) completed.");
+                    p("ScannerService(backup) completed.");
                     ss.cleanup();
-                    System.out.println("ScannerService(backup) cleaned up.");
+                    p("ScannerService(backup) cleaned up.");
                     ss = null;
                 }
             } else {
-                    System.out.println("**** SKIPPING SCAN FOR BACKUP ****");
+                    p("**** SKIPPING SCAN FOR BACKUP ****");
             }
             
             String sSyncNode = getConfig("syncnode", mCONFIG_PATH);            
@@ -184,7 +199,7 @@ public class ScannerLauncher implements Runnable{
                     e.printStackTrace();
                 }
                 if (mSYNC_PATH.length() > 0) {
-                    System.out.println("ScannerService (sync) launched for PATH: " + mSYNC_PATH);
+                    p("ScannerService (sync) launched for PATH: " + mSYNC_PATH);
                     ss = new ScannerService(mRECORDS_FILE_PATH, 
                                             mHostName, 
                                             mDelay, 
@@ -195,16 +210,16 @@ public class ScannerLauncher implements Runnable{
                                             mCONFIG_PATH,
                                             mLogLevel);             
                     ss.run();
-                    System.out.println("ScannerService(sync) completed.");
+                    p("ScannerService(sync) completed.");
                     ss.cleanup();
-                    System.out.println("ScannerService(sync) cleaned up.");
+                    p("ScannerService(sync) cleaned up.");
                     ss = null;
                 }
             } else {
-                    System.out.println("**** SKIPPING SCAN FOR SYNC ****");
+                    p("**** SKIPPING SCAN FOR SYNC ****");
             }
             
-            System.out.append("All done. Forcing a GC");
+            p("All done. Forcing a GC");
             System.gc();
         }
     }
