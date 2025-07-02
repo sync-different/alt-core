@@ -38,24 +38,26 @@ public class BroadcastService implements Runnable {
     protected static Properties props = new Properties();
 
     boolean mTerminated = false;
-    
+
+    static boolean bConsole = true;
+
     public BroadcastService(String _signature) {
         
         
       mNodeSignature = _signature;
       
       t = new Thread(this, "sc_r");
-      System.out.println("Child thread: " + t);
+      p("Child thread: " + t);
       t.start(); // Start the thread
       t2 = new Thread(new RunProbeFromBroadcast(), "sc_r2");
-      System.out.println("Child thread: " + t);
+      p("Child thread: " + t);
       t2.start();
         
     }
     
     public void terminate() {
        
-       System.out.println("Recieved Termination request.");
+      p("Recieved Termination request.");
        mTerminated = true;       
    }
     
@@ -105,7 +107,7 @@ public class BroadcastService implements Runnable {
                           ss.send(p);
                       } catch (IOException e) {
                           e.printStackTrace();
-                          p("WARNING: there was an error sending the probe.");
+                          pw("WARNING: there was an error sending the probe.");
                       }
                       p("done send probe." + localIP.getHostAddress());
 
@@ -156,6 +158,7 @@ public class BroadcastService implements Runnable {
 
                           ipaddress = recievePacket.getAddress();
                     }catch(Throwable th){
+                         pw("WARNING: there was an exception in run()");
                          th.printStackTrace();
                     }
                     
@@ -202,7 +205,7 @@ public class BroadcastService implements Runnable {
                                       ss.send(p);
                                   } catch (IOException e) {
                                       e.printStackTrace();
-                                      p("WARNING: there was an error sending the probe.");
+                                      pw("WARNING: there was an error sending the probe.");
                                   }
                                   p("done send probe." + localIP.getHostAddress());
 
@@ -230,8 +233,8 @@ public class BroadcastService implements Runnable {
     
     
     void loadProps() throws IOException {
-        //System.out.println(System.getProperty("java.home"));
-        System.out.println("loadProps()");
+        //p(System.getProperty("java.home"));
+        p("loadProps()");
         File f = new File
                 (
                 ".." +
@@ -261,6 +264,44 @@ public class BroadcastService implements Runnable {
         String clusteridUUID = NetUtils.getUUID(clusteridUUIDPath);
         p("clusteridUUID = " + clusteridUUID);
         return clusteridUUID;
+    }
+
+    public static final String ANSI_RED = "\u001B[31m";
+    public static final String ANSI_GREEN = "\u001B[32m";
+    public static final String ANSI_YELLOW = "\u001B[33m";
+    public static final String ANSI_RESET = "\u001B[0m";
+
+    protected static void pw(String s) {
+        Date ts_start = Calendar.getInstance().getTime();
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy/MM/dd hh:mm:ss");
+        String sDate = sdf.format(ts_start);
+
+        if (bConsole) {
+            long threadID = Thread.currentThread().getId();
+            System.out.println(ANSI_YELLOW + sDate + " [WARNING] [BroadcastService-" + threadID + "] " + s + ANSI_RESET);
+        }
+    }
+
+    protected static void pi(String s) {
+        Date ts_start = Calendar.getInstance().getTime();
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy/MM/dd hh:mm:ss");
+        String sDate = sdf.format(ts_start);
+
+        if (bConsole) {
+            long threadID = Thread.currentThread().getId();
+            System.out.println(ANSI_GREEN + sDate + " [INFO] [BroadcastService-" + threadID + "] " + s + ANSI_RESET);
+        }
+    }
+
+    protected static void pe(String s) {
+        Date ts_start = Calendar.getInstance().getTime();
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy/MM/dd hh:mm:ss");
+        String sDate = sdf.format(ts_start);
+
+        if (bConsole) {
+            long threadID = Thread.currentThread().getId();
+            System.out.println(ANSI_RED + sDate + " [ERROR] [BroadcastService-" + threadID + "] " + s + ANSI_RESET);
+        }
     }
 
     /* print to stdout */

@@ -644,20 +644,19 @@ public class TransferService implements Runnable {
                         nRetry++;
                     }  
                     //p("normal exit1");
-                    
-                                       
+
                 } catch (BindException e) {
-                    p("socket in use. attempt: " + nRetry);
+                    pw("socket in use. attempt: " + nRetry);
                     e.printStackTrace();
                     nRetry++;
                     doWait = true;
                 } catch (SocketTimeoutException e) {
-                    p("socket timeout. attempt: " + nRetry);
+                    pw("socket timeout. attempt: " + nRetry);
                     e.printStackTrace();
                     nRetry++;
                     doWait = true;
                 } catch (Exception e) {
-                    p("WARNING: there was some kind of exception");    
+                    pw("WARNING: there was some kind of exception");
                     e.printStackTrace();
                     nRetry++;
                     doWait = true;

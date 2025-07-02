@@ -167,7 +167,7 @@ public class ClientService implements Runnable {
         String sDate = sdf.format(ts_start);
 
         long threadID = Thread.currentThread().getId();
-        System.out.println(sDate + "[DEBUG] [client_" + threadID + "] " + s);
+        System.out.println(sDate + " [DEBUG] [client_" + threadID + "] " + s);
     }
 
     /* print to the log file */
@@ -639,9 +639,10 @@ public boolean setnode(String _serverIP, String _portRT, String _uuid, String _i
         outFile.close();
         return true;
     } catch (IOException e) {
-            StringWriter sWriter = new StringWriter();
-            e.printStackTrace(new PrintWriter(sWriter));
-            log(sWriter.getBuffer().toString(), 0) ;
+        StringWriter sWriter = new StringWriter();
+        e.printStackTrace(new PrintWriter(sWriter));
+        log(sWriter.getBuffer().toString(), 0) ;
+        pw("WARNING: There was an exception in setnode.");
         return false;
     }
 }
