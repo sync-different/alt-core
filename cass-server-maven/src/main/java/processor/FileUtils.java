@@ -135,6 +135,8 @@ public class FileUtils {
     int mMD5Method = 2;  //1=Java implementation  2=Apache Commons
     long mDelaySleep = 10; //Time to sleep between file scans
     long mDelayThumb = 100; //Time to sleep if a thumbnail was created
+
+    static boolean bConsole = true;
     
     public void cleanup() {
         long freeMem = 0;
@@ -157,7 +159,34 @@ public class FileUtils {
         mUUID = null;
         mUUIDPath = null;
     }
-    
+
+    public static final String ANSI_RED = "\u001B[31m";
+    public static final String ANSI_GREEN = "\u001B[32m";
+    public static final String ANSI_YELLOW = "\u001B[33m";
+    public static final String ANSI_RESET = "\u001B[0m";
+
+    protected static void pw(String s) {
+        if (bConsole) {
+            long threadID = Thread.currentThread().getId();
+            System.out.println(ANSI_YELLOW + "[WARNING] [FileUtilsCS-" + threadID + "] " + s + ANSI_RESET);
+        }
+    }
+
+    protected static void pi(String s) {
+        if (bConsole) {
+            long threadID = Thread.currentThread().getId();
+            System.out.println(ANSI_GREEN + "[INFO] [FileUtilsCS-" + threadID + "] " + s + ANSI_RESET);
+        }
+    }
+
+    protected static void pe(String s) {
+        if (bConsole) {
+            long threadID = Thread.currentThread().getId();
+            System.out.println(ANSI_RED + "[ERROR] [FileUtilsCS-" + threadID + "] " + s + ANSI_RESET);
+        }
+    }
+
+
     /* print to stdout */
     protected void p(String s) {
 
@@ -190,7 +219,7 @@ public class FileUtils {
                 log.println(sDate + " " + _loglevel + " " + s);
                 log.flush();
             }
-            p(sDate + " " + _loglevel + " " + s);
+            pi(sDate + " " + _loglevel + " " + s);
         }
     }
 

@@ -72,6 +72,8 @@ public class TransferService implements Runnable {
     static boolean bHostFound = false;
     static int mLogLevel = 0;
 
+    static boolean bConsole = true;
+
     /*
      * Scan processing directory
      */
@@ -178,15 +180,41 @@ public class TransferService implements Runnable {
         }
         log("Transfer completed.", 2);
     }
-    
-       /* print to stdout */
+
+    public static final String ANSI_RED = "\u001B[31m";
+    public static final String ANSI_GREEN = "\u001B[32m";
+    public static final String ANSI_YELLOW = "\u001B[33m";
+    public static final String ANSI_RESET = "\u001B[0m";
+
+    protected static void pw(String s) {
+        if (bConsole) {
+            long threadID = Thread.currentThread().getId();
+            System.out.println(ANSI_YELLOW + "[WARNING] [TransferService-" + threadID + "] " + s + ANSI_RESET);
+        }
+    }
+
+    protected static void pi(String s) {
+        if (bConsole) {
+            long threadID = Thread.currentThread().getId();
+            System.out.println(ANSI_GREEN + "[INFO] [TramsferService-" + threadID + "] " + s + ANSI_RESET);
+        }
+    }
+
+    protected static void pe(String s) {
+        if (bConsole) {
+            long threadID = Thread.currentThread().getId();
+            System.out.println(ANSI_RED + "[ERROR] [TransferService-" + threadID + "] " + s + ANSI_RESET);
+        }
+    }
+
+    /* print to stdout */
     protected void p(String s) {
 
         long threadID = Thread.currentThread().getId();
         System.out.println("[transfer_" + threadID + "] " + s);
     }
 
-      /* print to the log file */
+    /* print to the log file */
     protected void log(String s, int _loglevel) {
 
         if (_loglevel <= mLogLevel) {
@@ -200,8 +228,8 @@ public class TransferService implements Runnable {
                         log.flush();
                     } 
                 else
-                    p("Log is null. Skipping Log Entry...");
-                p(sDate + " " + _loglevel + " " + s);
+                    pw("Log is null. Skipping Log Entry...");
+                pi(sDate + " " + _loglevel + " " + s);
             } catch (Exception e) {
                 e.printStackTrace();
             }

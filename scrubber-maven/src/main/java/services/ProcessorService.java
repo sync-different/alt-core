@@ -77,7 +77,8 @@ import utils.NetUtils;
 
 public class ProcessorService implements Runnable{
 
-    
+    static boolean bConsole = true;
+
     Cass7Funcs c7 = new Cass7Funcs();
     LocalFuncs c8 = null;
     static WebFuncs wf = null;
@@ -215,9 +216,35 @@ public class ProcessorService implements Runnable{
        log("Recieved Termination request.", 0);
        mTerminated = true;       
    }
-    
-    
-       /* print to stdout */
+
+
+    public static final String ANSI_RED = "\u001B[31m";
+    public static final String ANSI_GREEN = "\u001B[32m";
+    public static final String ANSI_YELLOW = "\u001B[33m";
+    public static final String ANSI_RESET = "\u001B[0m";
+
+    protected static void pw(String s) {
+        if (bConsole) {
+            long threadID = Thread.currentThread().getId();
+            System.out.println(ANSI_YELLOW + "[WARNING] [ProcessorService-" + threadID + "] " + s + ANSI_RESET);
+        }
+    }
+
+    protected static void pi(String s) {
+        if (bConsole) {
+            long threadID = Thread.currentThread().getId();
+            System.out.println(ANSI_GREEN + "[INFO] [ProcessorService-" + threadID + "] " + s + ANSI_RESET);
+        }
+    }
+
+    protected static void pe(String s) {
+        if (bConsole) {
+            long threadID = Thread.currentThread().getId();
+            System.out.println(ANSI_RED + "[ERROR] [ProcessorService-" + threadID + "] " + s + ANSI_RESET);
+        }
+    }
+
+    /* print to stdout */
     protected static void p(String s) {
 
         long threadID = Thread.currentThread().getId();
@@ -239,8 +266,8 @@ public class ProcessorService implements Runnable{
                         log.flush();
                     } 
                 else
-                    p("Log is null. Skipping Log Entry...");
-                p(sDate + " " + _loglevel + " " + s);
+                    pw("Log is null. Skipping Log Entry...");
+                pi(sDate + " " + _loglevel + " " + s);
             } catch (Exception e) {
                 e.printStackTrace();
             }
@@ -268,7 +295,7 @@ public class ProcessorService implements Runnable{
             //CheckforIDX();
             
             //-Wait for next run
-            System.out.println("[PROCESSOR] Waiting for next sweep (processor)");
+            p("[PROCESSOR] Waiting for next sweep (processor)");
             Thread.sleep(mPeriodMs);
             log("run Sleep for " + mPeriodMs, 2);
             //mTerminated = true;                
@@ -535,7 +562,7 @@ public class ProcessorService implements Runnable{
                                         fis = null;
                                         filePart.delete();
                                     } else {
-                                        p("WARNING: file part does not exist: " + filePart.getAbsolutePath());
+                                        pw("WARNING: file part does not exist: " + filePart.getAbsolutePath());
                                     }
                                 }
                                 p("Finalizing file merge. Full file at: " + ofile.getAbsolutePath());
@@ -543,7 +570,7 @@ public class ProcessorService implements Runnable{
                                 fos = null;
                             }catch (Exception exception){                                
                                 exception.printStackTrace();
-                                p("WARNING - there was an exception merging the file." + ofile.getAbsolutePath());
+                                pw("WARNING - there was an exception merging the file." + ofile.getAbsolutePath());
                             }
                         }
                     }

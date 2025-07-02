@@ -42,7 +42,8 @@ public class ScannerService implements Runnable {
    String mRECORDS_FILE_PATH         = "./data/.records.db";
    String mSCAN_PATH         = "";
    String mSCAN_FILE = "";
-    
+
+   static boolean bConsole = true;
 
    String mCONFIG_PATH = "";
    String mUUID = "";
@@ -270,8 +271,34 @@ public class ScannerService implements Runnable {
         
     }
 
-    
-   /* print to stdout */
+    public static final String ANSI_RED = "\u001B[31m";
+    public static final String ANSI_GREEN = "\u001B[32m";
+    public static final String ANSI_YELLOW = "\u001B[33m";
+    public static final String ANSI_RESET = "\u001B[0m";
+
+    protected static void pw(String s) {
+        if (bConsole) {
+            long threadID = Thread.currentThread().getId();
+            System.out.println(ANSI_YELLOW + "[WARNING] [ScannerService-" + threadID + "] " + s + ANSI_RESET);
+        }
+    }
+
+    protected static void pi(String s) {
+        if (bConsole) {
+            long threadID = Thread.currentThread().getId();
+            System.out.println(ANSI_GREEN + "[INFO] [ScannerService-" + threadID + "] " + s + ANSI_RESET);
+        }
+    }
+
+    protected static void pe(String s) {
+        if (bConsole) {
+            long threadID = Thread.currentThread().getId();
+            System.out.println(ANSI_RED + "[ERROR] [ScannerService-" + threadID + "] " + s + ANSI_RESET);
+        }
+    }
+
+
+    /* print to stdout */
     protected void p(String s) {
 
         long threadID = Thread.currentThread().getId();
@@ -291,7 +318,7 @@ public class ScannerService implements Runnable {
                 log.println(sDate + " " + _loglevel + " " + s);
                 log.flush();
             }
-            p(sDate + " " + _loglevel + " " + s);            
+            pi(sDate + " " + _loglevel + " " + s);
         }
     }
    

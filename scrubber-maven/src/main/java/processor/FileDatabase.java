@@ -65,6 +65,8 @@ public final class FileDatabase {
     static boolean bConnect = false;
 
     static String dbmode = "cass"; //assume cassandra db by default
+
+    static boolean bConsole = true;
     
     void loadDbModeProp() throws IOException {
         //System.out.println(System.getProperty("java.home"));
@@ -100,12 +102,38 @@ public final class FileDatabase {
         }            
             
     }
-    
+
+    public static final String ANSI_RED = "\u001B[31m";
+    public static final String ANSI_GREEN = "\u001B[32m";
+    public static final String ANSI_YELLOW = "\u001B[33m";
+    public static final String ANSI_RESET = "\u001B[0m";
+
+    protected static void pw(String s) {
+        if (bConsole) {
+            long threadID = Thread.currentThread().getId();
+            System.out.println(ANSI_YELLOW + "[WARNING] [FileDatabase-" + threadID + "] " + s + ANSI_RESET);
+        }
+    }
+
+    protected static void pi(String s) {
+        if (bConsole) {
+            long threadID = Thread.currentThread().getId();
+            System.out.println(ANSI_GREEN + "[INFO] [FileDatabase-" + threadID + "] " + s + ANSI_RESET);
+        }
+    }
+
+    protected static void pe(String s) {
+        if (bConsole) {
+            long threadID = Thread.currentThread().getId();
+            System.out.println(ANSI_RED + "[ERROR] [FileDatabase-" + threadID + "] " + s + ANSI_RESET);
+        }
+    }
+
     /* print to stdout */
     protected static void p(String s) {
 
         long threadID = Thread.currentThread().getId();
-        System.out.println("[scrubber_" + threadID + "] " + s);
+        System.out.println("[filedatabase_" + threadID + "] " + s);
     }
 
     /* print to the log file */
@@ -120,7 +148,7 @@ public final class FileDatabase {
             log.println(sDate + " " + s);
             log.flush();
         }
-        p(sDate + " " + s);
+        pi(sDate + " " + s);
     }
 
     void loadBackupProps() throws IOException {

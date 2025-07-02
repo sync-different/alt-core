@@ -12,9 +12,9 @@ mvn compile
 mvn package
 cd ..
 cp cass-server-maven/target/cass-server-1.0.0.jar ./rtserver-maven/lib/cass-server.jar
+cp cass-server-maven/target/cass-server-1.0.0.jar ./scrubber/repo/cass-server.jar
 
 echo "-------------------building rtserver.jar"
-rtserver.jar
 cd rtserver-maven
 ./sync.sh
 mvn clean
