@@ -69,8 +69,8 @@ public final class FileDatabase {
     static boolean bConsole = true;
     
     void loadDbModeProp() throws IOException {
-        //System.out.println(System.getProperty("java.home"));
-        System.out.println("loadProps()");
+        //p(System.getProperty("java.home"));
+        p("loadProps()");
         File f = new File (".." + File.separator + "rtserver" + File.separator + "config" + File.separator + "www-server.properties");
         if (f.exists()) {
             InputStream is = new BufferedInputStream(new FileInputStream(f));
@@ -111,21 +111,21 @@ public final class FileDatabase {
     protected static void pw(String s) {
         if (bConsole) {
             long threadID = Thread.currentThread().getId();
-            System.out.println(ANSI_YELLOW + "[WARNING] [FileDatabase-" + threadID + "] " + s + ANSI_RESET);
+            System.out.println(ANSI_YELLOW + "[WARNING] [SC.FileDatabase-" + threadID + "] " + s + ANSI_RESET);
         }
     }
 
     protected static void pi(String s) {
         if (bConsole) {
             long threadID = Thread.currentThread().getId();
-            System.out.println(ANSI_GREEN + "[INFO] [FileDatabase-" + threadID + "] " + s + ANSI_RESET);
+            System.out.println(ANSI_GREEN + "[INFO] [SC.FileDatabase-" + threadID + "] " + s + ANSI_RESET);
         }
     }
 
     protected static void pe(String s) {
         if (bConsole) {
             long threadID = Thread.currentThread().getId();
-            System.out.println(ANSI_RED + "[ERROR] [FileDatabase-" + threadID + "] " + s + ANSI_RESET);
+            System.out.println(ANSI_RED + "[ERROR] [SC.FileDatabase-" + threadID + "] " + s + ANSI_RESET);
         }
     }
 
@@ -133,7 +133,7 @@ public final class FileDatabase {
     protected static void p(String s) {
 
         long threadID = Thread.currentThread().getId();
-        System.out.println("[filedatabase_" + threadID + "] " + s);
+        System.out.println("[SC.filedatabase_" + threadID + "] " + s);
     }
 
     /* print to the log file */
@@ -153,8 +153,8 @@ public final class FileDatabase {
 
     void loadBackupProps() throws IOException {
     
-        //System.out.println(System.getProperty("java.home"));
-        System.out.println("loadBackkupProps()");
+        //p(System.getProperty("java.home"));
+        p("loadBackkupProps()");
         File f = new File(
                 "config"+
                 File.separator+
@@ -253,7 +253,7 @@ public final class FileDatabase {
                         log("Sync: Adding " + sNamer2);
                         if (dbe.dbe_action != "OOM") {
                             bres = fu.saveDatabaseEntry(dbe, "A");
-                            System.out.println("bres = " + bres);
+                            p("bres = " + bres);
                         } else {
                             String sFile = URLEncoder.encode(f.getAbsolutePath());
                             log("There was an OOM. Removing entry '" + sFile + "'");
@@ -284,7 +284,7 @@ public final class FileDatabase {
 
                         DatabaseEntry dbe = new DatabaseEntry(record.mMD5, UUID.fromString(sUUID), URLDecoder.decode(sNamer, "UTF-8"));
                         Boolean bres = fu.saveDatabaseEntry(dbe, "D");
-                        System.out.println("bres = " + bres);
+                        p("bres = " + bres);
                         log("Sync: Deleting " + sNamer);
                         
                         mHashList.add(URLEncoder.encode(sNamer, "UTF8"));
@@ -353,7 +353,7 @@ public final class FileDatabase {
             File nFile = new File(sStorePath2);
             if (nFile.exists()) {
                     long nlen = new File(sStorePath2).length();
-                    //System.out.println("file length: " + nlen);
+                    //p("file length: " + nlen);
                     if (nlen > 0) {
                         return true;
                     } else {
@@ -429,7 +429,7 @@ public final class FileDatabase {
      */
     public boolean load() {
         try {
-            System.out.println(mStorage);
+            p(mStorage);
             File storage = new File(mStorage);            
             if (!storage.exists())
                 return false;
