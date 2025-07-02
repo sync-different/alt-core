@@ -119,6 +119,8 @@ public class BackupClientService implements Runnable {
     
     String mCONFIG_PATH = "";
 
+    static boolean bConsole = true;
+
     public BackupClientService(boolean _dothread, 
             String _signature, 
             Boolean _hostfound, 
@@ -229,15 +231,56 @@ public class BackupClientService implements Runnable {
                 log.println(sDate + " " + _loglevel + " " + s);
                 log.flush();
             }
-            p(sDate + " " + _loglevel + " " + s);
+            pi(_loglevel + " " + s);
         }
     }
-    
+
+    public static final String ANSI_RED = "\u001B[31m";
+    public static final String ANSI_GREEN = "\u001B[32m";
+    public static final String ANSI_YELLOW = "\u001B[33m";
+    public static final String ANSI_RESET = "\u001B[0m";
+
+    protected static void pw(String s) {
+        Date ts_start = Calendar.getInstance().getTime();
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy/MM/dd hh:mm:ss");
+        String sDate = sdf.format(ts_start);
+
+        if (bConsole) {
+            long threadID = Thread.currentThread().getId();
+            System.out.println(ANSI_YELLOW + sDate + " [WARNING] [SC.BackupClientService-" + threadID + "] " + s + ANSI_RESET);
+        }
+    }
+
+    protected static void pi(String s) {
+        Date ts_start = Calendar.getInstance().getTime();
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy/MM/dd hh:mm:ss");
+        String sDate = sdf.format(ts_start);
+
+        if (bConsole) {
+            long threadID = Thread.currentThread().getId();
+            System.out.println(ANSI_GREEN + sDate + " [INFO ] [SC.BackupClientService-" + threadID + "] " + s + ANSI_RESET);
+        }
+    }
+
+    protected static void pe(String s) {
+        Date ts_start = Calendar.getInstance().getTime();
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy/MM/dd hh:mm:ss");
+        String sDate = sdf.format(ts_start);
+
+        if (bConsole) {
+            long threadID = Thread.currentThread().getId();
+            System.out.println(ANSI_RED + sDate + " [ERROR] [SC.BackupClientService-" + threadID + "] " + s + ANSI_RESET);
+        }
+    }
+
     /* print to stdout */
     protected void p(String s) {
+        Date ts_start = Calendar.getInstance().getTime();
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy/MM/dd hh:mm:ss");
+        String sDate = sdf.format(ts_start);
 
         long threadID = Thread.currentThread().getId();
-        System.out.println("[backup_client_" + threadID + "] " + s);
+        System.out.println(sDate + " [DEBUG] [SC.backup_client_" + threadID + "] " + s);
     }
     
     /* load www-server.properties from java.home */

@@ -98,8 +98,8 @@ public class BackupServerService implements Runnable  {
     
      public void terminate() {
        
-       System.out.println("Recieved Termination request.");
-       mTerminated = true;       
+       p("Recieved Termination request.");
+       mTerminated = true;
    }
     
     
@@ -115,17 +115,59 @@ public class BackupServerService implements Runnable  {
                 log.println(sDate + " " + _loglevel + " " + s);
                 log.flush();
             }            
-            p(sDate + " " + _loglevel + " " + s);
+            pi(_loglevel + " " + s);
         }
     }
-    
+
+    static boolean bConsole = true;
+
+    public static final String ANSI_RED = "\u001B[31m";
+    public static final String ANSI_GREEN = "\u001B[32m";
+    public static final String ANSI_YELLOW = "\u001B[33m";
+    public static final String ANSI_RESET = "\u001B[0m";
+
+    protected static void pw(String s) {
+        Date ts_start = Calendar.getInstance().getTime();
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy/MM/dd hh:mm:ss");
+        String sDate = sdf.format(ts_start);
+
+        if (bConsole) {
+            long threadID = Thread.currentThread().getId();
+            System.out.println(ANSI_YELLOW + sDate + " [WARNING] [SC.BackupServerService-" + threadID + "] " + s + ANSI_RESET);
+        }
+    }
+
+    protected static void pi(String s) {
+        Date ts_start = Calendar.getInstance().getTime();
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy/MM/dd hh:mm:ss");
+        String sDate = sdf.format(ts_start);
+
+        if (bConsole) {
+            long threadID = Thread.currentThread().getId();
+            System.out.println(ANSI_GREEN + sDate + " [INFO ] [SC.BackupServerService-" + threadID + "] " + s + ANSI_RESET);
+        }
+    }
+
+    protected static void pe(String s) {
+        Date ts_start = Calendar.getInstance().getTime();
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy/MM/dd hh:mm:ss");
+        String sDate = sdf.format(ts_start);
+
+        if (bConsole) {
+            long threadID = Thread.currentThread().getId();
+            System.out.println(ANSI_RED + sDate + " [ERROR] [SC.BackupServerService-" + threadID + "] " + s + ANSI_RESET);
+        }
+    }
+
     /* print to stdout */
     protected void p(String s) {
+        Date ts_start = Calendar.getInstance().getTime();
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy/MM/dd hh:mm:ss");
+        String sDate = sdf.format(ts_start);
 
         long threadID = Thread.currentThread().getId();
-        System.out.println("[backup_server_" + threadID + "] " + s);
+        System.out.println(sDate + " [DEBUG] [SC.backup_server_" + threadID + "] " + s);
     }
-    
     
     public void run() {
         
@@ -265,7 +307,7 @@ public class BackupServerService implements Runnable  {
             if (DB_MODE.equals("cass") || DB_MODE.equals("both")) {
                 connectCassandra();                
             } else {
-                System.out.println("Skip cassandra connect. P22 mode");
+                p("Skip cassandra connect. P22 mode");
             }
 
             File dir = new File(sRoot);

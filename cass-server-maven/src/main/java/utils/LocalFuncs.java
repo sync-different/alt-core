@@ -61,12 +61,12 @@ import static utils.Cass7Funcs.UTF8;
 import static utils.Cass7Funcs.getConfig;
 import static utils.Cass7Funcs.keyspace;
 //import static utils.Cass7Funcs.lf;
-import static utils.Cass7Funcs.p;
+//import static utils.Cass7Funcs.p;
 
 import static utils.Cass7Funcs.isNodeAvailable;
 import static utils.Cass7Funcs.getLocalAddress;
 //import static utils.Cass7Funcs.occurences_copies;
-import static utils.Cass7Funcs.p;
+//import static utils.Cass7Funcs.p;
 import static utils.NetUtils.getfile;
 
 import processor.FileDatabaseEntry;
@@ -234,6 +234,47 @@ public class LocalFuncs {
     
     static String appendage = "";
     static String appendageRW = "";
+
+    /* print to stdout */
+    static protected void p(String s) {
+        Date ts_start = Calendar.getInstance().getTime();
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy/MM/dd hh:mm:ss");
+        String sDate = sdf.format(ts_start);
+
+        long threadID = Thread.currentThread().getId();
+        System.out.println(sDate + " [DEBUG] [CS.localfuncs_" + threadID + "] " + s);
+    }
+
+    static boolean bConsole = true;
+
+    public static final String ANSI_RED = "\u001B[31m";
+    public static final String ANSI_GREEN = "\u001B[32m";
+    public static final String ANSI_YELLOW = "\u001B[33m";
+    public static final String ANSI_RESET = "\u001B[0m";
+
+    protected static void pw(String s) {
+        Date ts_start = Calendar.getInstance().getTime();
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy/MM/dd hh:mm:ss");
+        String sDate = sdf.format(ts_start);
+
+        if (bConsole) {
+            long threadID = Thread.currentThread().getId();
+            System.out.println(ANSI_YELLOW + sDate + " [WARNING] [CS.LocalFuncs-" + threadID + "] " + s + ANSI_RESET);
+        }
+    }
+
+    protected static void pi(String s) {
+        Date ts_start = Calendar.getInstance().getTime();
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy/MM/dd hh:mm:ss");
+        String sDate = sdf.format(ts_start);
+
+        if (bConsole) {
+            long threadID = Thread.currentThread().getId();
+            System.out.println(ANSI_GREEN + sDate + " [INFO ] [CS.LocalFuncs-" + threadID + "] " + s + ANSI_RESET);
+        }
+    }
+
+
 
     public LocalFuncs() {
         //constructor 
@@ -603,7 +644,7 @@ public class LocalFuncs {
                                                     nerr++;
                                                     bAssert = true;
                                                 } catch (InternalError e) {
-                                                    log("WARNING InteralError mm2: " + sub_string + " " + sAdder + " " + sub_string.length() + " " + sAdder.length(), 2);                                    
+                                                    log("WARNING InternalError mm2: " + sub_string + " " + sAdder + " " + sub_string.length() + " " + sAdder.length(), 2);
                                                     e.printStackTrace();
                                                     nerr++;
                                                     bAssert = true;
@@ -1813,15 +1854,15 @@ public class LocalFuncs {
         };
         String [] children = dir.list(filter);
         if (children == null) {
-            System.out.println("WARNING : could not find lib dir");
+            pw("WARNING : could not find lib dir");
             return "";
         } else {
             String version = "";
             for (int i = 0; i<children.length;i++) {
                 String filename = children[i];
-                System.out.println(filename);
+                p(filename);
                 version = filename.substring(6, filename.indexOf(".jar"));
-                System.out.println(version);
+                p(version);
             }
             return version;
         }
@@ -1850,7 +1891,7 @@ public class LocalFuncs {
             String sDB = appendageRW + "../rtserver/dbname.txt";
             File fbd = new File(sDB);
 
-            System.out.println("[LocalFuncs.loadIndexMapDB()] file '" + fbd.getAbsoluteFile() + "' exists: " + fbd.exists());
+            p("[LocalFuncs.loadIndexMapDB()] file '" + fbd.getAbsoluteFile() + "' exists: " + fbd.exists());
             
             String sDBName = readDoc(appendageRW + "../rtserver/dbname.txt");
             if (sDBName.length() > 0) {
@@ -1874,7 +1915,7 @@ public class LocalFuncs {
             if (appendage.length() > 0) sAppend = "";
             File fh = new File(sAppend + appendageRW + sFile + "_mm1");
             
-            System.out.println("[LocalFuncs] File '" + fh.getAbsolutePath() + "' exists: " + fh.exists());
+            p("[LocalFuncs] File '" + fh.getAbsolutePath() + "' exists: " + fh.exists());
             
             if (fh.exists()) {
                 File parent = fh.getParentFile();
@@ -1887,8 +1928,8 @@ public class LocalFuncs {
                     throw new IOException("Parent folder is not writeable: "+fh);                
             }
             
-            System.out.println("[LocalFuncs] File  : '" + fh.getAbsolutePath() + "' exists: " + fh.exists());
-            System.out.println("[LocalFuncs] Compat: '" + isBackwardCompatible(sDBCurrent, sDBVersion));
+            p("[LocalFuncs] File  : '" + fh.getAbsolutePath() + "' exists: " + fh.exists());
+            p("[LocalFuncs] Compat: '" + isBackwardCompatible(sDBCurrent, sDBVersion));
 
             boolean bCreate = false;           
             if (fh.exists() && isBackwardCompatible(sDBCurrent, sDBVersion)) {
@@ -2740,31 +2781,31 @@ public class LocalFuncs {
         //File directory = new File("../app/projects/rtserver").getAbsoluteFile();
         if (directory.exists())
         {
-            System.out.println("[LocalFUncs] Found app directory. Setting working dir to it");
+            p("[LocalFUncs] Found app directory. Setting working dir to it");
             result = (System.setProperty("user.dir", directory.getAbsolutePath()) != null);
             
             appendage = "/Applications/Alterante.app/Contents/AlteranteJava.app/Contents/app/projects/rtserver/";
-            System.out.println("appendage  = " + appendage);            
+            p("appendage  = " + appendage);
             //appendage = "../app/projects/rtserver/";        
         }
         
         String username = System.getProperty("user.name");
-        System.out.println("username: " + username);
+        p("username: " + username);
         File directoryRW = new File("/Users/" + username + "/Library/Containers/com.alterante.desktopapp1j");
         if (directoryRW.exists()) {
-            System.out.println("[LocalFuncs] Found container directory. checking folders.");
+            p("[LocalFuncs] Found container directory. checking folders.");
             appendageRW = "/Users/" + username + "/Library/Containers/com.alterante.desktopapp1j/Data/app/projects/rtserver/";
             File dir = new File("/Users" + username + "/Library/Containers/com.alterante.desktopapp1j/Data/app/projects/rtserver");
             if (dir.exists()) {
-                System.out.println("appendageRW rtserver exists.");            
+                p("appendageRW rtserver exists.");
             } else {
                 boolean res = new File(appendageRW).mkdirs();
-                System.out.println("appendageRW rtserver create = " + res);                            
+                p("appendageRW rtserver create = " + res);
                 res = new File(appendageRW + "/logs/").mkdirs();
-                System.out.println("appendageRW rtserver create logs = " + res);                            
+                p("appendageRW rtserver create logs = " + res);
             }               
         } else {
-            System.out.println("[LocalFuncs] Container directory not found.");
+            p("[LocalFuncs] Container directory not found.");
         }
     }
     
@@ -2779,8 +2820,8 @@ public class LocalFuncs {
                 "config"+
                 File.separator+
                 "www-processor.properties";
-            System.out.println("Localfuncs.loadProps() appendage: " + appendage);
-            System.out.println("Localfuncs.loadProps() looking for config: " + sConfig);
+            p("Localfuncs.loadProps() appendage: " + appendage);
+            p("Localfuncs.loadProps() looking for config: " + sConfig);
             File f = new File(sConfig);
             if (f.exists()) {
                 InputStream is =new BufferedInputStream(new
@@ -2908,7 +2949,7 @@ public class LocalFuncs {
                     log.println(sDate + " " + _loglevel + " " + s);
                     log.flush();
                 }                            
-                p(sDate + " " + _loglevel + " " + s);
+                pi(_loglevel + " " + s);
             }
         } catch (Exception e) {
             e.printStackTrace();           
@@ -6550,7 +6591,7 @@ public class LocalFuncs {
                             if (name.length() > 27) {
                                 //format = new SimpleDateFormat("EEE MMM dd hh:mm:ss zzz yyyy");           
                                 name = get_row_attribute(keyspace, "Standard1", value, "date_modified", null);
-                                System.out.println("***FIXED DATE MODIFIED: '" + name + "'");
+                                p("***FIXED DATE MODIFIED: '" + name + "'");
                             }
                             long regTime = 0;
                             try {
@@ -7767,7 +7808,7 @@ public class LocalFuncs {
                 int i = 0;
                 
                 while (((sCurrentLine = br.readLine()) != null)) {
-                        System.out.println(sCurrentLine);
+                        p(sCurrentLine);
                         i++;
                 }                
                 return i;                
@@ -7978,7 +8019,7 @@ public class LocalFuncs {
             
             File fh = new File(sAppend + sFile);
             
-            System.out.println("mapDB File '" + fh.getAbsolutePath() + "' exists: " + fh.exists());
+            p("mapDB File '" + fh.getAbsolutePath() + "' exists: " + fh.exists());
             
             if (fh.exists()) {
                 File parent = fh.getParentFile();
@@ -8077,17 +8118,17 @@ public class LocalFuncs {
                 String[] splited = fileurl[0].split("\\/");
                 if(splited.length >= 2){
                     String[] hostNport = splited[2].split("\\:");
-                    System.out.println("*** UUID = " + fileurl[1]);
+                    p("*** UUID = " + fileurl[1]);
                     String sNettyPort = (String)mapNetty.get(fileurl[1]);
                     if (sNettyPort == null) {
                         sNettyPort = get_row_attribute("Keyspace1b","NodeInfo", fileurl[1], "nettyport", null);                        
-                        System.out.println("*** Get NettyPort = '" + sNettyPort + "'");                        
+                        p("*** Get NettyPort = '" + sNettyPort + "'");
                         mapNetty.put(fileurl[1], sNettyPort);
                     } else {
-                        System.out.println("*** Cache NettyPort = '" + sNettyPort + "'");                        
+                        p("*** Cache NettyPort = '" + sNettyPort + "'");
                     }
                     if (sNettyPort.length() == 0) sNettyPort = "8084";
-                    System.out.println("*** NettyPort = '" + sNettyPort + "'");
+                    p("*** NettyPort = '" + sNettyPort + "'");
                     String function = null;
                     if(mediaType.equals("audio")){
                         function = "/getaudio.fn?md5=";

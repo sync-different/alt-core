@@ -46,6 +46,10 @@ import utils.NetUtils;
 
 import amazon.AmazonDrive;
 
+import java.util.Date;
+import java.util.Calendar;
+import java.text.SimpleDateFormat;
+
 public class Main extends AbstractService {
     
     static boolean mTerminated = false;
@@ -611,9 +615,12 @@ public class Main extends AbstractService {
       
     /* print to stdout */
     static protected void p(String s) {
+        Date ts_start = Calendar.getInstance().getTime();
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy/MM/dd hh:mm:ss");
+        String sDate = sdf.format(ts_start);
 
         long threadID = Thread.currentThread().getId();
-        System.out.println("[main_" + threadID + "] " + s);
+        System.out.println(sDate + " [DEBUG] [SC.main_" + threadID + "] " + s);
     }
     
    static void loadProps() throws IOException {

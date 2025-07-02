@@ -44,6 +44,10 @@ import org.apache.hc.core5.http.ClassicHttpRequest;
 
 import java.util.Map;
 
+import java.util.Date;
+import java.util.Calendar;
+import java.text.SimpleDateFormat;
+
 public class WebFuncs {
 
         static Map mapBatches = new java.util.HashMap();
@@ -154,7 +158,7 @@ class UpdateCheck implements Runnable {
     
     BListLoader(String _localIP, String _b1, String _b2) {
         try {
-            System.out.println("new BListLoader()");
+            p("new BListLoader()");
             mLocalIP = _localIP;
             b1 = _b1;
             b2 = _b2;
@@ -174,8 +178,19 @@ class UpdateCheck implements Runnable {
             
         }
     }
-    
-    public void run() {     
+
+      /* print to stdout */
+      protected void p(String s) {
+          Date ts_start = Calendar.getInstance().getTime();
+          SimpleDateFormat sdf = new SimpleDateFormat("yyyy/MM/dd hh:mm:ss");
+          String sDate = sdf.format(ts_start);
+
+          long threadID = Thread.currentThread().getId();
+          System.out.println(sDate+ " [DEBUG] [CS.WebFuncs_" + threadID + "] " + s);
+      }
+
+
+      public void run() {
         try {      
             refcount++;
             Stopwatch tt = new Stopwatch();
@@ -197,7 +212,7 @@ class UpdateCheck implements Runnable {
             
             //c8.UpdateBlacklistedFiles(mLocalIP);       
             tt.stop();
-            System.out.println("**** launchBL took " + tt.getElapsedTime() + "ms");    
+            p("**** launchBL took " + tt.getElapsedTime() + "ms");
             refcount--;
         } catch (Exception e) {
             e.printStackTrace();
@@ -213,11 +228,11 @@ class UpdateCheck implements Runnable {
     boolean skipopen = false;
         
     CopyLoader(String _localIP) {
-        System.out.println("new CopyLoader()");
+        p("new CopyLoader()");
         mLocalIP = _localIP;
         
         Thread t = new Thread(this, "CopyLoader");
-        //System.out.println("Child thread: " + t);
+        //p("Child thread: " + t);
         t.setUncaughtExceptionHandler(h);
         t.setPriority(Thread.NORM_PRIORITY);
         t.start(); // Start the thread
@@ -225,7 +240,7 @@ class UpdateCheck implements Runnable {
     
 Thread.UncaughtExceptionHandler h = new Thread.UncaughtExceptionHandler() {
     public void uncaughtException(Thread th, Throwable ex) {
-        System.out.println("UNCAUGHT EXCEPTION ERROR!!! Closing DB and Shutting down RT.");
+        p("UNCAUGHT EXCEPTION ERROR!!! Closing DB and Shutting down RT.");
         ex.printStackTrace();
         p("closedb");
         c8.closeMapDB();  
@@ -251,7 +266,7 @@ Thread.UncaughtExceptionHandler h = new Thread.UncaughtExceptionHandler() {
                 e.printStackTrace();
             }
             if (nres < 0) {
-                System.out.println("WARNING: There was an error loading MapDB. Waiting 5s.");
+                p("WARNING: There was an error loading MapDB. Waiting 5s.");
             } else {
                 if (nres == 2) {
                     //new db was created, reindex
@@ -292,7 +307,7 @@ Thread.UncaughtExceptionHandler h = new Thread.UncaughtExceptionHandler() {
             
         } catch (Exception e) {
             e.printStackTrace();
-            System.out.println("here2!!!!");
+            p("here2!!!!");
         }             
     }    
 }
@@ -300,7 +315,7 @@ Thread.UncaughtExceptionHandler h = new Thread.UncaughtExceptionHandler() {
   int CheckforCommit() {
       try {          
           int nres = c8.check_commit(mapBatches);
-          System.out.println("res check_commit:" + nres);           
+          p("res check_commit:" + nres);
           if (nres < 0) {
             p("WARNING: There was an ERROR in the commit. Shutting down RT.");
             p("closedb");
@@ -323,7 +338,7 @@ Thread.UncaughtExceptionHandler h = new Thread.UncaughtExceptionHandler() {
             if (tf.exists()) {
                 File[] files = tf.listFiles();
                 for (File f:files) {
-                    //System.out.println(f.getName());
+                    //p(f.getName());
                     if (f.getName().contains(".idx")) {
                         p("checking for commit first.");
                         CheckforCommit();
@@ -343,7 +358,7 @@ Thread.UncaughtExceptionHandler h = new Thread.UncaughtExceptionHandler() {
                                     mapBatches.put(f.getCanonicalPath(), "");
                                 }                           
                                 //boolean res = f.delete();
-                                //System.out.println("res delete:" + res);                                                             
+                                //p("res delete:" + res);
                             } else {
                                 p("WARNING BATCH #" + nErrors + ": There was an error processing batch: " + sBatchID);
                                 String sNewFileName = f.getName();
@@ -374,25 +389,25 @@ Thread.UncaughtExceptionHandler h = new Thread.UncaughtExceptionHandler() {
   
         public void closeDB() {
             int nres = c8.closeMapDB();
-            System.out.println("res close: " + nres);
+            p("res close: " + nres);
         }
     
         public WebFuncs(String _ServerIP) {
             try {
                 if(!"".equals(_ServerIP)) {
-                    System.out.println("WebFuncs constructor. Copyloader.");
+                    p("WebFuncs constructor. Copyloader.");
                     Thread.sleep(3000);
                     Stopwatch tt = new Stopwatch();
                     tt.start();
                     CopyLoader cl = new CopyLoader(_ServerIP);
                     tt.stop();
-                    System.out.println("loadNumberOfCopies took " + tt.getElapsedTime() + "ms");
+                    p("loadNumberOfCopies took " + tt.getElapsedTime() + "ms");
                     
                     UpdateCheck uc = new UpdateCheck();                   
                     MailProcessor mp = new MailProcessor();
                     
                 } else {                
-                    //System.out.println("WebFuncs constructor. Skipped Copyloader.");
+                    //p("WebFuncs constructor. Skipped Copyloader.");
                     //Thread.sleep(3000);
                 }                
             } catch (Exception e) {
@@ -406,35 +421,35 @@ Thread.UncaughtExceptionHandler h = new Thread.UncaughtExceptionHandler() {
         }
 
         public static void main(String[] args) {
-            //System.out.println("hello!!!!");
+            //p("hello!!!!");
             //connectCassandra();
             //String str = getp("7791B34496CE2235071A086EA84ABE4E","paths");
             //String str = echoh2("hello");
             int nres = 1;
 
 //            nres = WebFuncs.insert_node_attribute("0ce78da1-fe24-4875-9ff0-476a6ef4883d","ipaddress","192.168.1.4");
-//            System.out.println(nres);
+//            p(nres);
 //            nres = WebFuncs.insert_node("0ce78da1-fe24-4875-9ff0-476a6ef4883d");
-//            System.out.println(nres);
+//            p(nres);
 //
 //            nres = WebFuncs.insert_node_attribute("9e8b5dc1-1e9f-4883-83ee-e2e0f772b19c","ipaddress","192.168.1.19");
-//            System.out.println(nres);
+//            p(nres);
 //            nres = WebFuncs.insert_node("9e8b5dc1-1e9f-4883-83ee-e2e0f772b19c");
-//            System.out.println(nres);
+//            p(nres);
 //
 //            nres = WebFuncs.insert_node_attribute("98bf3e62-e23d-4754-af80-6d09a79e8817","ipaddress","192.168.1.9");
-//            System.out.println(nres);
+//            p(nres);
 //            nres = WebFuncs.insert_node("98bf3e62-e23d-4754-af80-6d09a79e8817");
-//            System.out.println(nres);
+//            p(nres);
 //
 //            String res = WebFuncs.get_node_attribute("98bf3e62-e23d-4754-af80-6d09a79e8817","ipaddress");
-//            System.out.println(res);
+//            p(res);
 
               String _port = "8080";
               String _address = "192.168.56.1";
               boolean avail;
               avail = isNodeAvailable(_address,_port);
-              System.out.println(avail);
+              p("avail = " + avail);
     }
 
 public String getTagsForFile(String sMD5, String _user){
@@ -507,7 +522,7 @@ public static boolean isNodeAvailable(String _ipaddress, String _port) {
 
 
 static void loadProps() throws IOException {
-        //System.out.println(System.getProperty("java.home"));
+        //p(System.getProperty("java.home"));
         File f = new File
                 (System.getProperty("java.home")+File.separator+
                     "lib"+File.separator+"www-cassandra.properties");
@@ -518,7 +533,7 @@ static void loadProps() throws IOException {
             is.close();
             String r = props.getProperty("server");
             if (r != null) {
-                System.out.println("using server = " + r);
+                p("using server = " + r);
                 mCassIP = r;
             }
         }
@@ -755,7 +770,7 @@ public int insert_name_value(String _keyspace, String _columnfamily, String _key
             
             if (_dbmode.equals("cass") || _dbmode.equals("both")) {
                 boolean bres = c7.connect(mCassIP,9160);
-                System.out.println("insert_node_attribute.connect res:" + bres);
+                p("insert_node_attribute.connect res:" + bres);
                 if (bres) {
                     int ires = c7.insert_column(_keyspace,_columnfamily,_key,_name,_value);
                     c7.close();
@@ -791,7 +806,7 @@ public int insert_node_attribute(String _uuid, String _name, String _value, Stri
                 loadProps();
                 //Cass7Funcs.connect(mCassIP,9160);
                 boolean bres = c7.connect(mCassIP,9160);
-                //System.out.println("insert_node_attribute.connect res:" + bres);
+                //p("insert_node_attribute.connect res:" + bres);
                 if (bres) {
                     int ires = c7.insert_column("Keyspace1b","NodeInfo",_uuid,_name,_value);
                     c7.close();
@@ -1732,9 +1747,9 @@ public String echobackup(String _key, String _dbmode) {
             String backupid = "";
             String seqid = "";
             if (_dbmode.equals("cass") || _dbmode.equals("both")) {
-                //System.out.println("[1]");
+                //p("[1]");
                 connectCassandra();
-                //System.out.println("[2]");
+                //p("[2]");
                 batchid = c7.get_batch_id("batchid","BatchJobs", "idx");
                 backupid = c7.get_batch_id("backupid","BackupJobs", "idx2");
                 seqid = c7.get_batch_id("backupid","BackupJobs", "idx3");
@@ -1756,9 +1771,9 @@ public String echobackup(String _key, String _dbmode) {
                 backupid = "0";
             }
             
-            //System.out.println("last id batch stored : " + batchid);
-            //System.out.println("last backup id batch stored : " + backupid);
-            //System.out.println("last sequence stored : " + seqid);
+            //p("last id batch stored : " + batchid);
+            //p("last backup id batch stored : " + backupid);
+            //p("last sequence stored : " + seqid);
             
             String res = seqid + "," + batchid + "," + backupid;
             return res;
@@ -1795,16 +1810,16 @@ public ArrayList<Node> getNodes(String _key, String _dbmode){
 public String echonode(String _key, String _dbmode) {
         try {
             if (_dbmode.equals("cass")) {
-                //System.out.println("[1]");
+                //p("[1]");
                 connectCassandra();
-                //System.out.println("[2]");
+                //p("[2]");
                 String res = c7.get_node_info(_key, "NodeInfo");
-                //System.out.println("[3]");
+                //p("[3]");
                 return res;
             } else {
                 //p2p
                 String res = c8.get_node_info(_key, "NodeInfo");
-                System.out.println("[3]: '" + res + "'");
+                p("[3]: '" + res + "'");
                 return res;
             }
 
@@ -1837,16 +1852,16 @@ public String echoh3(String _key, String _dbmode) {
         try {
             if (_dbmode.equals("cass")) {
 
-                System.out.println("[1]");
+                p("[1]");
                 connectCassandra();
-                System.out.println("[2]");
+                p("[2]");
                 String res = c7.read_row_info(_key, "Standard1");
-                System.out.println("[3]");
+                p("[3]");
                 return res;
             } else {
                 //P2P
                 String res = c8.read_row_info(_key, "Standard1");
-                System.out.println("[3]");
+                p("[3]");
                 return res;
             }
 
@@ -1948,14 +1963,14 @@ public String delete_hash_cass(String _keyspace, String _key, String _hashkey, S
             StringTokenizer st = new StringTokenizer(_hashkey, "", false);
             while (st.hasMoreTokens()) {
                 String w = st.nextToken();
-                System.out.println("Deleting hashkey '" + w + "'");  
+                p("Deleting hashkey '" + w + "'");
                 
                 //delete manual hashes
                 res_code = c7.deleteSuperColumn(_keyspace, "Super2" ,_key, "hashesm", w);
-                System.out.println("RET: '" + res_code);
+                p("RET: '" + res_code);
 
                 res_code += c7.delete_column(_keyspace, "Standard1", w, _datemodified);
-                System.out.println("RET2: '" + res_code);
+                p("RET2: '" + res_code);
                 
 
                 //this is to know if exist some object with the Tag, if not, delete all the substrings
@@ -1964,7 +1979,7 @@ public String delete_hash_cass(String _keyspace, String _key, String _hashkey, S
                 
                 for (int idx=1; idx<w.length()+1;idx++) {
                     String str3 = w.substring(0, idx);
-                    System.out.println("str3: '" + str3 + "'");
+                    p("str3: '" + str3 + "'");
 
                     if (bDeleteAutcomplete) {
                         //delete substring in autocomplete table (e.g. key: 'P' name/value: 'Pictures')
@@ -2044,14 +2059,14 @@ public String delete_hash_P2P(String _keyspace, String _key, String _hashkey, St
             StringTokenizer st = new StringTokenizer(_hashkey, "+ ", false);
             while (st.hasMoreTokens()) {
                 String w = st.nextToken();
-                System.out.println("Deleting hashkey '" + w + "'");  
+                p("Deleting hashkey '" + w + "'");
 
                 //delete manual hashes
                 res_code = c8.delete_SuperColumn(_keyspace, "Super2" ,_key, "hashesm", w, w);
-                System.out.println("RET: '" + res_code);
+                p("RET: '" + res_code);
     
                 res_code += c8.delete_column(_keyspace,"Standard1",w, _datemodified, sAdder);
-                System.out.println("RET2: '" + res_code);
+                p("RET2: '" + res_code);
                 
 
                 //this is to know if exist some object with the Tag, if not, delete all the substrings

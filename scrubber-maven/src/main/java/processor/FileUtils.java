@@ -135,6 +135,8 @@ public class FileUtils {
     int mMD5Method = 2;  //1=Java implementation  2=Apache Commons
     long mDelaySleep = 10; //Time to sleep between file scans
     long mDelayThumb = 100; //Time to sleep if a thumbnail was created
+
+    static boolean bConsole = true;
     
     public void cleanup() {
         long freeMem = 0;
@@ -157,7 +159,45 @@ public class FileUtils {
         mUUID = null;
         mUUIDPath = null;
     }
-    
+
+    public static final String ANSI_RED = "\u001B[31m";
+    public static final String ANSI_GREEN = "\u001B[32m";
+    public static final String ANSI_YELLOW = "\u001B[33m";
+    public static final String ANSI_RESET = "\u001B[0m";
+
+    protected static void pw(String s) {
+        Date ts_start = Calendar.getInstance().getTime();
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy/MM/dd hh:mm:ss");
+        String sDate = sdf.format(ts_start);
+
+        if (bConsole) {
+            long threadID = Thread.currentThread().getId();
+            System.out.println(ANSI_YELLOW + sDate + " [WARNING] [FileUtils-" + threadID + "] " + s + ANSI_RESET);
+        }
+    }
+
+    protected static void pi(String s) {
+        Date ts_start = Calendar.getInstance().getTime();
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy/MM/dd hh:mm:ss");
+        String sDate = sdf.format(ts_start);
+
+        if (bConsole) {
+            long threadID = Thread.currentThread().getId();
+            System.out.println(ANSI_GREEN + sDate + " [INFO] [FileUtils-" + threadID + "] " + s + ANSI_RESET);
+        }
+    }
+
+    protected static void pe(String s) {
+        Date ts_start = Calendar.getInstance().getTime();
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy/MM/dd hh:mm:ss");
+        String sDate = sdf.format(ts_start);
+
+        if (bConsole) {
+            long threadID = Thread.currentThread().getId();
+            System.out.println(ANSI_RED + sDate + " [ERROR] [FileUtils-" + threadID + "] " + s + ANSI_RESET);
+        }
+    }
+
     /* print to stdout */
     protected void p(String s) {
 
@@ -166,14 +206,17 @@ public class FileUtils {
         String sDate = sdf.format(ts_start);
         
         long threadID = Thread.currentThread().getId();
-        System.out.println("[scanner_" + threadID + "] " + sDate + " " + s);
+        System.out.println(sDate + "[DEBUG] [FileUtils_" + threadID + "] " + sDate + " " + s);
     }
     
     protected void pdebug(String s) {
+        Date ts_start = Calendar.getInstance().getTime();
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy/MM/dd hh:mm:ss");
+        String sDate = sdf.format(ts_start);
 
         if (mDEBUG_MODE) {
             long threadID = Thread.currentThread().getId();
-            System.out.println("[scanner_" + threadID + "] " + s);            
+            System.out.println("[FileUtils_" + threadID + "] " + s);
         }
     }
 
@@ -190,7 +233,7 @@ public class FileUtils {
                 log.println(sDate + " " + _loglevel + " " + s);
                 log.flush();
             }
-            p(sDate + " " + _loglevel + " " + s);
+            pi(sDate + " " + _loglevel + " " + s);
         }
     }
 
@@ -730,7 +773,7 @@ public class FileUtils {
                 return 0;
             }
         } else {
-            p("ERROR: Directory " + tf.getAbsolutePath() + " doesn't exist or unavailable.");
+            pe("ERROR: Directory " + tf.getAbsolutePath() + " doesn't exist or unavailable.");
             
         }
         if (tf != null) {

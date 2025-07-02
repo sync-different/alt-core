@@ -77,7 +77,8 @@ import utils.NetUtils;
 
 public class ProcessorService implements Runnable{
 
-    
+    static boolean bConsole = true;
+
     Cass7Funcs c7 = new Cass7Funcs();
     LocalFuncs c8 = null;
     static WebFuncs wf = null;
@@ -201,7 +202,7 @@ public class ProcessorService implements Runnable{
         //loadWebFuncs();
         
         t = new Thread(this, "Demo Thread");
-        System.out.println("Child thread: " + t);
+        p("Child thread: " + t);
         t.start(); // Start the thread
         
         } catch (Exception e) {
@@ -215,13 +216,54 @@ public class ProcessorService implements Runnable{
        log("Recieved Termination request.", 0);
        mTerminated = true;       
    }
-    
-    
-       /* print to stdout */
+
+
+    public static final String ANSI_RED = "\u001B[31m";
+    public static final String ANSI_GREEN = "\u001B[32m";
+    public static final String ANSI_YELLOW = "\u001B[33m";
+    public static final String ANSI_RESET = "\u001B[0m";
+
+    protected static void pw(String s) {
+        Date ts_start = Calendar.getInstance().getTime();
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy/MM/dd hh:mm:ss");
+        String sDate = sdf.format(ts_start);
+
+        if (bConsole) {
+            long threadID = Thread.currentThread().getId();
+            System.out.println(ANSI_YELLOW + sDate + " [WARNING] [SC.ProcessorService-" + threadID + "] " + s + ANSI_RESET);
+        }
+    }
+
+    protected static void pi(String s) {
+        Date ts_start = Calendar.getInstance().getTime();
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy/MM/dd hh:mm:ss");
+        String sDate = sdf.format(ts_start);
+
+        if (bConsole) {
+            long threadID = Thread.currentThread().getId();
+            System.out.println(ANSI_GREEN + sDate + " [INFO ] [SC.ProcessorService-" + threadID + "] " + s + ANSI_RESET);
+        }
+    }
+
+    protected static void pe(String s) {
+        Date ts_start = Calendar.getInstance().getTime();
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy/MM/dd hh:mm:ss");
+        String sDate = sdf.format(ts_start);
+
+        if (bConsole) {
+            long threadID = Thread.currentThread().getId();
+            System.out.println(ANSI_RED + sDate + " [ERROR] [SC.ProcessorService-" + threadID + "] " + s + ANSI_RESET);
+        }
+    }
+
+    /* print to stdout */
     protected static void p(String s) {
+        Date ts_start = Calendar.getInstance().getTime();
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy/MM/dd hh:mm:ss");
+        String sDate = sdf.format(ts_start);
 
         long threadID = Thread.currentThread().getId();
-        System.out.println("[processor_" + threadID + "] " + s);
+        System.out.println(sDate+ " [DEBUG] [SC.processor_" + threadID + "] " + s);
     }
 
       /* print to the log file */
@@ -239,8 +281,8 @@ public class ProcessorService implements Runnable{
                         log.flush();
                     } 
                 else
-                    p("Log is null. Skipping Log Entry...");
-                p(sDate + " " + _loglevel + " " + s);
+                    pw("Log is null. Skipping Log Entry...");
+                pi(_loglevel + " " + s);
             } catch (Exception e) {
                 e.printStackTrace();
             }
@@ -261,14 +303,14 @@ public class ProcessorService implements Runnable{
             ScanProcessingDir();
 
             //-Store batch info
-            //System.out.println("StoreBatchinfo");
+            //p("StoreBatchinfo");
             //int nres = storeBatchInfo(mStatistics);
-            //System.out.println("nres StoreBatchinfo:" + nres);
+            //p("nres StoreBatchinfo:" + nres);
 
             //CheckforIDX();
             
             //-Wait for next run
-            System.out.println("[PROCESSOR] Waiting for next sweep (processor)");
+            p("[PROCESSOR] Waiting for next sweep (processor)");
             Thread.sleep(mPeriodMs);
             log("run Sleep for " + mPeriodMs, 2);
             //mTerminated = true;                
@@ -330,8 +372,8 @@ public class ProcessorService implements Runnable{
     }
     
     void loadBackupProps() throws IOException {  
-        //System.out.println(System.getProperty("java.home"));
-        System.out.println("loadBackkupProps()");
+        //p(System.getProperty("java.home"));
+        p("loadBackkupProps()");
         File f = new File(mCONFIG_PATH);
         if (f.exists()) {
             InputStream is =new BufferedInputStream(new
@@ -354,7 +396,7 @@ public class ProcessorService implements Runnable{
     }
     
     void loadProps() throws IOException {
-        System.out.println(System.getProperty("java.home"));
+        p(System.getProperty("java.home"));
         File f = new File
                 (
                 "config"+
@@ -535,7 +577,7 @@ public class ProcessorService implements Runnable{
                                         fis = null;
                                         filePart.delete();
                                     } else {
-                                        p("WARNING: file part does not exist: " + filePart.getAbsolutePath());
+                                        pw("WARNING: file part does not exist: " + filePart.getAbsolutePath());
                                     }
                                 }
                                 p("Finalizing file merge. Full file at: " + ofile.getAbsolutePath());
@@ -543,7 +585,7 @@ public class ProcessorService implements Runnable{
                                 fos = null;
                             }catch (Exception exception){                                
                                 exception.printStackTrace();
-                                p("WARNING - there was an exception merging the file." + ofile.getAbsolutePath());
+                                pw("WARNING - there was an exception merging the file." + ofile.getAbsolutePath());
                             }
                         }
                     }
@@ -598,7 +640,7 @@ public class ProcessorService implements Runnable{
                                 }
                                 else {
                                     String key = file_record.dbe_md5;
-                                    System.out.println("key(md5): " + key);
+                                    p("key(md5): " + key);
                                     
                                     if (DB_MODE.equals("cass")) {
                                         res = processFileRecordData_cass(file_record, mStatistics);                                        
@@ -622,7 +664,7 @@ public class ProcessorService implements Runnable{
                                 
                                 if (mStatistics.nFiles == RECORDS) {
                                     int nres = storeBatchInfo(mStatistics);
-                                    System.out.println("nres StoreBatchinfo:" + nres);
+                                    p("nres StoreBatchinfo:" + nres);
                                     mStatistics = new RecordStats();
                                 }
                             }
@@ -638,9 +680,9 @@ public class ProcessorService implements Runnable{
         }
         log(mStatistics.toString(), 1);
         
-        System.out.println("StoreBatchinfo");
+        p("StoreBatchinfo");
         int nres = storeBatchInfo(mStatistics);
-        System.out.println("nres StoreBatchinfo:" + nres);
+        p("nres StoreBatchinfo:" + nres);
     }
     
     public static boolean isWindows() {
@@ -897,7 +939,7 @@ public class ProcessorService implements Runnable{
 
         if (mStatistics.nFiles % mFiles == 0) {
             try {
-                System.out.println(mFiles + " files scanned. Time to sleep for " + mDelay + " ms.");
+                p(mFiles + " files scanned. Time to sleep for " + mDelay + " ms.");
                 log("processFileRecordData_exp 1 Sleep for " + mDelay + " ms.", 2);
                 Thread.sleep(mDelay);
             } catch (InterruptedException ex) {
@@ -1005,7 +1047,7 @@ public class ProcessorService implements Runnable{
         String sPath = "";
         //For each folder      
         for (String sub_folder_full : _record.dbe_folders) {            
-            //System.out.println("sub_folder_full: " + sub_folder_full);
+            //p("sub_folder_full: " + sub_folder_full);
             if (!sub_folder_full.isEmpty()) {
                     sPath += sub_folder_full + "/";
             }
@@ -1085,7 +1127,7 @@ public class ProcessorService implements Runnable{
         //For each folder             
         for (String sub_folder_full : _record.dbe_folders) {
             
-            //System.out.println("sub_folder_full: " + sub_folder_full);
+            //p("sub_folder_full: " + sub_folder_full);
             if (!sub_folder_full.isEmpty()) {
                     full_path += sub_folder_full + "/";
                     
@@ -1111,11 +1153,11 @@ public class ProcessorService implements Runnable{
                             boolean bCont = true;
                             int nlen = sub_folder.length();
                             if (isHashFile(sub_folder)) {
-                                System.out.println("Skipping HASHFILE:" + sub_folder);
+                                p("Skipping HASHFILE:" + sub_folder);
                                 bCont = false;
                             }
                             if (isHex(sub_folder)) {
-                                System.out.println("Skipping HEXFILE:" + sub_folder);
+                                p("Skipping HEXFILE:" + sub_folder);
                                 bCont = false;
                             }
                             
@@ -1126,7 +1168,7 @@ public class ProcessorService implements Runnable{
                             
                             if (bCont) {                                                                                
                                 //store full name in index so the file can be found in search.
-                                System.out.println("adding standard1: '" + _record.dbe_filename + "' name:" + strDateModified + " value: " + sAdder);
+                                p("adding standard1: '" + _record.dbe_filename + "' name:" + strDateModified + " value: " + sAdder);
                                 ret_code = c8.insert_column(keyspace, "Standard1", _record.dbe_filename, strDateModified, sAdder, true);
                                 //ret_code = c8.insert_column(keyspace, "Standard1", _record.dbe_filename, strDateModified, dbe_md5, true);
                                 //ret_code = c8.insert_local_index(keyspace, "Standard1", _record.dbe_filename, strDateModified, dbe_md5, _record.dbe_filename);
@@ -1140,9 +1182,9 @@ public class ProcessorService implements Runnable{
 
                                         //- TODO move to configuartion min-length-substring
                                         if (sub_string.length() >= mMinSubstrLen) {
-                                            //System.out.println("adding sub_string: '" + sub_string + "'");
+                                            //p("adding sub_string: '" + sub_string + "'");
                                             if (mAutoComplete) {
-                                                System.out.println("adding standard2: '" + sub_string.toLowerCase() + "' name:" + sub_folder.toLowerCase() + " value: " + sub_folder.toLowerCase());
+                                                p("adding standard2: '" + sub_string.toLowerCase() + "' name:" + sub_folder.toLowerCase() + " value: " + sub_folder.toLowerCase());
 
                                                 //-Add substring in autocomplete table (e.g. key: 'P' name/value: 'Pictures')
                                                 //ret_code += c7.insert_column(keyspace, "Standard2", sub_string.toLowerCase(), sub_folder.toLowerCase(), sub_folder.toLowerCase());
@@ -1159,7 +1201,7 @@ public class ProcessorService implements Runnable{
                                             //-Also associate hash to subtring (e.g. key:'P'  name/value:file_hash
                                             //ret_code += c7.insert_column(keyspace, "Standard1", sub_string.toLowerCase(), strDateModified, key);
                                             //ret_code = c8.insert_local_index(keyspace, "Standard1", sub_string.toLowerCase(), strDateModified, dbe_md5, _record.dbe_filename);
-                                            System.out.println("adding standard1: '" + sub_string.toLowerCase() + "' name:" + strDateModified + " value: " + sAdder);
+                                            p("adding standard1: '" + sub_string.toLowerCase() + "' name:" + strDateModified + " value: " + sAdder);
                                             ret_code = c8.insert_column(keyspace, "Standard1", sub_string.toLowerCase(), strDateModified, sAdder, true);
                                             ++mStatistics.nInsert;
                                         } else {
@@ -1211,7 +1253,7 @@ public class ProcessorService implements Runnable{
         ret_code += c8.insertSuperColumn(keyspace, "Super2", key, "paths", _record.dbe_uuid.toString() + ":" + abspath, _record.dbe_filename);
         ++mStatistics.nInsertHash;
 
-        //System.out.println("inserting path: '" + str2 +"'");
+        //p("inserting path: '" + str2 +"'");
         //c7.insert_column(keyspace,"Standard1", key, "path", full_path);
         //mStatistics.nInsert += 1;
 
@@ -1297,7 +1339,7 @@ public class ProcessorService implements Runnable{
 
             if (mStatistics.nFiles % mFiles == 0) {
                 try {
-                    System.out.println(mFiles + " files scanned. Time to sleep for " + mDelay + " ms.");
+                    p(mFiles + " files scanned. Time to sleep for " + mDelay + " ms.");
                     log("processFileRecordData_cass SLEEP  -  " + mFiles + " files scanned. Time to sleep for " + mDelay + " ms.", 2);
                     Thread.sleep(mDelay);
                 } catch (InterruptedException ex) {
@@ -1435,7 +1477,7 @@ public class ProcessorService implements Runnable{
                 if (!sub_folder.isEmpty()) {
                     full_path += sub_folder + "/";
 
-                    //System.out.println("\t processing <'" + str + "'> with length" + str.length());
+                    //p("\t processing <'" + str + "'> with length" + str.length());
                     //c7.insert_hashtag(keyspace,key, str, "hashes");
 
                     // (1)Add path compoenents (folders) as hashtags
@@ -1516,7 +1558,7 @@ public class ProcessorService implements Runnable{
             ret_code += c7.insertSuperColumn(keyspace, "Super2", key, "paths", _record.dbe_uuid.toString() + ":" + full_path, _record.dbe_filename);
             ++mStatistics.nInsertHash;
 
-            //System.out.println("inserting path: '" + str2 +"'");
+            //p("inserting path: '" + str2 +"'");
             //c7.insert_column(keyspace,"Standard1", key, "path", full_path);
             //mStatistics.nInsert += 1;
 
@@ -1574,7 +1616,7 @@ public class ProcessorService implements Runnable{
                     return false;
                 }
             } else {
-                //System.out.println("insert ok, continue...");
+                //p("insert ok, continue...");
                 insert_ok = true;
             }                     
         }
@@ -1640,20 +1682,20 @@ public class ProcessorService implements Runnable{
                 int nError = 0;
                 
                 try {
-                    //System.out.println("   [B]");
+                    //p("   [B]");
                     sViewURL = c7.get_row_attribute(keyspace, "Standard1", _key, "ViewLink3");
                 } catch (Exception ex) {
-                    System.out.println("   [Be]");
+                    p("   [Be]");
                     nError += 1;
                 }
                         
-                //System.out.println("   [C]");
+                //p("   [C]");
 
                 String sPlayURL = "";
                 try {
                     sPlayURL = c7.get_row_attribute(keyspace, "Standard1", _key, "PlayLink3");
                 } catch (Exception ex) {
-                    System.out.println("   [Ce]");
+                    p("   [Ce]");
                     nError += 1;
                 }            
 
@@ -1661,20 +1703,20 @@ public class ProcessorService implements Runnable{
                     sURLPack sURLpack = new sURLPack();
                     sURLpack = c7.get_remote_link2(_key,"paths", false, false, "127.0.0.1", true, false);
 
-                    System.out.println("Viewlink ---> '" + sURLpack.sViewURL + "'");
+                    p("Viewlink ---> '" + sURLpack.sViewURL + "'");
                     if (sURLpack.sViewURL.length() > 0 && !sURLpack.sViewURL.equals("ERROR")) {
                         sViewURL = sURLpack.sViewURL;
                         int ires = c7.insert_column("Keyspace1b","Standard1", _key, "ViewLink3", sViewURL); 
 
                     }
 
-                    System.out.println("Playlink ---> '" + sURLpack.sPlayURL + "'");
+                    p("Playlink ---> '" + sURLpack.sPlayURL + "'");
                     if (sURLpack.sPlayURL.length() > 0 && !sURLpack.sPlayURL.equals("ERROR")) {
                         sPlayURL = sURLpack.sPlayURL;
                         int ires = c7.insert_column("Keyspace1b","Standard1", _key, "PlayLink3", sPlayURL);  
                     }                    
                 } else {
-                    System.out.println("Skipping remote link insert. They already exist.");
+                    p("Skipping remote link insert. They already exist.");
                 }
                 return 0;
            } catch (Exception ex) {
@@ -1687,7 +1729,7 @@ public class ProcessorService implements Runnable{
       private int addMP3Info_exp(String _mp3info, RecordStats mStatistics, String _key, String _keyspace, String _date, String _adder) {
                         
                 if (_mp3info != null && _mp3info.length() > 0) {
-                    System.out.println("mp3 info found '" + _mp3info + "'");
+                    p("mp3 info found '" + _mp3info + "'");
           
                     //String strDateAddedTime = DateFormat.format(Calendar.getInstance().getTime());
           
@@ -1700,7 +1742,7 @@ public class ProcessorService implements Runnable{
                     while (st.hasMoreTokens()) {
                         String w = st.nextToken();
                         if (w.length() >= mMinSubstrLen) {
-                            System.out.println("adding hash for mp3 '" + _key + "','" + w + "'");    
+                            p("adding hash for mp3 '" + _key + "','" + w + "'");
                             ret_code += c8.insertSuperColumn(keyspace, "Super2", _key, "hashes", w, w);
                         }                        
                         for (int idx = 0; idx < w.length() + 1; ++idx) {
@@ -1709,10 +1751,10 @@ public class ProcessorService implements Runnable{
 
                                     //- TODO move to configuartion min-length-substring
                                     if (sub_string.length() >= mMinSubstrLen) {
-                                            System.out.println("adding: '" + sub_string.toLowerCase() + "' to key " + _key);
+                                            p("adding: '" + sub_string.toLowerCase() + "' to key " + _key);
                                             ret_code += c8.insert_column(_keyspace, "Standard1", sub_string.toLowerCase(), _date, _adder, true);
                                             ++mStatistics.nInsert;
-                                            //System.out.println("adding string: '" + sub_string + "' to autocomplete '" + _mp3info.toLowerCase());
+                                            //p("adding string: '" + sub_string + "' to autocomplete '" + _mp3info.toLowerCase());
                                             if (mAutoComplete) {
                                                 ret_code += c8.insert_column(_keyspace, "Standard2", sub_string.toLowerCase(), _mp3info.toLowerCase(), _mp3info.toLowerCase(), true);
                                                 ++mStatistics.nInsertAutoComplete;
@@ -1731,7 +1773,7 @@ public class ProcessorService implements Runnable{
               
           
                 if (_mp3info != null && _mp3info.length() > 0) {
-                    System.out.println("mp3 info found '" + _mp3info + "'");
+                    p("mp3 info found '" + _mp3info + "'");
           
                     //String strDateAddedTime = DateFormat.format(Calendar.getInstance().getTime());
           
@@ -1744,7 +1786,7 @@ public class ProcessorService implements Runnable{
                     while (st.hasMoreTokens()) {
                         String w = st.nextToken();
                         if (w.length() >= mMinSubstrLen) {
-                            System.out.println("adding hash for mp3 '" + _key + "','" + w + "'");    
+                            p("adding hash for mp3 '" + _key + "','" + w + "'");
                             ret_code += c7.insertSuperColumn(keyspace, "Super2", _key, "hashes", w, w);
                         }                        
                         for (int idx = 0; idx < w.length() + 1; ++idx) {
@@ -1753,10 +1795,10 @@ public class ProcessorService implements Runnable{
 
                                     //- TODO move to configuartion min-length-substring
                                     if (sub_string.length() >= mMinSubstrLen) {
-                                            //System.out.println("adding: '" + sub_string.toLowerCase() + "' to key " + _key);
+                                            //p("adding: '" + sub_string.toLowerCase() + "' to key " + _key);
                                             ret_code += c7.insert_column(_keyspace, "Standard1", sub_string.toLowerCase(), _date, _key);
                                             ++mStatistics.nInsert;
-                                            //System.out.println("adding string: '" + sub_string + "' to autocomplete '" + _mp3info.toLowerCase());
+                                            //p("adding string: '" + sub_string + "' to autocomplete '" + _mp3info.toLowerCase());
                                             if (mAutoComplete) {
                                                 ret_code += c7.insert_column(_keyspace, "Standard2", sub_string.toLowerCase(), _mp3info.toLowerCase(), _mp3info.toLowerCase());
                                                 ++mStatistics.nInsertAutoComplete;
@@ -1782,7 +1824,7 @@ public class ProcessorService implements Runnable{
                     if (!sub_folder.isEmpty()) {
                         //full_path += sub_folder + "/";
 
-                        //System.out.println("\t processing <'" + str + "'> with length" + str.length());
+                        //p("\t processing <'" + str + "'> with length" + str.length());
                         //c7.insert_hashtag(keyspace,key, str, "hashes");
 
                         // (1)Add path compoenents (folders) as hashtags
@@ -1827,11 +1869,11 @@ public class ProcessorService implements Runnable{
                                     }
                                 }  
                             } else {
-                                System.out.println("skipping sub folder'" + sub_folder + "' due to hashfile: '" + sub_folder + "'");
+                                p("skipping sub folder'" + sub_folder + "' due to hashfile: '" + sub_folder + "'");
                             }
                         } else {
                             //-Since it's long substring, just link the obj to the entire string
-                            System.out.println("skipping sub folder'" + sub_folder + "' due to length: " + sub_folder.length());
+                            p("skipping sub folder'" + sub_folder + "' due to length: " + sub_folder.length());
                             ++mStatistics.nSkipSubFolders;
                             ret_code += c7.insert_column(keyspace, "Standard1", sub_folder, key, key);
                         }
@@ -1842,17 +1884,17 @@ public class ProcessorService implements Runnable{
        }
        
        private boolean isHashFile(String sFileName) {           
-            //System.out.println("IsHashFile: '" + sFileName + "'");
+            //p("IsHashFile: '" + sFileName + "'");
             String sFileName2 = sFileName;
             if (sFileName.indexOf(".") > 0) {
                  sFileName2 = sFileName.substring(0, sFileName.indexOf("."));
-                 System.out.println("len1 = " + sFileName2.length());
+                 p("len1 = " + sFileName2.length());
             }           
             if (isHex(sFileName2) && !isNumeric(sFileName2)) {
-               //System.out.println("true1");
+               //p("true1");
                return true;
             } else {
-               //System.out.println("false1");
+               //p("false1");
                return false;
             } 
        }
@@ -1895,25 +1937,25 @@ public class ProcessorService implements Runnable{
             Date ts_end = Calendar.getInstance().getTime();
             SimpleDateFormat sdf = new SimpleDateFormat("yyyy/MM/dd");
             String sDate = sdf.format(ts_end);
-            System.out.println("id sDate #: " + sDate);
+            p("id sDate #: " + sDate);
 
             //String batchid = c8.get_batch_id(sDate);
-            //System.out.println("id batch last entry #: " + batchid);
+            //p("id batch last entry #: " + batchid);
 
             sdf = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss");
             String sTimeStart = sdf.format(ts_start);
-            System.out.println("time_start: " + sTimeStart);
+            p("time_start: " + sTimeStart);
 
             String sTimeEnd = sdf.format(ts_end);
-            System.out.println("time_end: " + sTimeEnd);
+            p("time_end: " + sTimeEnd);
 
             int retcode = 0;
             //c8.insert_column(keyspace, "BatchJobs", sDate, batchid, batchid);
-            System.out.println("batchid_store:" + batchid_store);
+            p("batchid_store:" + batchid_store);
 
             String stats = mStatistics.toString();
             
-            System.out.println(stats);
+            p(stats);
         
             retcode += c8.insert_column(keyspace, "BatchJobs", batchid_store, "ts_start", sTimeStart, true);
             retcode += c8.insert_column(keyspace, "BatchJobs", batchid_store, "ts_end", sTimeEnd, true);
@@ -1929,7 +1971,7 @@ public class ProcessorService implements Runnable{
 
             //long newbatch = Long.parseLong(batchid.trim());
             //newbatch++;
-            //System.out.println("newbatch: " + newbatch);
+            //p("newbatch: " + newbatch);
             //c7.insert_column(keyspace, "BatchJobs", "batchid", "id", Long.toString(newbatch));
 
             if (retcode != 0) {
@@ -1939,7 +1981,7 @@ public class ProcessorService implements Runnable{
             
             updateNumberOfCopies(batchid_store);
         } else {
-            System.out.println("Skip batch storage.");
+            p("Skip batch storage.");
         }
         return 0;
     }
@@ -1953,25 +1995,25 @@ public class ProcessorService implements Runnable{
             Date ts_end = Calendar.getInstance().getTime();
             SimpleDateFormat sdf = new SimpleDateFormat("yyyy/MM/dd");
             String sDate = sdf.format(ts_end);
-            System.out.println("id sDate #: " + sDate);
+            p("id sDate #: " + sDate);
 
             //String batchid = c7.get_batch_id(sDate);
-            //System.out.println("id batch last entry #: " + batchid);
+            //p("id batch last entry #: " + batchid);
 
             sdf = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss");
             String sTimeStart = sdf.format(ts_start);
-            System.out.println("time_start: " + sTimeStart);
+            p("time_start: " + sTimeStart);
 
             String sTimeEnd = sdf.format(ts_end);
-            System.out.println("time_end: " + sTimeEnd);
+            p("time_end: " + sTimeEnd);
 
             int retcode = 0;
             //c7.insert_column(keyspace, "BatchJobs", sDate, batchid, batchid);
-            System.out.println("batchid_store:" + batchid_store);
+            p("batchid_store:" + batchid_store);
 
             String stats = mStatistics.toString();
             
-            System.out.println(stats);
+            p(stats);
         
             retcode += c7.insert_column(keyspace, "BatchJobs", batchid_store, "ts_start", sTimeStart);
             retcode += c7.insert_column(keyspace, "BatchJobs", batchid_store, "ts_end", sTimeEnd);
@@ -1987,7 +2029,7 @@ public class ProcessorService implements Runnable{
 
             //long newbatch = Long.parseLong(batchid.trim());
             //newbatch++;
-            //System.out.println("newbatch: " + newbatch);
+            //p("newbatch: " + newbatch);
             //c7.insert_column(keyspace, "BatchJobs", "batchid", "id", Long.toString(newbatch));
 
             if (retcode != 0) {
@@ -1995,7 +2037,7 @@ public class ProcessorService implements Runnable{
             }
             newbatch = false;
         } else {
-            System.out.println("Skip batch storage.");
+            p("Skip batch storage.");
         }
         return 0;
     }
@@ -2009,11 +2051,11 @@ public class ProcessorService implements Runnable{
             while (!bConnect) {
                 if (mServerIP == null || mServerIP.length() == 0) {
                     mServerIP = "localhost";
-                    System.out.println("fix cassandra host");
+                    p("fix cassandra host");
                 }
-                System.out.println("Connecting to Cassandra. Hostname: " + mServerIP);
+                p("Connecting to Cassandra. Hostname: " + mServerIP);
                 bConnect = c7.connect(mServerIP,9160);
-                System.out.println("connect result = " + bConnect);
+                p("connect result = " + bConnect);
                 if (!bConnect) {
                     long lSleep = 10000;
                     log("connect failed. going to sleep for " + lSleep + " ms", 2);

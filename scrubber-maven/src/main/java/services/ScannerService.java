@@ -42,7 +42,8 @@ public class ScannerService implements Runnable {
    String mRECORDS_FILE_PATH         = "./data/.records.db";
    String mSCAN_PATH         = "";
    String mSCAN_FILE = "";
-    
+
+   static boolean bConsole = true;
 
    String mCONFIG_PATH = "";
    String mUUID = "";
@@ -120,7 +121,7 @@ public class ScannerService implements Runnable {
             // Create a new, second thread
             if (_launchthread) {
                 t = new Thread(this, "sc_s");
-                System.out.println("Launched thread: " + t);
+                p("Launched thread: " + t);
                 t.start(); // Start the thread                
             }
             
@@ -153,7 +154,7 @@ public class ScannerService implements Runnable {
                     clientSocket.receive(recievePacket);
 
                     String s = new String(recieveData);
-                    System.out.println("packet data:" + s);
+                    p("packet data:" + s);
 
                     StringTokenizer st = new StringTokenizer(s,",", true);
                     String sCount = st.nextToken();
@@ -208,7 +209,7 @@ public class ScannerService implements Runnable {
    
     void loadBackupProps() throws IOException {
     
-        //System.out.println(System.getProperty("java.home"));
+        //p(System.getProperty("java.home"));
         p("loadBackkupProps()");
         File f = new File(mCONFIG_PATH);
         if (f.exists()) {
@@ -240,13 +241,13 @@ public class ScannerService implements Runnable {
 
            if (mSCAN_PATH.length() == 0) {
                 //get scan path from config 
-                System.out.println(">>> Retrieving paths from config file.");
+                p(">>> Retrieving paths from config file.");
                 r = props.getProperty("scandir");
                 if (r != null) {
                     mSCAN_FILE = r;
                 }                
             } else {
-                System.out.println(">>> Retrieving path from param.");
+                p(">>> Retrieving path from param.");
             }
            
             r = props.getProperty("logpath");
@@ -264,18 +265,58 @@ public class ScannerService implements Runnable {
         p("md5count=" + mScansBeforeMD5Check);
         p("debugmode=" + mDEBUG_MODE);
         p("scandir=" + mSCAN_PATH);
-        //System.out.println("maxstrlen=" + mMaxStrLen);
-        //System.out.println("autocomplete=" + mAutoComplete);
-        //System.out.println("forceindex=" + mForceIndex);
+        //p("maxstrlen=" + mMaxStrLen);
+        //p("autocomplete=" + mAutoComplete);
+        //p("forceindex=" + mForceIndex);
         
     }
 
-    
-   /* print to stdout */
+    public static final String ANSI_RED = "\u001B[31m";
+    public static final String ANSI_GREEN = "\u001B[32m";
+    public static final String ANSI_YELLOW = "\u001B[33m";
+    public static final String ANSI_RESET = "\u001B[0m";
+
+    protected static void pw(String s) {
+        Date ts_start = Calendar.getInstance().getTime();
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy/MM/dd hh:mm:ss");
+        String sDate = sdf.format(ts_start);
+
+        if (bConsole) {
+            long threadID = Thread.currentThread().getId();
+            System.out.println(ANSI_YELLOW + sDate + " [WARNING] [SC.ScannerService-" + threadID + "] " + s + ANSI_RESET);
+        }
+    }
+
+    protected static void pi(String s) {
+        Date ts_start = Calendar.getInstance().getTime();
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy/MM/dd hh:mm:ss");
+        String sDate = sdf.format(ts_start);
+
+        if (bConsole) {
+            long threadID = Thread.currentThread().getId();
+            System.out.println(ANSI_GREEN + sDate + " [INFO ] [SC.ScannerService-" + threadID + "] " + s + ANSI_RESET);
+        }
+    }
+
+    protected static void pe(String s) {
+        Date ts_start = Calendar.getInstance().getTime();
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy/MM/dd hh:mm:ss");
+        String sDate = sdf.format(ts_start);
+
+        if (bConsole) {
+            long threadID = Thread.currentThread().getId();
+            System.out.println(ANSI_RED + sDate + " [ERROR] [SC.ScannerService-" + threadID + "] " + s + ANSI_RESET);
+        }
+    }
+
+    /* print to stdout */
     protected void p(String s) {
+        Date ts_start = Calendar.getInstance().getTime();
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy/MM/dd hh:mm:ss");
+        String sDate = sdf.format(ts_start);
 
         long threadID = Thread.currentThread().getId();
-        System.out.println("[scanner_" + threadID + "] " + s);
+        System.out.println(sDate+ " [DEBUG] [SC.scanner_" + threadID + "] " + s);
     }
 
     /* print to the log file */
@@ -291,7 +332,7 @@ public class ScannerService implements Runnable {
                 log.println(sDate + " " + _loglevel + " " + s);
                 log.flush();
             }
-            p(sDate + " " + _loglevel + " " + s);            
+            pi(_loglevel + " " + s);
         }
     }
    
@@ -306,13 +347,13 @@ public class ScannerService implements Runnable {
                 is.close();
                 String r = props.getProperty(_name);
                 if (r != null ) {
-                    System.out.println("Old value = " + r);   
+                    p("Old value = " + r);
                     return r;
                 } else {
                     return "";
                 }
             } else {
-                System.out.println("File not found. exiting...");
+                p("File not found. exiting...");
                 return "";
             }
         } catch (Exception e) {
@@ -333,10 +374,10 @@ public class ScannerService implements Runnable {
                 bWindowsServer = Boolean.parseBoolean(sWindowsServer);
             }
             
-            System.out.println("Setup State = " + sState);
+            p("Setup State = " + sState);
             if (sState.equals("NEW")) {
                 while (sState.equals("NEW")) {
-                    System.out.println("State=NEW. Waiting for user to complete Wizard setup. Sleeping for " + mDelay + "ms.");
+                    p("State=NEW. Waiting for user to complete Wizard setup. Sleeping for " + mDelay + "ms.");
                     Thread.sleep(mDelay);                
                     sState = getConfig("state", "../rtserver/config/www-setup.properties");
                 }                
@@ -365,8 +406,8 @@ public class ScannerService implements Runnable {
 
                 FileUtils pf = new FileUtils(mRECORDS_FILE_PATH, mDEBUG_MODE, mCONFIG_PATH, mLogLevel);
                 Boolean bres = pf.loadPendingFiles();
-                System.out.println("load res = " + bres);
-                System.out.println("count = " + pf.printFileCount());
+                p("load res = " + bres);
+                p("count = " + pf.printFileCount());
 
                 boolean bCheck = false;
                 j++;
@@ -377,16 +418,16 @@ public class ScannerService implements Runnable {
                 
                 Runtime r = Runtime.getRuntime();
                 long freemem1 = r.freeMemory();
-                System.out.println("freemem1 = " + freemem1);
+                p("freemem1 = " + freemem1);
                 
                 //load hashmap (blacklisted paths)
                 pf.loadBlacklistMap();                             
 
-                System.out.println("********** SCAN PATH = " + mSCAN_PATH);
+                p("********** SCAN PATH = " + mSCAN_PATH);
                 if (mSCAN_PATH.length() > 0) {
                     pf.ScanDirectory(mSCAN_PATH, bCheck);
                 } else {
-                    System.out.println("********** SCAN CONFIG FILE = " + mSCAN_FILE);
+                    p("********** SCAN CONFIG FILE = " + mSCAN_FILE);
                     
                     File f = new File(mSCAN_FILE);
                     if (f.exists()) {
@@ -404,7 +445,7 @@ public class ScannerService implements Runnable {
                             if (res < 0) {
                                 log("There was an error scanning path: '" + sdu + "'", 0);                                 
                                 if (pf.oomcase) {
-                                    System.out.println("There was an OOM. Time to exit...");                    
+                                    pw("There was an OOM. Time to exit...");
                                     System.exit(-1);
                                 }                                
                             }
@@ -430,10 +471,10 @@ public class ScannerService implements Runnable {
                 bres = pf.savePendingFiles();
                 log("save records res = " + bres, 1);
                                 
-                System.out.println("pf cleanup");
+                p("pf cleanup");
                 pf.cleanup();
 
-                System.out.println("Setting pf to Null");
+                p("Setting pf to Null");
                 pf = null;                
 
                 //Scrubber
@@ -457,14 +498,14 @@ public class ScannerService implements Runnable {
                     }
                     
                     if (bHostFound) {
-                        System.out.println("********** SYNC");
+                        p("********** SYNC");
                         mFileRecords = new FileDatabase(mRECORDS_FILE_PATH);
                         log("count before scrub = " + mFileRecords.count(), 1);
                         mFileRecords.sync(mHostName,mUUID);
                         log("count after scrub = " + mFileRecords.count(), 1);
                         boolean res = mFileRecords.save();
-                        System.out.println("res save file = " + res);                                            
-                        System.out.println("Setting fr to Null");
+                        p("res save file = " + res);
+                        p("Setting fr to Null");
                         mFileRecords = null;
                     } else {
                         log("[WARNING: Skipped scrubber because server was not found.]", 0);   
@@ -489,9 +530,9 @@ public class ScannerService implements Runnable {
          
           
      } catch (Exception e) {
-         System.out.println("Child interrupted.");
+         p("Child interrupted.");
          e.printStackTrace();
      }
-     System.out.println("Exiting child thread.");
+     p("Exiting child thread.");
    }
 }
