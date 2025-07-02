@@ -175,6 +175,33 @@ public class WebServer extends AbstractService {
         }
     }
 
+    public static final String ANSI_RED = "\u001B[31m";
+    public static final String ANSI_GREEN = "\u001B[32m";
+    public static final String ANSI_YELLOW = "\u001B[33m";
+    public static final String ANSI_RESET = "\u001B[0m";
+
+    protected static void pw(String s) {
+        if (bConsole) {
+            long threadID = Thread.currentThread().getId();
+            System.out.println(ANSI_YELLOW + "[WARNING] [WebServer-" + threadID + "] " + s + ANSI_RESET);
+        }
+    }
+
+    protected static void pi(String s) {
+        if (bConsole) {
+            long threadID = Thread.currentThread().getId();
+            System.out.println(ANSI_GREEN + "[INFO] [WebServer-" + threadID + "] " + s + ANSI_RESET);
+        }
+    }
+
+    protected static void pe(String s) {
+        if (bConsole) {
+            long threadID = Thread.currentThread().getId();
+            System.out.println(ANSI_RED + "[ERROR] [WebServer-" + threadID + "] " + s + ANSI_RESET);
+        }
+    }
+
+
     /* print to the log file */
     protected static void log(String s, int _loglevel) {
 
@@ -187,7 +214,7 @@ public class WebServer extends AbstractService {
                 log.println(sDate + " " + _loglevel + " " + s);
                 log.flush();
             }
-            p(sDate + " " + _loglevel + " " + s);
+            pi(sDate + " " + _loglevel + " " + s);
         }
     }
 
@@ -395,6 +422,7 @@ public class WebServer extends AbstractService {
             if (r != null) {
                 root = new File(appendage + r);
                 if (!root.exists()) {
+                    pe(root + " doesn't exist as server root");
                     throw new Error(root + " doesn't exist as server root");
                 }
             }
@@ -403,7 +431,8 @@ public class WebServer extends AbstractService {
             if (r != null) {
                 incoming = new File(appendage + r);
                 if (!incoming.exists()) {
-                    throw new Error(incoming + " doesn't exist as incoming folder");
+                    pe(incoming + " doesn't exist as server root");
+                    throw new Error(incoming + " doesn't exist as error folder");
                 }
             }
 
@@ -489,7 +518,7 @@ public class WebServer extends AbstractService {
                     log = new PrintStream(new BufferedOutputStream(
                             new FileOutputStream(logpath,true)));
                 } else {
-                    p("[WebServer] WARNING: Log file could not be opened. try create. " + logFile.getAbsolutePath());
+                    pw("[WebServer] WARNING: Log file could not be opened. try create. " + logFile.getAbsolutePath());
                     log = new PrintStream(new BufferedOutputStream(
                             new FileOutputStream(logpath,true)));
                 }
@@ -537,7 +566,7 @@ public class WebServer extends AbstractService {
             }
 
         } else {
-            System.out.println("WARNING: file not found " + f.getAbsolutePath());
+            pw("WARNING: file not found " + f.getAbsolutePath());
         }
 
         /* if no properties were specified, choose defaults */
@@ -593,7 +622,7 @@ public class WebServer extends AbstractService {
             p("DB_PATH = " + DB_PATH);
 
         } else {
-            p("[loadPropsProcessor()] WARNING config/www.processor-properties does not exist");
+            pw("[loadPropsProcessor()] WARNING config/www.processor-properties does not exist");
         }
     }
 
@@ -662,13 +691,13 @@ public class WebServer extends AbstractService {
                     sMailFromPassword = r;
                 }
             } else {
-                p("WARNING: Mailer config file does not exist: " + f.getAbsolutePath() );
+                pw("WARNING: Mailer config file does not exist: " + f.getAbsolutePath() );
             }
 
         } catch (IOException e) {
-            p("WARNING: mailer config file not found.");
+            pw("WARNING: mailer config file not found.");
         } catch (Exception e) {
-            p("WARNING: mailer config file not found.");
+            pw("WARNING: mailer config file not found.");
         }
 
 
@@ -694,7 +723,7 @@ public class WebServer extends AbstractService {
                     bCloudAmazon = Boolean.parseBoolean(r);
                 }
             } else {
-                p("WARNING: Cloud config file does not exist: " + sPath);
+                pw("WARNING: Cloud config file does not exist: " + sPath);
             }
         } catch (Exception e) {
             e.printStackTrace();
@@ -746,13 +775,13 @@ public class WebServer extends AbstractService {
                 }
 
             } else {
-                p("WARNING: Analytics config file does not exist: " + sPath);
+                pw("WARNING: Analytics config file does not exist: " + sPath);
             }
 
         } catch (IOException e) {
-            p("WARNING: mailer config file not found.");
+            pw("WARNING: mailer config file not found.");
         } catch (Exception e) {
-            p("WARNING: mailer config file not found.");
+            pw("WARNING: mailer config file not found.");
         }
     }
 
@@ -859,87 +888,94 @@ public class WebServer extends AbstractService {
         //File directory = new File("../app/projects/rtserver").getAbsoluteFile();
         if (directory.exists())
         {
-            System.out.println("[WebServer] Found app directory. Setting working dir to it");
+            p("[WebServer] Found app directory. Setting working dir to it");
             result = (System.setProperty("user.dir", directory.getAbsolutePath()) != null);
 
             appendage = "/Applications/Alterante.app/Contents/AlteranteJava.app/Contents/app/projects/rtserver/";
-            System.out.println("appendage  = " + appendage);
+            p("appendage  = " + appendage);
             //appendage = "../app/projects/rtserver/";
         }
 
         String username = System.getProperty("user.name");
-        System.out.println("username: " + username);
+        p("username: " + username);
         File directoryRW = new File("/Users/" + username + "/Library/Containers/com.alterante.desktopapp1j");
         if (directoryRW.exists()) {
-            System.out.println("[WebServer] Found container directory. checking folders.");
+            p("[WebServer] Found container directory. checking folders.");
             appendageRW = "/Users/" + username + "/Library/Containers/com.alterante.desktopapp1j/Data/app/projects/rtserver/";
-            System.out.println("appendageRW: " + appendageRW);
+            p("appendageRW: " + appendageRW);
 
 
             //rtserver setup
             File dir = new File("/Users/" + username + "/Library/Containers/com.alterante.desktopapp1j/Data/app/projects/rtserver/");
             if (dir.exists()) {
-                System.out.println("[WebServer] appendageRW rtserver exists.");
+                p("[WebServer] appendageRW rtserver exists.");
             } else {
                 boolean res = new File(appendageRW).mkdirs();
-                System.out.println("[WebServer] appendageRW rtserver create = " + res);
+                p("[WebServer] appendageRW rtserver create = " + res);
                 res = new File(appendageRW + "/logs/").mkdirs();
-                System.out.println("[WebServer] appendageRW rtserver create logs = " + res);
+                p("[WebServer] appendageRW rtserver create logs = " + res);
                 res = new File(appendageRW + "/tmp/").mkdirs();
-                System.out.println("[WebServer] appendageRW rtserver create tmp = " + res);
+                p("[WebServer] appendageRW rtserver create tmp = " + res);
             }
 
             //scrubber setup
             String sScrubberPath = "/Users/" + username + "/Library/Containers/com.alterante.desktopapp1j/Data/app/projects/scrubber/";
             dir = new File(sScrubberPath);
             if (dir.exists()) {
-                System.out.println("[WebServer] appendageRW scrubber exists.");
+                p("[WebServer] appendageRW scrubber exists.");
             } else {
-                System.out.println("[WebServer] scrubber path not exist: " + sScrubberPath);
+                p("[WebServer] scrubber path not exist: " + sScrubberPath);
                 boolean res = new File(sScrubberPath).mkdirs();
-                System.out.println("[WebServer] appendageRW scrubber create = " + res);
+                p("[WebServer] appendageRW scrubber create = " + res);
                 res = new File(sScrubberPath + "/data/").mkdirs();
-                System.out.println("[WebServer] appendageRW scrubber create data = " + res);
+                p("[WebServer] appendageRW scrubber create data = " + res);
                 res = new File(sScrubberPath + "/config/").mkdirs();
-                System.out.println("[WebServer] appendageRW scrubber create config = " + res);
+                p("[WebServer] appendageRW scrubber create config = " + res);
             }
 
         } else {
-            System.out.println("[WebServer] Container directory not found.");
+            p("[WebServer] Container directory not found.");
         }
     }
 
     public static void main(String[] a) throws Exception {
 
         boolean result = false;
+        pi("-------------------------------------------------------------------------");
+        pi(" █████╗ ██╗  ████████╗███████╗██████╗  █████╗ ███╗   ██╗████████╗███████╗");
+        pi("██╔══██╗██║  ╚══██╔══╝██╔════╝██╔══██╗██╔══██╗████╗  ██║╚══██╔══╝██╔════╝");
+        pi("███████║██║     ██║   █████╗  ██████╔╝███████║██╔██╗ ██║   ██║   █████╗  ");
+        pi("██╔══██║██║     ██║   ██╔══╝  ██╔══██╗██╔══██║██║╚██╗██║   ██║   ██╔══╝  ");
+        pi("██║  ██║███████╗██║   ███████╗██║  ██║██║  ██║██║ ╚████║   ██║   ███████╗");
+        pi("╚═╝  ╚═╝╚══════╝╚═╝   ╚══════╝╚═╝  ╚═╝╚═╝  ╚═╝╚═╝  ╚═══╝   ╚═╝   ╚══════╝");
+        pi("-------------------------------------------------------------------------");
 
-        System.out.println("-----------------------------------------");
-        System.out.println("Working Directory[1] = " + System.getProperty("user.dir"));
+        pi("Working Directory[1] = " + System.getProperty("user.dir"));
 
         Path currentRelativePath = Paths.get(".");
         String sPath = currentRelativePath.toAbsolutePath().toString();
-        System.out.println("Current absolute[1]  = " + sPath);
+        pi("Current absolute[1]  = " + sPath);
 
         //File directory = new File("../app/projects/rtserver").getAbsoluteFile();
         File directory = new File("/Applications/Alterante.app/Contents/AlteranteJava.app/Contents/MacOS").getAbsoluteFile();
         if (directory.exists())
         {
-            System.out.println("[init] Found app directory. Setting working dir to it");
+            p("[init] Found app directory. Setting working dir to it");
             result = (System.setProperty("user.dir", directory.getAbsolutePath()) != null);
-            System.out.println("set user.dir  = " + result);
+            p("set user.dir  = " + result);
 
             appendage = "/Applications/Alterante.app/Contents/AlteranteJava.app/Contents/app/projects/rtserver/";
-            System.out.println("appendage  = " + appendage);
+            p("appendage  = " + appendage);
 
         } else {
-            System.out.println("[init] Not Found app directory.");
+            p("[init] Not Found app directory.");
         }
 
         setAppendage();
 
-        System.out.println("Working Directory[2] = " + System.getProperty("user.dir"));
+        p("Working Directory[2] = " + System.getProperty("user.dir"));
 
-        System.out.println("-----------------------------------------");
+        p("-----------------------------------------");
 
 
         System.setProperty("java.net.preferIPv4Stack" , "true");
@@ -981,7 +1017,7 @@ public class WebServer extends AbstractService {
         while (clientIP == null && nTries < 10) {
             try {
                 nTries++;
-                System.out.println("Try getLocalhost #" + nTries);
+                p("Try getLocalhost #" + nTries);
                 clientIP = NetUtils.getLocalAddressNonLoopback2();
             } catch (Exception e) {
                 e.printStackTrace();
@@ -1261,11 +1297,11 @@ class Worker extends WebServer implements HttpConstants, Runnable {
                     }
 
                 } catch (Exception e) {
-                    p("exception.1*");
+                    pw("exception.1*");
                     e.printStackTrace();
-                    p(e.getMessage());
+                    pw(e.getMessage());
                     keepread = false;
-                    p("sizeof buf[] #2" + buf.length);
+                    pw("sizeof buf[] #2" + buf.length);
                 }
             }
 
@@ -1351,7 +1387,7 @@ class Worker extends WebServer implements HttpConstants, Runnable {
                                 bUserAuthenticated = true;
                             } else {
                                 //bUserAuthenticated = true;
-                                p("WARNING: Invalid UUID detected.");
+                                pw("WARNING: Invalid UUID detected.");
                             }
                         }
                     }
@@ -3039,7 +3075,7 @@ class Worker extends WebServer implements HttpConstants, Runnable {
                             String result = "";
                             UserSession us = uuidmap.get(sAuthUUID);
                             if (us.isRemote() || (isValidMultiClusterID(sMultiClusterID))) {
-                                System.out.println("REMOTE GETTAGS");
+                                p("REMOTE GETTAGS");
                                 RemoteAccess ra =null;
                                 if(isValidMultiClusterID(sMultiClusterID)){
                                     ra=MultiClusterManager.getInstance().getRA(us.getUsername(),sMultiClusterID);
@@ -4205,16 +4241,16 @@ class Worker extends WebServer implements HttpConstants, Runnable {
                                 for (String param : tokens)
                                 {
                                     int n = param.split("=").length;
-                                    System.out.println("#tokens -> " + n);
+                                    p("#tokens -> " + n);
                                     String name = param.split("=")[0];
-                                    System.out.println("name -> " + name);
+                                    p("name -> " + name);
                                     String value = "";
                                     if (n > 2) {
                                         value = param.split("=")[1] + "=";
                                     } else {
                                         value = param.split("=")[1];
                                     }
-                                    System.out.println("adding map '" + name + "' value '" + value + "'");
+                                    p("adding map '" + name + "' value '" + value + "'");
                                     map.put(name, value);
                                 }
 
@@ -4264,7 +4300,7 @@ class Worker extends WebServer implements HttpConstants, Runnable {
                                     int randomNumber = (int) Math.floor(Math.random() * chars.length());
                                     sKeyPassword += chars.substring(randomNumber,randomNumber+1);
                                 }
-                                System.out.println("***** Gen sKeySPassword = " + sKeyPassword);
+                                p("***** Gen sKeySPassword = " + sKeyPassword);
 
                                 //sIV = rc.generateRandomIV();
 
@@ -4276,7 +4312,7 @@ class Worker extends WebServer implements HttpConstants, Runnable {
                                     sIV += chars.substring(randomNumber,randomNumber+1);
                                 }
 
-                                System.out.println("***** Gen sKeySPassword = " + sKeyPassword);
+                                p("***** Gen sKeySPassword = " + sKeyPassword);
 
                                 loggedIn = ra.remoteLogin(sBoxUser, sBoxPassword, publicKey, sKeyPassword, sIV);
                                 uuid = ra.getUuid();
@@ -4290,13 +4326,13 @@ class Worker extends WebServer implements HttpConstants, Runnable {
 
                             }else{
                                 p("case cluster empty");
-                                System.out.println("**** before decode= "  + sBoxPassword);
+                                p("**** before decode= "  + sBoxPassword);
                                 try {
                                     sBoxPassword = URLDecoder.decode(sBoxPassword, "UTF-8");
                                 } catch (Exception e) {
-                                    System.out.println("password contains actual % , skipping decode..."  + sBoxPassword);
+                                    p("password contains actual % , skipping decode..."  + sBoxPassword);
                                 }
-                                System.out.println("**** after try decode ="  + sBoxPassword);
+                                p("**** after try decode ="  + sBoxPassword);
 
                                 final boolean userPasswordValid = userCollection.isUserPasswordValid(sBoxUser, sBoxPassword);
                                 isUserAdmin = userCollection.getUserAdmin().getUsername().equalsIgnoreCase(sBoxUser);
@@ -4518,13 +4554,13 @@ class Worker extends WebServer implements HttpConstants, Runnable {
 
                                         case 10: {
                                             //store setting that came from page 10
-                                            System.out.println("---------------");
-                                            System.out.println("---------------bCloudAmazon '" + bCloudAmazon );
-                                            System.out.println("---------------bDriveAmazonURL '" + bDriveAmazonURL );
-                                            System.out.println("---------------bForcedSetup '" + bForcedSetup );
-                                            System.out.println("---------------cloud drive: '" + code + "' " + code.length() );
-                                            System.out.println("---------------drive amazon: '" + drive_amazon + "' " + drive_amazon.length() );
-                                            System.out.println("---------------");
+                                            p("---------------");
+                                            p("---------------bCloudAmazon '" + bCloudAmazon );
+                                            p("---------------bDriveAmazonURL '" + bDriveAmazonURL );
+                                            p("---------------bForcedSetup '" + bForcedSetup );
+                                            p("---------------cloud drive: '" + code + "' " + code.length() );
+                                            p("---------------drive amazon: '" + drive_amazon + "' " + drive_amazon.length() );
+                                            p("---------------");
 
 //                                    if (bForcedSetup && !bDriveAmazonURL && drive_amazon.length() == 0 && code.length() == 0) {
 //                                        String sMode = GetConfig("drive_amazon", "config/www-cloud.properties");
@@ -4538,13 +4574,13 @@ class Worker extends WebServer implements HttpConstants, Runnable {
 //                                    }
 
                                             if (drive_amazon.equals("") && bCloudAmazon && !bForcedSetup) {
-                                                System.out.println("Turning OFF Amazon Cloud.");
+                                                p("Turning OFF Amazon Cloud.");
                                                 bCloudAmazon = false;
                                                 String sFalse = "false";
                                                 int nRes = NetUtils.UpdateConfig("drive_amazon", sFalse, "config/www-cloud.properties");
                                             }
                                             if (drive_amazon.equals("on") && !bCloudAmazon && !bForcedSetup) {
-                                                System.out.println("Turning ON Amazon Cloud.");
+                                                p("Turning ON Amazon Cloud.");
                                                 bCloudAmazon = true;
                                                 String sFalse = "true";
                                                 int nRes = NetUtils.UpdateConfig("drive_amazon", sFalse, "config/www-cloud.properties");
@@ -4566,17 +4602,17 @@ class Worker extends WebServer implements HttpConstants, Runnable {
 
                                         case 9: {
                                             //store setting that came from page 9
-                                            System.out.println("---------------");
-                                            System.out.println("---------------analytics: '" + analytics + "' " + analytics.length() );
-                                            System.out.println("---------------");
+                                            p("---------------");
+                                            p("---------------analytics: '" + analytics + "' " + analytics.length() );
+                                            p("---------------");
                                             if (analytics.equals("") && bAnalyticsGA) {
-                                                System.out.println("Turning OFF Analytics.");
+                                                p("Turning OFF Analytics.");
                                                 bAnalyticsGA = false;
                                                 String sFalse = "false";
                                                 int nRes = UpdateConfig("events_ga", sFalse, "config/www-analytics.properties");
                                             }
                                             if (analytics.equals("on") && !bAnalyticsGA) {
-                                                System.out.println("Turning ON Analytics.");
+                                                p("Turning ON Analytics.");
                                                 bAnalyticsGA = true;
                                                 String sFalse = "true";
                                                 int nRes = UpdateConfig("events_ga", sFalse, "config/www-analytics.properties");
@@ -4654,7 +4690,7 @@ class Worker extends WebServer implements HttpConstants, Runnable {
                                     }
                                 }
                             } else {
-                                p("WARNING: cSetupPage is empty.");
+                                pw("WARNING: cSetupPage is empty.");
                             }
 
                             if(!sSetupPage.isEmpty()){
@@ -5548,7 +5584,7 @@ class Worker extends WebServer implements HttpConstants, Runnable {
                         if (bUserAuthenticated) {
                             p("Processing NodeInfo()");
                             String res2 = getNodeInfo();
-                            System.out.println("res2 len = " + res2.length());
+                            p("res2 len = " + res2.length());
                             byte[] kk = res2.getBytes();
                             outFile.write(kk);
                         }
@@ -5614,7 +5650,7 @@ class Worker extends WebServer implements HttpConstants, Runnable {
                                         bRetry = false;
                                     } else {
                                         //error;
-                                        p(res + " SLEEPING BEFORE RETRY");
+                                        pw(res + " SLEEPING BEFORE RETRY");
                                         long lSleep = 100;
                                         try {
                                             Thread.sleep(lSleep);
@@ -5691,13 +5727,13 @@ class Worker extends WebServer implements HttpConstants, Runnable {
 
                             //try to see if a remote session
                             if (us.isRemote()) {
-                                System.out.println("@@@@@******* REMOTE QUERY.FN!!!!");
+                                p("@@@@@******* REMOTE QUERY.FN!!!!");
                                 RemoteAccess ra = new RemoteAccess(us.getRemoteCluster());
                                 ra.setUuid(us.getUuid());
 
                                 String returned = ra.remoteQuery(sFileType, sDaysBack, sFoo2, "json", sNumObj, sDateStart);
 
-                                System.out.println("@@@@@******* len returned = " + returned.length());
+                                p("@@@@@******* len returned = " + returned.length());
 
                                 byte[] kk = returned.getBytes();
                                 outFile.write(kk);
@@ -5728,11 +5764,11 @@ class Worker extends WebServer implements HttpConstants, Runnable {
                         if (bUserAuthenticated){
                             UserSession us = uuidmap.get(sAuthUUID);
                             if (us.isRemote()) {
-                                System.out.println("REMOTE SIDEBAR");
+                                p("REMOTE SIDEBAR");
                                 RemoteAccess ra = new RemoteAccess(us.getRemoteCluster());
                                 ra.setUuid(us.getUuid());
                                 String param = fname.split("sidebar.fn\\?")[1];
-                                System.out.println("REMOTE SIDEBAR PARAM: '" + param + "'");
+                                p("REMOTE SIDEBAR PARAM: '" + param + "'");
                                 String json = ra.remoteSidebar();
                                 outFile.write(json.getBytes());
                                 outFile.close();
@@ -5792,7 +5828,7 @@ class Worker extends WebServer implements HttpConstants, Runnable {
 
                             UserSession us = uuidmap.get(sAuthUUID);
                             if(us.isRemote() || isValidMultiClusterID(sMultiClusterID)){
-                                System.out.println("@@@@!!!! REMOTE GET FILE");
+                                p("@@@@!!!! REMOTE GET FILE");
                                 RemoteAccess ra =null;
                                 if(isValidMultiClusterID(sMultiClusterID)){
                                     ra=MultiClusterManager.getInstance().getRA(us.getUsername(), sMultiClusterID);
@@ -5815,9 +5851,9 @@ class Worker extends WebServer implements HttpConstants, Runnable {
                                 } else {
                                     sGetFileExt = ".jpeg";
                                 }
-                                System.out.println("Extension = " + sGetFileExt);
-                                System.out.println("isAesEncrypt = " + us.isAesecrypt());
-                                System.out.println("sMessage len = " + sMessage.length);
+                                p("Extension = " + sGetFileExt);
+                                p("isAesEncrypt = " + us.isAesecrypt());
+                                p("sMessage len = " + sMessage.length);
                                 if(isValidMultiClusterID(sMultiClusterID)){
                                     FileOutputStream encFile = new FileOutputStream("tmp/enc" + sNamer, false);
                                     encFile.write(sMessage);
@@ -5844,9 +5880,9 @@ class Worker extends WebServer implements HttpConstants, Runnable {
                                     //String key = CryptLib.SHA256(us.getPasswordkey(), us.getAessize());
                                     String key = us.getPasswordkey();
 
-                                    System.out.println("passwordkey = '" + us.getPasswordkey() + "' " + us.getPasswordkey().length());
-                                    System.out.println("aesize      = '" + us.getAessize());
-                                    System.out.println("key         = '" + key + "' " + key.length());
+                                    p("passwordkey = '" + us.getPasswordkey() + "' " + us.getPasswordkey().length());
+                                    p("aesize      = '" + us.getAessize());
+                                    p("key         = '" + key + "' " + key.length());
 
 
                                     _crypt.decryptFile("tmp/enc" + sNamer, "tmp/dec" + sNamer, key, us.getIv()); //decrypt
@@ -5855,14 +5891,14 @@ class Worker extends WebServer implements HttpConstants, Runnable {
                                     decFile.read(sMessage);
 
                                 }
-                                System.out.println("Len file = " + sMessage.length);
+                                p("Len file = " + sMessage.length);
 
                                 outFile.write(sMessage);
                                 outFile.close();
 
                             }else{
 
-                                System.out.println("@@@@@@@@@@@@ --- !!!! LOCAL GET FILE");
+                                p("@@@@@@@@@@@@ --- !!!! LOCAL GET FILE");
 
                                 String ClientIP = s.getInetAddress().getHostAddress();
                                 //String res = wf.echoh2mobileac(sFoo2, dbmode, ClientIP, sFileType, sNumObj, LocalIP, Integer.toString(port));
@@ -5913,14 +5949,14 @@ class Worker extends WebServer implements HttpConstants, Runnable {
 
                                     String aesencrypt = GetConfig("aesencrypt", "config/www-server.properties");
 
-                                    System.out.println("@@@@@@@@@@@@ ---- aesencrypt : " + aesencrypt);
-                                    System.out.println("@@@@@@@@@@@@ ---- bMobile    : " + bMobile);
-                                    System.out.println("@@@@@@@@@@@@ ---- aes pwLength    : " + us.getPasswordkey().length());
+                                    p("@@@@@@@@@@@@ ---- aesencrypt : " + aesencrypt);
+                                    p("@@@@@@@@@@@@ ---- bMobile    : " + bMobile);
+                                    p("@@@@@@@@@@@@ ---- aes pwLength    : " + us.getPasswordkey().length());
 
                                     if (us.getPasswordkey().length() == 0) aesencrypt = "false";
                                     if (!bMobile) aesencrypt = "false";
 
-                                    System.out.println("@@@@@@@@@@@@ ---- aencrypt   : " + aesencrypt);
+                                    p("@@@@@@@@@@@@ ---- aencrypt   : " + aesencrypt);
 
                                     //                            String aessizeString = GetConfig("aessize", "config/www-server.properties");
                                     //                            int aessize = -1;
@@ -5931,10 +5967,10 @@ class Worker extends WebServer implements HttpConstants, Runnable {
                                     if(aesencrypt != null && aesencrypt.equals("true") && aessize > -1){
 
                                         try {
-                                            System.out.println("encrypt file ");
-                                            System.out.println("@@@@@@@@@@@@ ---- bMobile   : " + bMobile);
-                                            System.out.println("@@@@@@@@@@@@ ---- key size:     : " + aessize);
-                                            System.out.println("@@@@@@@@@@@@ ---- password key  : '" + us.getPasswordkey() + "'");
+                                            p("encrypt file ");
+                                            p("@@@@@@@@@@@@ ---- bMobile   : " + bMobile);
+                                            p("@@@@@@@@@@@@ ---- key size:     : " + aessize);
+                                            p("@@@@@@@@@@@@ ---- password key  : '" + us.getPasswordkey() + "'");
 
                                             CryptLib _crypt = new CryptLib(aessize);
                                             if(us != null){
@@ -5944,8 +5980,8 @@ class Worker extends WebServer implements HttpConstants, Runnable {
 
 
                                                 String iv = us.getIv();
-                                                System.out.println("key = '" + key + "'");
-                                                System.out.println("iv  = '" + iv + "'");
+                                                p("key = '" + key + "'");
+                                                p("iv  = '" + iv + "'");
 
                                                 String sTmpFileNameEnc = "tmp/enc" + sNamer + "." + us.getUuid();
                                                 File fe = new File(sTmpFileNameEnc);
@@ -6039,11 +6075,11 @@ class Worker extends WebServer implements HttpConstants, Runnable {
                             UserSession us = uuidmap.get(sAuthUUID);
 
                             if (us.isRemote()) {
-                                System.out.println("REMOTE SUGGEST");
+                                p("REMOTE SUGGEST");
                                 RemoteAccess ra = new RemoteAccess(us.getRemoteCluster());
                                 ra.setUuid(us.getUuid());
                                 String param = fname.split("suggest.fn\\?")[1];
-                                System.out.println("REMOTE SUGGEST PARAM: '" + param + "'");
+                                p("REMOTE SUGGEST PARAM: '" + param + "'");
                                 //public String remoteSuggest(String filetype, String days, String foo, String numobj){
                                 String json = ra.remoteSuggest(sFileType, sDaysBack, sFoo2, sNumObj);
                                 outFile.write(json.getBytes());
@@ -6092,11 +6128,11 @@ class Worker extends WebServer implements HttpConstants, Runnable {
                     //getts.fn
                     if ((fname.contains("getts.fn"))) {
 
-                        System.out.println("------------getts.fn");
-                        System.out.println("   sAuthUUID: " + sAuthUUID);
-                        System.out.println("   sMultiClusterID: " + sMultiClusterID);
-                        System.out.println("   uuid: " + uuid);
-                        System.out.println("  sUUID: " + sUUID);
+                        p("------------getts.fn");
+                        p("   sAuthUUID: " + sAuthUUID);
+                        p("   sMultiClusterID: " + sMultiClusterID);
+                        p("   uuid: " + uuid);
+                        p("  sUUID: " + sUUID);
 
                         UserSession us = uuidmap.get(sAuthUUID);
                         if(us.isRemote() || (isValidMultiClusterID(sMultiClusterID))){
@@ -6106,11 +6142,11 @@ class Worker extends WebServer implements HttpConstants, Runnable {
                             if(isValidMultiClusterID(sMultiClusterID)){
                                 auxSAuthUUID= MultiClusterManager.getInstance().getRA(us.getUsername(), sMultiClusterID).getUuid();
                             } else {
-                                System.out.println("WARNING: isValidMultiClusterID invalid for cluster: " + sMultiClusterID);
+                                pw("WARNING: isValidMultiClusterID invalid for cluster: " + sMultiClusterID);
                             }
 
                             if (auxSAuthUUID == null) {
-                                System.out.println("  Fixing null sAuthUUID to :" + sAuthUUID);
+                                p("  Fixing null sAuthUUID to :" + sAuthUUID);
                                 auxSAuthUUID = sAuthUUID;
                             }
 
@@ -6120,7 +6156,7 @@ class Worker extends WebServer implements HttpConstants, Runnable {
                             fh.mkdirs();
                             String urlgetfile = "https://abc.alterante.com/cass/getts.fn?md5=" + sMD5 + "&ts=" + sTS + "&uuid=" + auxSAuthUUID;
 
-                            System.out.println("   url getts: " + urlgetfile);
+                            p("   url getts: " + urlgetfile);
 
                             GetMethod getFile = new GetMethod(urlgetfile);
                             HttpClient httpclient = new HttpClient();
@@ -6130,7 +6166,7 @@ class Worker extends WebServer implements HttpConstants, Runnable {
                             }
                             int re = httpclient.executeMethod(getFile);
 
-                            System.out.println("res remote getts = " + re);
+                            p("res remote getts = " + re);
 
                             if (re == 200) outFile.write(getFile.getResponseBody());
 
@@ -6140,10 +6176,10 @@ class Worker extends WebServer implements HttpConstants, Runnable {
                             if (isUUIDValid(sUUID)) {
                                 String sTmpFileName = "../rtserver/streaming/" + sMD5 + "/" + sTS;
 
-                                System.out.println("Looking for TS file: " + sTmpFileName);
+                                p("Looking for TS file: " + sTmpFileName);
                                 File fh2 = new File(sTmpFileName);
                                 if (fh2.exists()) {
-                                    System.out.println("Found TS file: " + fh2.getCanonicalPath());
+                                    p("Found TS file: " + fh2.getCanonicalPath());
                                     is = new FileInputStream(sTmpFileName);
                                     try {
                                         int n;
@@ -6166,10 +6202,10 @@ class Worker extends WebServer implements HttpConstants, Runnable {
                     //getvideo.fn
                     if ((fname.contains("getvideo.m3u8"))) {
 
-                        System.out.println("------------getvideo.m3u8");
-                        System.out.println("   sAuthUUID: " + sAuthUUID);
-                        System.out.println("   sMultiClusterID: " + sMultiClusterID);
-                        System.out.println("   uuid: " + uuid);
+                        p("------------getvideo.m3u8");
+                        p("   sAuthUUID: " + sAuthUUID);
+                        p("   sMultiClusterID: " + sMultiClusterID);
+                        p("   uuid: " + uuid);
 
                         UserSession us = uuidmap.get(sAuthUUID);
                         if(us.isRemote() || isValidMultiClusterID(sMultiClusterID)){
@@ -6183,7 +6219,7 @@ class Worker extends WebServer implements HttpConstants, Runnable {
                             fh.mkdirs();
                             String urlgetfile = "https://abc.alterante.com/cass/getvideo.m3u8?md5=" + sMD5 + "&uuid=" + auxSAuthUUID;
 
-                            System.out.println("   url getvideo: " + urlgetfile);
+                            p("   url getvideo: " + urlgetfile);
 
                             GetMethod getFile = new GetMethod(urlgetfile);
                             HttpClient httpclient = new HttpClient();
@@ -6193,7 +6229,7 @@ class Worker extends WebServer implements HttpConstants, Runnable {
                             }
                             int re = httpclient.executeMethod(getFile);
 
-                            System.out.println("res remote getvideo = " + re);
+                            p("res remote getvideo = " + re);
 
                             if (re == 200) outFile.write(getFile.getResponseBody());
 
@@ -6202,10 +6238,10 @@ class Worker extends WebServer implements HttpConstants, Runnable {
                             if (isUUIDValid(sUUID)) {
                                 String sTmpFileName = "../rtserver/streaming/" + sMD5 + "/" + "OUTPUT.m3u8";
 
-                                System.out.println("Looking for M3u8 file: " + sTmpFileName);
+                                p("Looking for M3u8 file: " + sTmpFileName);
                                 File fh2 = new File(sTmpFileName);
                                 if (fh2.exists()) {
-                                    System.out.println("Found M3u8 file: " + fh2.getCanonicalPath());
+                                    p("Found M3u8 file: " + fh2.getCanonicalPath());
 
                                     byte[] encoded = Files.readAllBytes(Paths.get(fh2.getCanonicalPath()));
                                     String body = new String(encoded, "UTF-8");
@@ -6287,7 +6323,7 @@ class Worker extends WebServer implements HttpConstants, Runnable {
                                     bRetry = false;
                                 } else {
                                     //error;
-                                    p(res + " SLEEPING BEFORE RETRY");
+                                    pw(res + " SLEEPING BEFORE RETRY");
                                     long lSleep = 100;
                                     try {
                                         Thread.sleep(lSleep);
@@ -7265,7 +7301,7 @@ class Worker extends WebServer implements HttpConstants, Runnable {
                             sharedName = "the tag '" + key + "'";
                         }
 
-                        System.out.println("Key = " + key);
+                        p("Key = " + key);
 
                         ShareController sc = ShareController.getInstance();
 
@@ -7278,7 +7314,7 @@ class Worker extends WebServer implements HttpConstants, Runnable {
 
                         if((users != null && !users.isEmpty() || bWebApp)){
                             if (users != null) {
-                                System.out.println("#users: " + users.size());
+                                p("#users: " + users.size());
                                 for (User user : users) {
                                     if(user.getEmail()!=null && !user.getEmail().isEmpty()){
                                         if(!sMailTo.isEmpty())
@@ -7333,7 +7369,7 @@ class Worker extends WebServer implements HttpConstants, Runnable {
                                     results += "}\n";
                                     results += "}\n";
 
-                                    System.out.println("Invitation results: " + results);
+                                    p("Invitation results: " + results);
 
                                     byte[] kk = results.getBytes();
                                     outFile.write(kk);
@@ -7357,10 +7393,10 @@ class Worker extends WebServer implements HttpConstants, Runnable {
                                     sc.markAllAsNotified(key);
                                 }
                             } else {
-                                System.out.println("[***mailto empty ***]");
+                                p("[***mailto empty ***]");
                             }
                         } else {
-                            System.out.println("[***users empty ***]");
+                            p("[***users empty ***]");
                         }
                     }
 
@@ -7379,7 +7415,7 @@ class Worker extends WebServer implements HttpConstants, Runnable {
                             p("   ***us.isRemote()     : " + us.isRemote());
 
                             if (us.isRemote() || isValidMultiClusterID(sMultiClusterID)) {
-                                System.out.println("REMOTE APPLYTAGS");
+                                p("REMOTE APPLYTAGS");
                                 RemoteAccess ra = null;
                                 if(isValidMultiClusterID(sMultiClusterID)){
                                     ra=MultiClusterManager.getInstance().getRA(us.getUsername(),sMultiClusterID);
@@ -7388,7 +7424,7 @@ class Worker extends WebServer implements HttpConstants, Runnable {
                                     ra.setUuid(us.getUuid());
                                 }
                                 String param = fname.split("applytags.fn\\?")[1];
-                                System.out.println("REMOTE APPLYTAGS PARAM: '" + param + "'");
+                                p("REMOTE APPLYTAGS PARAM: '" + param + "'");
                                 String json = ra.remoteApplyTag(param);
                                 outFile.write(json.getBytes());
                                 outFile.close();
@@ -7466,7 +7502,7 @@ class Worker extends WebServer implements HttpConstants, Runnable {
                         if (bUserAuthenticated) {
                             UserSession us = uuidmap.get(sAuthUUID);
                             if (us.isRemote() || isValidMultiClusterID(sMultiClusterID)) {
-                                System.out.println("REMOTE CHAT PULL ");
+                                p("REMOTE CHAT PULL ");
                                 RemoteAccess ra = null;
                                 if(isValidMultiClusterID(sMultiClusterID)){
                                     ra=MultiClusterManager.getInstance().getRA(us.getUsername(), sMultiClusterID);
@@ -7477,14 +7513,14 @@ class Worker extends WebServer implements HttpConstants, Runnable {
 
 
                                 String param = fname.split("chat_pull.fn\\?")[1];
-                                System.out.println("REMOTE CHAT PULL PARAM: '" + param + "'");
+                                p("REMOTE CHAT PULL PARAM: '" + param + "'");
                                 String json = ra.remoteChatPull(param);
-                                System.out.println("REMOTE CHAT PULL JSON: '" + json + "'");
+                                p("REMOTE CHAT PULL JSON: '" + json + "'");
                                 outFile.write(json.getBytes());
                                 outFile.close();
                             } else {
-                                System.out.println("---------- Chat Pull(LOCAL)");
-                                System.out.println("msg_date: " + msg_date);
+                                p("---------- Chat Pull(LOCAL)");
+                                p("msg_date: " + msg_date);
 
                                 String results = "";
 
@@ -7501,7 +7537,7 @@ class Worker extends WebServer implements HttpConstants, Runnable {
                                 }
 
                                 for (UserMessage msg: msgs) {
-                                    System.out.println(msg.getTimestamp() + " " + msg.getUsername() + " " + msg.getMessage());
+                                    p(msg.getTimestamp() + " " + msg.getUsername() + " " + msg.getMessage());
                                     if (bfirst) {
                                         results += "{\n";
                                         bfirst = false;
@@ -7523,7 +7559,7 @@ class Worker extends WebServer implements HttpConstants, Runnable {
                                 outFile.write(results.getBytes());
                                 outFile.close();
 
-                                System.out.println("---------- End Chat Pull");
+                                p("---------- End Chat Pull");
 
                             }
                         } else {
@@ -7535,22 +7571,22 @@ class Worker extends WebServer implements HttpConstants, Runnable {
                         if (bUserAuthenticated) {
                             UserSession us = uuidmap.get(sAuthUUID);
                             if (us.isRemote()) {
-                                System.out.println("REMOTE CHAT CLEAR ");
+                                p("REMOTE CHAT CLEAR ");
                                 RemoteAccess ra = new RemoteAccess(us.getRemoteCluster());
                                 ra.setUuid(us.getUuid());
                                 String param = "";
                                 String json = ra.remoteChatClear(param);
-                                System.out.println("REMOTE CHAT CLEAR JSON: '" + json + "'");
+                                p("REMOTE CHAT CLEAR JSON: '" + json + "'");
                                 outFile.write(json.getBytes());
                                 outFile.close();
                             } else {
-                                System.out.println("---------- Chat Clear(LOCAL)");
+                                p("---------- Chat Clear(LOCAL)");
                                 chats.clearChats();
                                 String results = "{\"result\":true}";
                                 outFile.write(results.getBytes());
                                 outFile.close();
 
-                                System.out.println("---------- End Chat Pull");
+                                p("---------- End Chat Pull");
 
                             }
                         } else {
@@ -7562,7 +7598,7 @@ class Worker extends WebServer implements HttpConstants, Runnable {
                         if (bUserAuthenticated) {
                             UserSession us = uuidmap.get(sAuthUUID);
                             if (us.isRemote() || isValidMultiClusterID(sMultiClusterID)) {
-                                System.out.println("REMOTE CHAT PUSH ");
+                                p("REMOTE CHAT PUSH ");
                                 RemoteAccess ra = null;
                                 if(isValidMultiClusterID(sMultiClusterID)){
                                     ra=MultiClusterManager.getInstance().getRA(us.getUsername(), sMultiClusterID);
@@ -7572,18 +7608,18 @@ class Worker extends WebServer implements HttpConstants, Runnable {
                                 }
 
                                 String param = fname.split("chat_push.fn\\?")[1];
-                                System.out.println("REMOTE CHAT PUSH PARAM: '" + param + "'");
+                                p("REMOTE CHAT PUSH PARAM: '" + param + "'");
                                 String json = ra.remoteChatPush(param);
                                 outFile.write(json.getBytes());
                                 outFile.close();
                             } else {
-                                System.out.println("---------- Chat Push");
-                                System.out.println("msg_date: " + msg_date);
-                                System.out.println("msg_type: " + msg_body);
-                                System.out.println("msg_user: " + msg_user);
-                                System.out.println("msg_body: " + msg_body);
+                                p("---------- Chat Push");
+                                p("msg_date: " + msg_date);
+                                p("msg_type: " + msg_body);
+                                p("msg_user: " + msg_user);
+                                p("msg_body: " + msg_body);
                                 if(sMD5!=null){
-                                    System.out.println("md5: "+sMD5);
+                                    p("md5: "+sMD5);
                                 }
 
 
@@ -7634,7 +7670,7 @@ class Worker extends WebServer implements HttpConstants, Runnable {
                                 outFile.write(results.getBytes());
                                 outFile.close();
 
-                                System.out.println("---------- End Chat Push");
+                                p("---------- End Chat Push");
 
                             }
                         } else {
@@ -7765,7 +7801,7 @@ class Worker extends WebServer implements HttpConstants, Runnable {
                         } else {
                             //error;
                             nCount = nCount - 1;
-                            p(res + " SLEEPING BEFORE RETRY. Count = " + nCount);
+                            pw(res + " SLEEPING BEFORE RETRY. Count = " + nCount);
                             long lSleep = 100;
                             try {
                                 Thread.sleep(lSleep);
@@ -7874,6 +7910,7 @@ class Worker extends WebServer implements HttpConstants, Runnable {
             return sHash;
         } catch (Exception ex) {
             ex.printStackTrace();
+            pe("Exception findtag()");
             return "ERROR";
         }
     }
@@ -8552,16 +8589,16 @@ class Worker extends WebServer implements HttpConstants, Runnable {
 
                     String sFileName = "";
                     if (!cluster.isEmpty()) {
-                        System.out.println("REMOTE Filename:" + _sFileName);
+                        p("REMOTE Filename:" + _sFileName);
                         sFileName = _sFileName;
                     } else {
                         sFileName = wf.get_row_attribute(keyspace, "Standard1", sMD5, "name", dbmode);
-                        System.out.println("LOCAL Filename:" + sFileName);
+                        p("LOCAL Filename:" + sFileName);
                     }
 
                     if (_sGetFileExt.length() == 0) {
                         _sGetFileExt = sFileName.substring(sFileName.lastIndexOf("."));
-                        System.out.println("Fixed ext = " + _sGetFileExt);
+                        p("Fixed ext = " + _sGetFileExt);
                     }
                     ct = (String) map.get(_sGetFileExt.toLowerCase());
 
@@ -8769,15 +8806,15 @@ class Worker extends WebServer implements HttpConstants, Runnable {
             new File(sFileNew + "r").delete();
 
             if (success) {
-                System.out.println("✓ Binary extraction successful!");
+                p("✓ Binary extraction successful!");
 
                 // Read and display the extracted content
                 //byte[] extractedData = Files.readAllBytes(Paths.get("extracted-binary.bin"));
-                //System.out.println("Extracted " + extractedData.length + " bytes");
-                //System.out.println("Content preview: " + new String(extractedData).substring(0,
+                //p("Extracted " + extractedData.length + " bytes");
+                //p("Content preview: " + new String(extractedData).substring(0,
                 //Math.min(100, extractedData.length)) + "...");
             } else {
-                System.out.println("✗ Binary extraction failed");
+                pw("✗ WARNING: Binary extraction failed");
             }
 
         }else {
@@ -8900,7 +8937,7 @@ class Worker extends WebServer implements HttpConstants, Runnable {
 
             p("   done with write: " + data.length);
         } catch (Exception e) {
-            p("   *** WARNING *** Exception during partial sendfile: " + e.getMessage());
+            pw("   *** WARNING *** Exception during partial sendfile: " + e.getMessage());
 
         } finally {
             is.close();
@@ -9078,7 +9115,7 @@ class Worker extends WebServer implements HttpConstants, Runnable {
             buf = null;
 
         } catch (Exception e) {
-            p("   *** WARNING *** Exception during sendfile: " + e.getMessage());
+            pw("   *** WARNING *** Exception during sendfile: " + e.getMessage());
         } finally {
             is.close();
         }
@@ -9162,6 +9199,7 @@ class Worker extends WebServer implements HttpConstants, Runnable {
         } catch (Exception e) {
             e.printStackTrace();
             res += "ERROR";
+            pe("Exception writeconfig()");
         }
         return res;
 
@@ -9248,13 +9286,13 @@ class Worker extends WebServer implements HttpConstants, Runnable {
             while (addresses.hasMoreElements()) {
                 InetAddress addr = addresses.nextElement();
 
-                System.out.println ("addr.getHostAddress() = " + addr.getHostAddress());
-                System.out.println ("addr.getHostName() = " + addr.getHostName());
-                System.out.println ("addr.isAnyLocalAddress() = " + addr.isAnyLocalAddress());
-                System.out.println ("addr.isLinkLocalAddress() = " + addr.isLinkLocalAddress());
-                System.out.println ("addr.isLoopbackAddress() = " + addr.isLoopbackAddress());
-                System.out.println ("addr.isMulticastAddress() = " + addr.isMulticastAddress());
-                System.out.println ("addr.isSiteLocalAddress() = " + addr.isSiteLocalAddress());
+                p ("addr.getHostAddress() = " + addr.getHostAddress());
+                p ("addr.getHostName() = " + addr.getHostName());
+                p ("addr.isAnyLocalAddress() = " + addr.isAnyLocalAddress());
+                p ("addr.isLinkLocalAddress() = " + addr.isLinkLocalAddress());
+                p ("addr.isLoopbackAddress() = " + addr.isLoopbackAddress());
+                p ("addr.isMulticastAddress() = " + addr.isMulticastAddress());
+                p ("addr.isSiteLocalAddress() = " + addr.isSiteLocalAddress());
 
                 if (addr instanceof Inet4Address && !addr.isLoopbackAddress() && addr.isSiteLocalAddress()) {
                     addr_res = addr;
@@ -10864,6 +10902,7 @@ class Worker extends WebServer implements HttpConstants, Runnable {
             return res.toString();
         } catch (Exception e) {
             e.printStackTrace();
+            pe("Error in getExtensions()");
             return "ERROR";
         }
     }
@@ -11127,7 +11166,7 @@ class Worker extends WebServer implements HttpConstants, Runnable {
                 fis = new FileInputStream(f);
                 Scanner scanner2 = new Scanner(fis);
                 sUUID = scanner2.nextLine();
-                System.out.println("UUID exists = " + sUUID);
+                p("UUID exists = " + sUUID);
             }
         }catch (Exception e) {
             e.printStackTrace();
@@ -11410,6 +11449,7 @@ class Worker extends WebServer implements HttpConstants, Runnable {
 
         } catch (Exception e) {
             e.printStackTrace();
+            pe("Error in getFileMD5()");
             return "ERROR";
         }
     }
