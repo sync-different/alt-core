@@ -15,129 +15,9 @@ mvn install:install-file \
    -DgeneratePom=true
 
 mvn install:install-file \
-   -Dfile=./repo/WinRun4J.jar \
-   -DgroupId=org.boris.win4j \
-   -DartifactId=win4j \
-   -Dversion=0.4.5 \
-   -Dpackaging=jar \
-   -DgeneratePom=true
-
-mvn install:install-file \
    -Dfile=./repo/cass-server.jar \
    -DgroupId=com.alterante.cass \
    -DartifactId=cass-server \
-   -Dversion=1.0.0 \
-   -Dpackaging=jar \
-   -DgeneratePom=true
-
-mvn install:install-file \
-   -Dfile=./repo/netty-all-4.1.68.Final.jar \
-   -DgroupId=com.alterante.cass \
-   -DartifactId=netty \
-   -Dversion=4.1.68 \
-   -Dpackaging=jar \
-   -DgeneratePom=true
-
-mvn install:install-file \
-   -Dfile=./repo/apache-cassandra-thrift-1.2.0.jar \
-   -DgroupId=com.alterante.cass \
-   -DartifactId=thrift \
-   -Dversion=1.2.0 \
-   -Dpackaging=jar \
-   -DgeneratePom=true
-
-mvn install:install-file \
-   -Dfile=./repo/libthrift-0.7.0.jar \
-   -DgroupId=com.alterante.cass \
-   -DartifactId=libthrift \
-   -Dversion=0.7.0 \
-   -Dpackaging=jar \
-   -DgeneratePom=true
-
-mvn install:install-file \
-   -Dfile=./repo/mapdb-1.0.9.jar \
-   -DgroupId=com.alterante.cass \
-   -DartifactId=mapdb \
-   -Dversion=1.0.9 \
-   -Dpackaging=jar \
-   -DgeneratePom=true
-
-mvn install:install-file \
-   -Dfile=./repo/mail.jar \
-   -DgroupId=com.alterante.cass \
-   -DartifactId=mail \
-   -Dversion=1.0.0 \
-   -Dpackaging=jar \
-   -DgeneratePom=true
-
-mvn install:install-file \
-   -Dfile=./repo/commons-httpclient-3.1.jar \
-   -DgroupId=com.alterante.cass \
-   -DartifactId=httpclient \
-   -Dversion=3.1 \
-   -Dpackaging=jar \
-   -DgeneratePom=true
-
-mvn install:install-file \
-   -Dfile=./repo/commons-logging-1.1.3.jar \
-   -DgroupId=com.alterante.cass \
-   -DartifactId=commons-logging \
-   -Dversion=1.1.3 \
-   -Dpackaging=jar \
-   -DgeneratePom=true
-
-mvn install:install-file \
-   -Dfile=./repo/commons-codec-1.8.jar \
-   -DgroupId=com.alterante.cass \
-   -DartifactId=commons-codec \
-   -Dversion=1.8 \
-   -Dpackaging=jar \
-   -DgeneratePom=true
-
-   mvn install:install-file \
-   -Dfile=./repo/slf4j-log4j12-1.5.8.jar \
-   -DgroupId=com.alterante.cass \
-   -DartifactId=sl4jlog \
-   -Dversion=1.5.8 \
-   -Dpackaging=jar \
-   -DgeneratePom=true
-
-    mvn install:install-file \
-   -Dfile=./repo/dom4j-1.6.1.jar \
-   -DgroupId=com.alterante.cass \
-   -DartifactId=dom4j \
-   -Dversion=1.6.1 \
-   -Dpackaging=jar \
-   -DgeneratePom=true
-
-    mvn install:install-file \
-   -Dfile=./repo/httpcore5-5.3.1.jar \
-   -DgroupId=com.alterante.cass \
-   -DartifactId=httpcore \
-   -Dversion=5.3.1 \
-   -Dpackaging=jar \
-   -DgeneratePom=true
-
-    mvn install:install-file \
-   -Dfile=./repo/jakarta.activation-2.0.1.jar \
-   -DgroupId=com.alterante.cass \
-   -DartifactId=jakarta \
-   -Dversion=2.0.1 \
-   -Dpackaging=jar \
-   -DgeneratePom=true
-
-    mvn install:install-file \
-   -Dfile=./repo/json-smart-1.2.jar \
-   -DgroupId=com.alterante.cass \
-   -DartifactId=jsonsmart \
-   -Dversion=1.2 \
-   -Dpackaging=jar \
-   -DgeneratePom=true
-
-mvn install:install-file \
-   -Dfile=./repo/mailer.jar \
-   -DgroupId=com.alterante.cass \
-   -DartifactId=mailer \
    -Dversion=1.0.0 \
    -Dpackaging=jar \
    -DgeneratePom=true
@@ -150,7 +30,128 @@ mvn install:install-file \
    -Dpackaging=jar \
    -DgeneratePom=true
 
+GROUP_ID_PATH="com/alterante/rtserver/rtserver/1.0.0"
+JAR_NAME="rtserver-1.0.0.jar"
+if [ ! -f "$HOME/.m2/repository/$GROUP_ID_PATH/$JAR_NAME" ]; then
+  mvn install:install-file \
+     -Dfile=./repo/WinRun4J.jar \
+     -DgroupId=org.boris.win4j \
+     -DartifactId=win4j \
+     -Dversion=0.4.5 \
+     -Dpackaging=jar \
+     -DgeneratePom=true
 
+  mvn install:install-file \
+   -Dfile=./repo/netty-all-4.1.68.Final.jar \
+   -DgroupId=com.alterante.cass \
+   -DartifactId=netty \
+   -Dversion=4.1.68 \
+   -Dpackaging=jar \
+   -DgeneratePom=true
+
+  mvn install:install-file \
+   -Dfile=./repo/apache-cassandra-thrift-1.2.0.jar \
+   -DgroupId=com.alterante.cass \
+   -DartifactId=thrift \
+   -Dversion=1.2.0 \
+   -Dpackaging=jar \
+   -DgeneratePom=true
+
+  mvn install:install-file \
+   -Dfile=./repo/libthrift-0.7.0.jar \
+   -DgroupId=com.alterante.cass \
+   -DartifactId=libthrift \
+   -Dversion=0.7.0 \
+   -Dpackaging=jar \
+   -DgeneratePom=true
+
+  mvn install:install-file \
+   -Dfile=./repo/mapdb-1.0.9.jar \
+   -DgroupId=com.alterante.cass \
+   -DartifactId=mapdb \
+   -Dversion=1.0.9 \
+   -Dpackaging=jar \
+   -DgeneratePom=true
+
+  mvn install:install-file \
+   -Dfile=./repo/mail.jar \
+   -DgroupId=com.alterante.cass \
+   -DartifactId=mail \
+   -Dversion=1.0.0 \
+   -Dpackaging=jar \
+   -DgeneratePom=true
+
+  mvn install:install-file \
+   -Dfile=./repo/commons-httpclient-3.1.jar \
+   -DgroupId=com.alterante.cass \
+   -DartifactId=httpclient \
+   -Dversion=3.1 \
+   -Dpackaging=jar \
+   -DgeneratePom=true
+
+  mvn install:install-file \
+   -Dfile=./repo/commons-logging-1.1.3.jar \
+   -DgroupId=com.alterante.cass \
+   -DartifactId=commons-logging \
+   -Dversion=1.1.3 \
+   -Dpackaging=jar \
+   -DgeneratePom=true
+
+  mvn install:install-file \
+   -Dfile=./repo/commons-codec-1.8.jar \
+   -DgroupId=com.alterante.cass \
+   -DartifactId=commons-codec \
+   -Dversion=1.8 \
+   -Dpackaging=jar \
+   -DgeneratePom=true
+
+ mvn install:install-file \
+   -Dfile=./repo/slf4j-log4j12-1.5.8.jar \
+   -DgroupId=com.alterante.cass \
+   -DartifactId=sl4jlog \
+   -Dversion=1.5.8 \
+   -Dpackaging=jar \
+   -DgeneratePom=true
+
+  mvn install:install-file \
+   -Dfile=./repo/dom4j-1.6.1.jar \
+   -DgroupId=com.alterante.cass \
+   -DartifactId=dom4j \
+   -Dversion=1.6.1 \
+   -Dpackaging=jar \
+   -DgeneratePom=true
+
+  mvn install:install-file \
+   -Dfile=./repo/httpcore5-5.3.1.jar \
+   -DgroupId=com.alterante.cass \
+   -DartifactId=httpcore \
+   -Dversion=5.3.1 \
+   -Dpackaging=jar \
+   -DgeneratePom=true
+
+  mvn install:install-file \
+   -Dfile=./repo/jakarta.activation-2.0.1.jar \
+   -DgroupId=com.alterante.cass \
+   -DartifactId=jakarta \
+   -Dversion=2.0.1 \
+   -Dpackaging=jar \
+   -DgeneratePom=true
+
+  mvn install:install-file \
+     -Dfile=./repo/json-smart-1.2.jar \
+     -DgroupId=com.alterante.cass \
+     -DartifactId=jsonsmart \
+     -Dversion=1.2 \
+     -Dpackaging=jar \
+     -DgeneratePom=true
+
+  mvn install:install-file \
+     -Dfile=./repo/mailer.jar \
+     -DgroupId=com.alterante.cass \
+     -DartifactId=mailer \
+     -Dversion=1.0.0 \
+     -Dpackaging=jar \
+     -DgeneratePom=true
 mvn install:install-file \
    -Dfile=./repo/CloudBackup.jar \
    -DgroupId=com.alterante.scrubber \
@@ -199,5 +200,13 @@ mvn install:install-file \
    -Dversion=0.4.5 \
    -Dpackaging=jar \
    -DgeneratePom=true
-   
+
+
+fi
+
+
+
+
+
+
    
