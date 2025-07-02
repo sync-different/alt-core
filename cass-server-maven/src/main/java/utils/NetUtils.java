@@ -220,7 +220,7 @@ public class NetUtils {
 
         if (bConsole) {
             long threadID = Thread.currentThread().getId();
-            System.out.println(ANSI_YELLOW + sDate + " [WARNING] [NetUtilsCS-" + threadID + "] " + s + ANSI_RESET);
+            System.out.println(ANSI_YELLOW + sDate + " [WARNING] [CS.NetUtils-" + threadID + "] " + s + ANSI_RESET);
         }
     }
 
@@ -231,7 +231,7 @@ public class NetUtils {
 
         if (bConsole) {
             long threadID = Thread.currentThread().getId();
-            System.out.println(ANSI_GREEN + sDate + " [INFO] [NetUtilsCS-" + threadID + "] " + s + ANSI_RESET);
+            System.out.println(ANSI_GREEN + sDate + " [INFO ] [CS.NetUtils-" + threadID + "] " + s + ANSI_RESET);
         }
     }
 
@@ -242,7 +242,7 @@ public class NetUtils {
 
         if (bConsole) {
             long threadID = Thread.currentThread().getId();
-            System.out.println(ANSI_RED + sDate + " [ERROR] [NetUtilsCS-" + threadID + "] " + s + ANSI_RESET);
+            System.out.println(ANSI_RED + sDate + " [ERROR] [CS.NetUtils-" + threadID + "] " + s + ANSI_RESET);
         }
     }
 
@@ -253,7 +253,7 @@ public class NetUtils {
         String sDate = sdf.format(ts_start);
 
         long threadID = Thread.currentThread().getId();
-        System.out.println(sDate + " [DEBUG] [netutils_" + threadID + "] " + s);
+        System.out.println(sDate + " [DEBUG] [CS.netutils_" + threadID + "] " + s);
     }
     
     static public String getMode() {

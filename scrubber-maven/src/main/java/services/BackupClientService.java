@@ -231,7 +231,7 @@ public class BackupClientService implements Runnable {
                 log.println(sDate + " " + _loglevel + " " + s);
                 log.flush();
             }
-            p(sDate + " " + _loglevel + " " + s);
+            pi(_loglevel + " " + s);
         }
     }
 
@@ -247,7 +247,7 @@ public class BackupClientService implements Runnable {
 
         if (bConsole) {
             long threadID = Thread.currentThread().getId();
-            System.out.println(ANSI_YELLOW + sDate + " [WARNING] [BackupClientService-" + threadID + "] " + s + ANSI_RESET);
+            System.out.println(ANSI_YELLOW + sDate + " [WARNING] [SC.BackupClientService-" + threadID + "] " + s + ANSI_RESET);
         }
     }
 
@@ -258,7 +258,7 @@ public class BackupClientService implements Runnable {
 
         if (bConsole) {
             long threadID = Thread.currentThread().getId();
-            System.out.println(ANSI_GREEN + sDate + " [INFO] [BackupClientService-" + threadID + "] " + s + ANSI_RESET);
+            System.out.println(ANSI_GREEN + sDate + " [INFO ] [SC.BackupClientService-" + threadID + "] " + s + ANSI_RESET);
         }
     }
 
@@ -269,7 +269,7 @@ public class BackupClientService implements Runnable {
 
         if (bConsole) {
             long threadID = Thread.currentThread().getId();
-            System.out.println(ANSI_RED + sDate + " [ERROR] [BackupClientService-" + threadID + "] " + s + ANSI_RESET);
+            System.out.println(ANSI_RED + sDate + " [ERROR] [SC.BackupClientService-" + threadID + "] " + s + ANSI_RESET);
         }
     }
 
@@ -280,7 +280,7 @@ public class BackupClientService implements Runnable {
         String sDate = sdf.format(ts_start);
 
         long threadID = Thread.currentThread().getId();
-        System.out.println(sDate + " [DEBUG] [backup_client_" + threadID + "] " + s);
+        System.out.println(sDate + " [DEBUG] [SC.backup_client_" + threadID + "] " + s);
     }
     
     /* load www-server.properties from java.home */

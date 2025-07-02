@@ -172,7 +172,7 @@ public class FileUtils {
 
         if (bConsole) {
             long threadID = Thread.currentThread().getId();
-            System.out.println(ANSI_YELLOW + sDate + " [WARNING] [FileUtilsCS-" + threadID + "] " + s + ANSI_RESET);
+            System.out.println(ANSI_YELLOW + sDate + " [WARNING] [CS.FileUtils-" + threadID + "] " + s + ANSI_RESET);
         }
     }
 
@@ -183,7 +183,7 @@ public class FileUtils {
 
         if (bConsole) {
             long threadID = Thread.currentThread().getId();
-            System.out.println(ANSI_GREEN + sDate + " [INFO] [FileUtilsCS-" + threadID + "] " + s + ANSI_RESET);
+            System.out.println(ANSI_GREEN + sDate + " [INFO ] [CS.FileUtils-" + threadID + "] " + s + ANSI_RESET);
         }
     }
 
@@ -194,7 +194,7 @@ public class FileUtils {
 
         if (bConsole) {
             long threadID = Thread.currentThread().getId();
-            System.out.println(ANSI_RED + sDate + " [ERROR] [FileUtilsCS-" + threadID + "] " + s + ANSI_RESET);
+            System.out.println(ANSI_RED + sDate + " [ERROR] [CS.FileUtils-" + threadID + "] " + s + ANSI_RESET);
         }
     }
 
@@ -207,7 +207,7 @@ public class FileUtils {
         String sDate = sdf.format(ts_start);
         
         long threadID = Thread.currentThread().getId();
-        System.out.println(sDate + " [DEBUG] [FileUtilsCS" + threadID + "] " + s);
+        System.out.println(sDate + " [DEBUG] [CS.FileUtils_" + threadID + "] " + s);
     }
     
     protected void pdebug(String s) {
@@ -217,7 +217,7 @@ public class FileUtils {
 
         if (mDEBUG_MODE) {
             long threadID = Thread.currentThread().getId();
-            System.out.println(sDate + "[DEBUG] [FileUtilsCS_" + threadID + "] " + s);
+            System.out.println(sDate + "[DEBUG] [CS.FileUtils_" + threadID + "] " + s);
         }
     }
 

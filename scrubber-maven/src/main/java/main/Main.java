@@ -620,7 +620,7 @@ public class Main extends AbstractService {
         String sDate = sdf.format(ts_start);
 
         long threadID = Thread.currentThread().getId();
-        System.out.println(sDate + " [DEBUG] [Scrubber.main_" + threadID + "] " + s);
+        System.out.println(sDate + " [DEBUG] [SC.main_" + threadID + "] " + s);
     }
     
    static void loadProps() throws IOException {

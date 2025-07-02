@@ -114,7 +114,7 @@ public class ClientService implements Runnable {
             if (_dothread) {
               // Create a new, second thread
               t = new Thread(this, "sc_c");
-              System.out.println("Child thread: " + t);
+              p("Child thread: " + t);
               t.start(); // Start the thread          
             }
       } catch (Exception e) {
@@ -134,7 +134,7 @@ public class ClientService implements Runnable {
 
         if (bConsole) {
             long threadID = Thread.currentThread().getId();
-            System.out.println(ANSI_YELLOW + sDate + " [WARNING] [ClientService-" + threadID + "] " + s + ANSI_RESET);
+            System.out.println(ANSI_YELLOW + sDate + " [WARNING] [SC.ClientService-" + threadID + "] " + s + ANSI_RESET);
         }
     }
 
@@ -145,7 +145,7 @@ public class ClientService implements Runnable {
 
         if (bConsole) {
             long threadID = Thread.currentThread().getId();
-            System.out.println(ANSI_GREEN + sDate + " [INFO] [ClientService-" + threadID + "] " + s + ANSI_RESET);
+            System.out.println(ANSI_GREEN + sDate + " [INFO ] [SC.ClientService-" + threadID + "] " + s + ANSI_RESET);
         }
     }
 
@@ -156,7 +156,7 @@ public class ClientService implements Runnable {
 
         if (bConsole) {
             long threadID = Thread.currentThread().getId();
-            System.out.println(ANSI_RED + sDate + " [ERROR] [ClientService-" + threadID + "] " + s + ANSI_RESET);
+            System.out.println(ANSI_RED + sDate + " [ERROR] [SC.ClientService-" + threadID + "] " + s + ANSI_RESET);
         }
     }
 
@@ -167,7 +167,7 @@ public class ClientService implements Runnable {
         String sDate = sdf.format(ts_start);
 
         long threadID = Thread.currentThread().getId();
-        System.out.println(sDate + " [DEBUG] [client_" + threadID + "] " + s);
+        System.out.println(sDate + " [DEBUG] [SC.client_" + threadID + "] " + s);
     }
 
     /* print to the log file */
@@ -209,8 +209,8 @@ public class ClientService implements Runnable {
                 clientIP = NetUtils.getLocalAddressLoopback();
                 mServername = clientIP.getHostAddress();
                 mPortRT = mLocalPort;
-                System.out.println("mServername " + mServername);
-                System.out.println("mPortRT: " + mPortRT);
+                p("mServername " + mServername);
+                p("mPortRT: " + mPortRT);
                 bHostFound = true;            
             }
             
@@ -464,8 +464,8 @@ public class ClientService implements Runnable {
    
    void loadBackupProps() throws IOException {
     
-        //System.out.println(System.getProperty("java.home"));
-        System.out.println("loadBackkupProps()");
+        //p(System.getProperty("java.home"));
+        p("loadBackkupProps()");
         File f = new File(mCONFIG_PATH);
         if (f.exists()) {
             InputStream is =new BufferedInputStream(new
@@ -516,8 +516,8 @@ public class ClientService implements Runnable {
     }
    
 void loadProps() throws IOException {
-        //System.out.println(System.getProperty("java.home"));
-        System.out.println("loadProps()");
+        //p(System.getProperty("java.home"));
+        p("loadProps()");
         File f = new File
                 (
                 ".."+
@@ -619,10 +619,10 @@ public boolean setnode(String _serverIP, String _portRT, String _uuid, String _i
 
         URL url = new URL(urlStr);
         URLConnection conn = url.openConnection ();
-        System.out.println("done");
+        p("done");
         InputStream rd = conn.getInputStream();
         String outfileName = "inputstream.txt";
-        System.out.println("source file exists, dest file = '" + outfileName + "'");
+        p("source file exists, dest file = '" + outfileName + "'");
         FileOutputStream outFile = new FileOutputStream(outfileName);
 
         int numRead = 0;
@@ -633,8 +633,8 @@ public boolean setnode(String _serverIP, String _portRT, String _uuid, String _i
             outFile.write(data,0,numRead);
             total += numRead;
         }
-        System.out.println("numRead = '" + numRead);
-        System.out.println("total = '" + total);
+        p("numRead = '" + numRead);
+        p("total = '" + total);
         rd.close();
         outFile.close();
         return true;

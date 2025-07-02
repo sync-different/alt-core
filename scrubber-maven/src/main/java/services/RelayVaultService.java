@@ -798,7 +798,7 @@ public class RelayVaultService implements Runnable {
         String sDate = sdf.format(ts_start);
 
         long threadID = Thread.currentThread().getId();
-        System.out.println(sDate + " [DEBUG] [RelayVaultService_" + threadID + "] " + s);
+        System.out.println(sDate + " [DEBUG] [SC.RelayVaultService_" + threadID + "] " + s);
     }
     
     protected void log(String s, int _loglevel) {

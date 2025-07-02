@@ -278,7 +278,7 @@ public class BroadcastService implements Runnable {
 
         if (bConsole) {
             long threadID = Thread.currentThread().getId();
-            System.out.println(ANSI_YELLOW + sDate + " [WARNING] [BroadcastService-" + threadID + "] " + s + ANSI_RESET);
+            System.out.println(ANSI_YELLOW + sDate + " [WARNING] [SC.BroadcastService-" + threadID + "] " + s + ANSI_RESET);
         }
     }
 
@@ -289,7 +289,7 @@ public class BroadcastService implements Runnable {
 
         if (bConsole) {
             long threadID = Thread.currentThread().getId();
-            System.out.println(ANSI_GREEN + sDate + " [INFO] [BroadcastService-" + threadID + "] " + s + ANSI_RESET);
+            System.out.println(ANSI_GREEN + sDate + " [INFO ] [SC.BroadcastService-" + threadID + "] " + s + ANSI_RESET);
         }
     }
 
@@ -300,7 +300,7 @@ public class BroadcastService implements Runnable {
 
         if (bConsole) {
             long threadID = Thread.currentThread().getId();
-            System.out.println(ANSI_RED + sDate + " [ERROR] [BroadcastService-" + threadID + "] " + s + ANSI_RESET);
+            System.out.println(ANSI_RED + sDate + " [ERROR] [SC.BroadcastService-" + threadID + "] " + s + ANSI_RESET);
         }
     }
 
@@ -311,7 +311,7 @@ public class BroadcastService implements Runnable {
         String sDate = sdf.format(ts_start);
 
         long threadID = Thread.currentThread().getId();
-        System.out.println(sDate + " [DEBUG] [BroadcastService_" + threadID + "] " + s);
+        System.out.println(sDate + " [DEBUG] [SC.BroadcastService_" + threadID + "] " + s);
     }
 
 }

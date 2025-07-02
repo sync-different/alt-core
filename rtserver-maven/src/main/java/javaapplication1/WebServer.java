@@ -172,7 +172,7 @@ public class WebServer extends AbstractService {
             String sDate = sdf.format(ts_start);
 
             long threadID = Thread.currentThread().getId();
-            System.out.println(sDate + " [DEBUG] [WebServer-" + threadID + "] " + s);
+            System.out.println(sDate + " [DEBUG] [RT.WebServer-" + threadID + "] " + s);
         }
     }
 
@@ -188,7 +188,7 @@ public class WebServer extends AbstractService {
 
         if (bConsole) {
             long threadID = Thread.currentThread().getId();
-            System.out.println(ANSI_YELLOW + sDate + " [WARNING] [WebServer-" + threadID + "] " + s + ANSI_RESET);
+            System.out.println(ANSI_YELLOW + sDate + " [WARNING] [RT.WebServer-" + threadID + "] " + s + ANSI_RESET);
         }
     }
 
@@ -199,7 +199,7 @@ public class WebServer extends AbstractService {
 
         if (bConsole) {
             long threadID = Thread.currentThread().getId();
-            System.out.println(ANSI_GREEN + sDate + " [INFO] [WebServer-" + threadID + "] " + s + ANSI_RESET);
+            System.out.println(ANSI_GREEN + sDate + " [INFO ] [RT.WebServer-" + threadID + "] " + s + ANSI_RESET);
         }
     }
 
@@ -210,7 +210,7 @@ public class WebServer extends AbstractService {
 
         if (bConsole) {
             long threadID = Thread.currentThread().getId();
-            System.out.println(ANSI_RED + sDate + " [ERROR] [WebServer-" + threadID + "] " + s + ANSI_RESET);
+            System.out.println(ANSI_RED + sDate + " [ERROR] [RT.WebServer-" + threadID + "] " + s + ANSI_RESET);
         }
     }
 
@@ -423,7 +423,7 @@ public class WebServer extends AbstractService {
 
         //p(System.getProperty("java.home"));
         String sPath = appendage + "config/" + "www-server.properties";
-        System.out.println("looking for config: " + sPath);
+        p("looking for config: " + sPath);
         File f = new File
                 (appendage + "config/" + "www-server.properties");
         if (f.exists()) {
@@ -601,7 +601,7 @@ public class WebServer extends AbstractService {
     public void loadPropsProcessor() throws IOException {
 
         String sPath = appendage + "../scrubber/config/" + "www-processor.properties";
-        System.out.println("looking for config: " + sPath);
+        p("looking for config: " + sPath);
 
 
         File f = new File
@@ -8463,7 +8463,12 @@ class Worker extends WebServer implements HttpConstants, Runnable {
                 commands.add(bLinux?(new File(uri2).isDirectory() ?"nautilus": "eog"):"open");//eog(fotos) y nautilus(carpetas) testeado para Ubuntu
                 commands.add(uri2);
 
-                System.out.println(commands);
+                int i = 0;
+                for (String cmd: commands) {
+                    p("commands[" + i + "] = " + cmd);
+                    i++;
+                }
+                //p(commands);
 
                 //Run macro on target
                 ProcessBuilder pb = new ProcessBuilder(commands);

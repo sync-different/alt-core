@@ -193,7 +193,7 @@ public class TransferService implements Runnable {
 
         if (bConsole) {
             long threadID = Thread.currentThread().getId();
-            System.out.println(ANSI_YELLOW + sDate + " [WARNING] [TransferService-" + threadID + "] " + s + ANSI_RESET);
+            System.out.println(ANSI_YELLOW + sDate + " [WARNING] [SC.TransferService-" + threadID + "] " + s + ANSI_RESET);
         }
     }
 
@@ -204,7 +204,7 @@ public class TransferService implements Runnable {
 
         if (bConsole) {
             long threadID = Thread.currentThread().getId();
-            System.out.println(ANSI_GREEN + sDate + " [INFO] [TramsferService-" + threadID + "] " + s + ANSI_RESET);
+            System.out.println(ANSI_GREEN + sDate + " [INFO ] [SC.TramsferService-" + threadID + "] " + s + ANSI_RESET);
         }
     }
 
@@ -215,7 +215,7 @@ public class TransferService implements Runnable {
 
         if (bConsole) {
             long threadID = Thread.currentThread().getId();
-            System.out.println(ANSI_RED + sDate + " [ERROR] [TransferService-" + threadID + "] " + s + ANSI_RESET);
+            System.out.println(ANSI_RED + sDate + " [ERROR] [SC.TransferService-" + threadID + "] " + s + ANSI_RESET);
         }
     }
 
@@ -226,7 +226,7 @@ public class TransferService implements Runnable {
         String sDate = sdf.format(ts_start);
 
         long threadID = Thread.currentThread().getId();
-        System.out.println(sDate + " [DEBUG] [transfer_" + threadID + "] " + s);
+        System.out.println(sDate + " [DEBUG] [SC.transfer_" + threadID + "] " + s);
     }
 
     /* print to the log file */
