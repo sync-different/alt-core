@@ -114,8 +114,7 @@ import utils.UserMessage;
 import utils.UserMessageCollection;
 
 import org.apache.hc.core5.http.ClassicHttpRequest;
-
-//import com.alterante.utils.BinaryExtractorUtil;
+import com.alterante.utils.BinaryExtractorUtil;
 
 public class WebServer extends AbstractService {
 
@@ -7794,7 +7793,7 @@ class Worker extends WebServer implements HttpConstants, Runnable {
                 boolean bres = targ.delete();
                 p("delete res: " + bres);
             }
-        } catch (Exception ex) {
+        } catch (Throwable ex) {
             p("hit Exception: " + ex.getMessage());
             ex.printStackTrace();
         } finally {
@@ -8767,6 +8766,7 @@ class Worker extends WebServer implements HttpConstants, Runnable {
                     sFileNew + "r",
                     sFileNew
             );
+            new File(sFileNew + "r").delete();
 
             if (success) {
                 System.out.println("✓ Binary extraction successful!");

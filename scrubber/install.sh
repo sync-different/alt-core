@@ -1,4 +1,12 @@
 mvn install:install-file \
+   -Dfile=./repo/binary-extractor-1.0-SNAPSHOT.jar \
+   -DgroupId=com.alterante.utils \
+   -DartifactId=alterante \
+   -Dversion=1.0.0 \
+   -Dpackaging=jar \
+   -DgeneratePom=true
+
+mvn install:install-file \
    -Dfile=./repo/rtserver.jar \
    -DgroupId=com.alterante.rtserver \
    -DartifactId=rtserver \
