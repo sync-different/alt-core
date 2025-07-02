@@ -35,6 +35,7 @@ cp scrubber-maven/target/scrubber.jar ./scrubber/repo/scrubber.jar
 
 echo "-------------------building uber jar"
 cd scrubber
+./sync.sh
 ./install.sh
 mvn clean
 mvn compile
