@@ -136,8 +136,6 @@ public class FileUtils {
     long mDelaySleep = 10; //Time to sleep between file scans
     long mDelayThumb = 100; //Time to sleep if a thumbnail was created
 
-    static boolean bConsole = true;
-    
     public void cleanup() {
         long freeMem = 0;
         
@@ -159,6 +157,10 @@ public class FileUtils {
         mUUID = null;
         mUUIDPath = null;
     }
+
+    // ***** BEGIN ANSI *****
+
+    static boolean bConsole = true;
 
     public static final String ANSI_RED = "\u001B[31m";
     public static final String ANSI_GREEN = "\u001B[32m";
@@ -198,7 +200,6 @@ public class FileUtils {
         }
     }
 
-
     /* print to stdout */
     static protected void p(String s) {
 
@@ -237,6 +238,8 @@ public class FileUtils {
             pi(sDate + " " + _loglevel + " " + s);
         }
     }
+
+    // ****** END ANSI
 
     public FileUtils() {
         

@@ -132,9 +132,12 @@ public final class FileDatabase {
 
     /* print to stdout */
     protected static void p(String s) {
+        Date ts_start = Calendar.getInstance().getTime();
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy/MM/dd hh:mm:ss");
+        String sDate = sdf.format(ts_start);
 
         long threadID = Thread.currentThread().getId();
-        System.out.println("[CS.FileDatabase_" + threadID + "] " + s);
+        System.out.println(sDate + "[DEBUG] [CS.FileDatabase_" + threadID + "] " + s);
     }
 
     /* print to the log file */

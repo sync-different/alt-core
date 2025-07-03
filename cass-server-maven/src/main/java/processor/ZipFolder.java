@@ -16,20 +16,79 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 import java.util.zip.ZipInputStream;
 
+import java.util.Date;
+import java.util.Calendar;
+import java.text.SimpleDateFormat;
+
 public class ZipFolder {
+
+    // ***** BEGIN ANSI *****
+
+    static boolean bConsole = true;
+
+    public static final String ANSI_RED = "\u001B[31m";
+    public static final String ANSI_GREEN = "\u001B[32m";
+    public static final String ANSI_YELLOW = "\u001B[33m";
+    public static final String ANSI_RESET = "\u001B[0m";
+
+    protected static void pw(String s) {
+        Date ts_start = Calendar.getInstance().getTime();
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy/MM/dd hh:mm:ss");
+        String sDate = sdf.format(ts_start);
+
+        if (bConsole) {
+            long threadID = Thread.currentThread().getId();
+            System.out.println(ANSI_YELLOW + sDate + " [WARNING] [CS.ZipFolder-" + threadID + "] " + s + ANSI_RESET);
+        }
+    }
+
+    protected static void pi(String s) {
+        Date ts_start = Calendar.getInstance().getTime();
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy/MM/dd hh:mm:ss");
+        String sDate = sdf.format(ts_start);
+
+        if (bConsole) {
+            long threadID = Thread.currentThread().getId();
+            System.out.println(ANSI_GREEN + sDate + " [INFO ] [CS.ZipFolder-" + threadID + "] " + s + ANSI_RESET);
+        }
+    }
+
+    protected static void pe(String s) {
+        Date ts_start = Calendar.getInstance().getTime();
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy/MM/dd hh:mm:ss");
+        String sDate = sdf.format(ts_start);
+
+        if (bConsole) {
+            long threadID = Thread.currentThread().getId();
+            System.out.println(ANSI_RED + sDate + " [ERROR] [CS.ZipFolder-" + threadID + "] " + s + ANSI_RESET);
+        }
+    }
+
+    /* print to stdout */
+    static protected void p(String s) {
+
+        Date ts_start = Calendar.getInstance().getTime();
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy/MM/dd hh:mm:ss");
+        String sDate = sdf.format(ts_start);
+
+        long threadID = Thread.currentThread().getId();
+        System.out.println(sDate + " [DEBUG] [CS.ZipFolder_" + threadID + "] " + s);
+    }
+
+    // ****** END ANSI
     
   public void ZipFolder() {
-      System.out.println("ZipFolder constructor.");
+      p("ZipFolder constructor.");
   }
   
   public void main(String[] a) throws Exception {
-    System.out.println("zipping outgoing");
+    p("zipping outgoing");
     zipFolder("/Applications/boxology/scrubber/outgoing", "a.zip");
-    System.out.println("zipping done");
+    p("zipping done");
     
-    System.out.println("unzipping");
+    p("unzipping");
     unzipFile("a.zip", "./testunzip");
-    System.out.println("unzipping done");
+    p("unzipping done");
     
   }
 
@@ -50,7 +109,7 @@ public class ZipFolder {
           String entryName = zipentry.getName();
           
           String entryName2 = entryName.substring(entryName.lastIndexOf("/") + 1, entryName.length());
-          System.out.println(entryName2);
+          p(entryName2);
           
           FileOutputStream fileoutputstream;
           File newFile = new File(sourceZipFile);
@@ -104,8 +163,8 @@ public class ZipFolder {
 
       try {
           
-        System.out.println("path = " + path);
-        System.out.println("srcfile = " + srcFile);
+        p("path = " + path);
+        p("srcfile = " + srcFile);
         
         File folder = new File(srcFile);
         
@@ -127,7 +186,7 @@ public class ZipFolder {
         return 1;
          
       } catch (Exception e) {
-         System.out.println("Warning. Exception with srcFile: " + srcFile); 
+         pw("Warning. Exception with srcFile: " + srcFile);
          return -1;
       }
   }
@@ -139,12 +198,12 @@ public class ZipFolder {
     int nres = 0;
     for (String fileName : folder.list()) {
       if (path.equals("")) {
-        System.out.println("case1");
-        System.out.println("path = " + path);
-        System.out.println("srcfolder = " + srcFolder);
+        p("case1");
+        p("path = " + path);
+        p("srcfolder = " + srcFolder);
         nres = addFileToZip(folder.getName(), srcFolder + "/" + fileName, zip);
       } else {
-        System.out.println("case2");
+        p("case2");
         nres = addFileToZip(path + "/" + folder.getName(), srcFolder + "/" + fileName, zip);
       }
     }

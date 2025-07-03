@@ -14,14 +14,71 @@ import net.minidev.json.*;
 import org.mapdb.DB;
 import org.mapdb.TxMaker;
 
-
+import java.util.Date;
+import java.util.Calendar;
+import java.text.SimpleDateFormat;
     
 public class ShareController {
     
    private static ShareController instance = null;
 
    private TxMaker txMaker;
-    
+
+// ***** BEGIN ANSI *****
+
+    static boolean bConsole = true;
+
+    public static final String ANSI_RED = "\u001B[31m";
+    public static final String ANSI_GREEN = "\u001B[32m";
+    public static final String ANSI_YELLOW = "\u001B[33m";
+    public static final String ANSI_RESET = "\u001B[0m";
+
+    protected static void pw(String s) {
+        Date ts_start = Calendar.getInstance().getTime();
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy/MM/dd hh:mm:ss");
+        String sDate = sdf.format(ts_start);
+
+        if (bConsole) {
+            long threadID = Thread.currentThread().getId();
+            System.out.println(ANSI_YELLOW + sDate + " [WARNING] [CS.ShareController-" + threadID + "] " + s + ANSI_RESET);
+        }
+    }
+
+    protected static void pi(String s) {
+        Date ts_start = Calendar.getInstance().getTime();
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy/MM/dd hh:mm:ss");
+        String sDate = sdf.format(ts_start);
+
+        if (bConsole) {
+            long threadID = Thread.currentThread().getId();
+            System.out.println(ANSI_GREEN + sDate + " [INFO ] [CS.ShareController-" + threadID + "] " + s + ANSI_RESET);
+        }
+    }
+
+    protected static void pe(String s) {
+        Date ts_start = Calendar.getInstance().getTime();
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy/MM/dd hh:mm:ss");
+        String sDate = sdf.format(ts_start);
+
+        if (bConsole) {
+            long threadID = Thread.currentThread().getId();
+            System.out.println(ANSI_RED + sDate + " [ERROR] [CS.ShareController-" + threadID + "] " + s + ANSI_RESET);
+        }
+    }
+
+    /* print to stdout */
+    static protected void p(String s) {
+
+        Date ts_start = Calendar.getInstance().getTime();
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy/MM/dd hh:mm:ss");
+        String sDate = sdf.format(ts_start);
+
+        long threadID = Thread.currentThread().getId();
+        System.out.println(sDate + " [DEBUG] [CS.ShareController_" + threadID + "] " + s);
+    }
+
+    // ****** END ANSI
+
     private DB makeShareTxMapDB() {
         return txMaker.makeTx();
        
@@ -45,7 +102,7 @@ public class ShareController {
         Map<String,String> sharetokens = db.getTreeMap("sharetokens");
     
         
-        System.out.println("*******createShare() *****");
+        p("*******createShare() *****");
         
         String share_token;        
         if(allowremote.equals("true")){
@@ -255,15 +312,15 @@ public class ShareController {
                 clusterToken = "00000000-0000-0000-0000-000000000000";
             }
 
-            System.out.println("   ClusterID: '" + clusterId + "'");
-            System.out.println("   Type: '" + type.toString() + "'");
-            System.out.println("   BridgeHost: '" + bridgeHost + "'");
-            System.out.println("   ClusterToken: '" + clusterToken + "'");
-            System.out.println("   Key: '" + key + "'");
+            p("   ClusterID: '" + clusterId + "'");
+            p("   Type: '" + type.toString() + "'");
+            p("   BridgeHost: '" + bridgeHost + "'");
+            p("   ClusterToken: '" + clusterToken + "'");
+            p("   Key: '" + key + "'");
 
             //transfer via HTTP
 //            String sHostFile = "https://" + bridgeHost +"/clusters/"+ clusterId + "/share?access-token=" + clusterToken;
-//            System.out.println("sHostFile: " + sHostFile);            
+//            p("sHostFile: " + sHostFile);
                        
             Writer writer = new StringWriter();
             JSONObject data = new JSONObject();
@@ -281,7 +338,7 @@ public class ShareController {
             boolean bres = htrp.postDataHttps_new(fis, bridgeHost, bridgePort, secure, writer, clusterId, clusterToken);
             if(bres){
                 String outputString = writer.toString();
-                System.out.println("outputstring=" + outputString);
+                p("outputstring=" + outputString);
                 String shareToken = "";
                 try {
                     JSONObject jtoken = (JSONObject)JSONValue.parse(outputString);
@@ -289,11 +346,11 @@ public class ShareController {
                         shareToken = jtoken.get("share-token").toString();
                     }
                 } catch (Exception ex) {
-                    System.out.println("JSON invalid for outputstring)");
+                    pw("JSON invalid for outputstring)");
                     shareToken = "00000000-0000-0000-0000-000000000000";
                     ex.printStackTrace();
                 }
-                System.out.println("return shareToken = '" + shareToken + "'");
+                p("return shareToken = '" + shareToken + "'");
                 return shareToken;
             }
         } catch (Exception ex) {
