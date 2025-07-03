@@ -61,7 +61,7 @@ public class VaultLauncher implements Runnable {
         System.out.println("Child thread: " + t);
         t.start(); // Start the thread
     }
-    
+
     public boolean finished() {
         return bTerminated;
     }

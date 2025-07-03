@@ -101,6 +101,7 @@ public final class FileDatabase {
             
     }
 
+    // BEGIN ANSI
     static boolean bConsole = true;
 
     public static final String ANSI_RED = "\u001B[31m";
@@ -154,6 +155,8 @@ public final class FileDatabase {
         }
         p(s);
     }
+
+    // END ANSI
 
     void loadBackupProps() throws IOException {
     
