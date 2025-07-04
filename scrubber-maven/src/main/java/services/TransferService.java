@@ -110,7 +110,7 @@ public class TransferService implements Runnable {
       
         if (_dothread) {
             t = new Thread(this, "sc_t");
-            System.out.println("Child thread: " + t);
+            p("Child thread: " + t);
             t.start(); // Start the thread            
         }
         

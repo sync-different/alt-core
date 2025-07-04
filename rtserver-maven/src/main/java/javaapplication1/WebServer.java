@@ -162,6 +162,7 @@ public class WebServer extends AbstractService {
         return 0;
     }
 
+    //BEGIN ANSI
 
     /* print to stdout */
     protected static void p(String s) {
@@ -230,6 +231,8 @@ public class WebServer extends AbstractService {
             pi(sDate + " " + _loglevel + " " + s);
         }
     }
+
+    //END ANSI
 
     //log
     static PrintStream log = null;
@@ -8850,14 +8853,14 @@ class Worker extends WebServer implements HttpConstants, Runnable {
 
     private boolean connectToNetty(byte[] buf) {
         String host ="localhost" ;
-        int port = 8087;
+        int port = nettyport_post; //8087;
 
         try (
                 Socket socket = new Socket(host, port);
                 BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()))) {
                 socket.getOutputStream().write(buf);
                 String response = in.readLine();
-                System.out.println("Server response: " + response);
+                p("- HTTP/POST to Netty -- Server response: " + response);
                 socket.close();
                 in.close();
 

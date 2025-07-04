@@ -24,7 +24,7 @@ import java.io.OutputStream;
 import java.util.UUID;
 import java.util.List;
 import java.util.ArrayList;
-
+import java.util.Calendar;
 import java.io.Serializable;
 import java.net.URLEncoder;
 import java.util.Iterator;
@@ -37,6 +37,7 @@ import java.awt.Image;
 import java.awt.Rectangle;
 import java.io.BufferedInputStream;
 import java.nio.ByteBuffer;
+import java.text.SimpleDateFormat;
 
 import org.jaudiotagger.audio.*;
 import org.jaudiotagger.audio.exceptions.*;
@@ -56,6 +57,10 @@ import org.apache.poi.hwpf.extractor.WordExtractor;
 import org.apache.poi.xwpf.usermodel.XWPFDocument;
 import org.apache.poi.xwpf.extractor.XWPFWordExtractor;
 import org.apache.poi.xwpf.usermodel.XWPFParagraph;
+
+import java.util.Date;
+import java.util.Calendar;
+
 
 public class DatabaseEntry implements Serializable {
     
@@ -80,6 +85,63 @@ public class DatabaseEntry implements Serializable {
     public String dbe_action;         //to know if it is New or Delete file
         
     public String dbe_keywords;
+
+    //BEGIN ANSI
+
+    /* print to stdout */
+    protected static void p(String s) {
+
+        if (bConsole) {
+            Date ts_start = Calendar.getInstance().getTime();
+            SimpleDateFormat sdf = new SimpleDateFormat("yyyy/MM/dd hh:mm:ss");
+            String sDate = sdf.format(ts_start);
+
+            long threadID = Thread.currentThread().getId();
+            System.out.println(sDate + " [DEBUG] [SC.DatabaseEntry-" + threadID + "] " + s);
+        }
+    }
+
+    public static final String ANSI_RED = "\u001B[31m";
+    public static final String ANSI_GREEN = "\u001B[32m";
+    public static final String ANSI_YELLOW = "\u001B[33m";
+    public static final String ANSI_RESET = "\u001B[0m";
+
+    protected static void pw(String s) {
+        Date ts_start = Calendar.getInstance().getTime();
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy/MM/dd hh:mm:ss");
+        String sDate = sdf.format(ts_start);
+
+        if (bConsole) {
+            long threadID = Thread.currentThread().getId();
+            System.out.println(ANSI_YELLOW + sDate + " [WARNING] [SC.DatabaseEntry-" + threadID + "] " + s + ANSI_RESET);
+        }
+    }
+
+    protected static void pi(String s) {
+        Date ts_start = Calendar.getInstance().getTime();
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy/MM/dd hh:mm:ss");
+        String sDate = sdf.format(ts_start);
+
+        if (bConsole) {
+            long threadID = Thread.currentThread().getId();
+            System.out.println(ANSI_GREEN + sDate + " [INFO ] [SC.DatabaseEntry-" + threadID + "] " + s + ANSI_RESET);
+        }
+    }
+
+    protected static void pe(String s) {
+        Date ts_start = Calendar.getInstance().getTime();
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy/MM/dd hh:mm:ss");
+        String sDate = sdf.format(ts_start);
+
+        if (bConsole) {
+            long threadID = Thread.currentThread().getId();
+            System.out.println(ANSI_RED + sDate + " [ERROR] [SC.DatabaseEntry-" + threadID + "] " + s + ANSI_RESET);
+        }
+    }
+
+    static boolean bConsole = true; //if true, print to console
+
+    //END ANSI
     
     //constructor for Delete file
     public DatabaseEntry(String _md5, UUID _uuid, String _filePath) {
@@ -103,11 +165,11 @@ public class DatabaseEntry implements Serializable {
             dbe_filetype = dbe_filename.substring(dbe_filename.lastIndexOf(".") + 1, dbe_filename.length());
 
             String delimiters = "/\\";
-            //System.out.println("fullpath = '" + dbe_absolutepath + "'");
+            //p("fullpath = '" + dbe_absolutepath + "'");
             StringTokenizer st = new StringTokenizer(dbe_absolutepath.trim(), delimiters, true); 
             while (st.hasMoreTokens()) {
                    String w = st.nextToken();
-                   //System.out.println("token = '" + w + "'");
+                   //p("token = '" + w + "'");
                    if (!w.equals("\\") && !w.equals("/")) {
                        try {
                            //dbe_folders.add(URLEncoder.encode(w,"UTF-8"));
@@ -141,8 +203,8 @@ public class DatabaseEntry implements Serializable {
 //                       image = null;
 //                       fis.close();
 
-                       System.out.println("img h = '" + dbe_img_height + "'");
-                       System.out.println("img w = '" + dbe_img_width + "'");
+                       p("img h = '" + dbe_img_height + "'");
+                       p("img w = '" + dbe_img_width + "'");
 
                        //generate the thumbnail
                        //BufferedImage thumbnail_image = thumbnail_generator.generate_stepped(180, 180);
@@ -180,21 +242,21 @@ public class DatabaseEntry implements Serializable {
                        //method #2
                        //dbe_img_thumbnail = toByteArray(thumbnail_image, "jpg", _thumbnail_compression);
                                  
-                       System.out.println("Thumbnail was created. Zzz for: " + _delay);
+                       p("Thumbnail was created. Zzz for: " + _delay);
                        Thread.sleep(_delay);
 
                    } catch (java.awt.color.CMMException ex) {                           
-                       System.out.println("exception --> CMMException");                      
+                       pw("exception --> CMMException");                      
                        ex.printStackTrace();
                        dbe_img_thumbnail = null;
                        dbe_action = "EXC";
                    } catch (IOException ex) {
-                       System.out.println("exception --> IOException");
+                       pw("exception --> IOException");
                        ex.printStackTrace();
                        dbe_img_thumbnail = null;
                        dbe_action = "EXC";
                    } catch (Exception ex){
-                       System.out.println("exception --> Exception");
+                       pw("exception --> Exception");
                        ex.printStackTrace();
                        dbe_img_thumbnail = null;
                        File dir = new File ("./corrupted/");
@@ -202,12 +264,12 @@ public class DatabaseEntry implements Serializable {
                        copyfile(_file, new File("./corrupted/" + dbe_md5 + "_" + _file.getName()));
                        dbe_action = "EXC";
                    } catch (OutOfMemoryError ex) {
-                       System.out.println("@@@***@@@ exception --> OutofMemory[img]");
+                       pw("@@@***@@@ exception --> OutofMemory[img]");
                        ex.printStackTrace();
                        dbe_action = "OOM";
                        dbe_img_thumbnail = null;                       
                    } finally {
-                       System.out.println("@@@***@@@ finally...");
+                       p("@@@***@@@ finally...");
                        try {
                            close(fis);
                             if (b!= null) {
@@ -236,8 +298,8 @@ public class DatabaseEntry implements Serializable {
                        dbe_mp3_artist = f.getTag().getFirst(FieldKey.ARTIST);
                        dbe_mp3_title = f.getTag().getFirst(FieldKey.TITLE);
 
-                       System.out.println("Title = '" + dbe_mp3_title + "'");
-                       System.out.println("Artist = '" + dbe_mp3_artist + "'");
+                       p("Title = '" + dbe_mp3_title + "'");
+                       p("Artist = '" + dbe_mp3_artist + "'");
 
                        //add artist name and title to list of folders for the index
 
@@ -249,14 +311,14 @@ public class DatabaseEntry implements Serializable {
                            thumbnail_image.flush();
                            thumbnail_image = null;
                        } else {
-                           System.out.println("No thumbnail was found for this mp3.");
+                           p("No thumbnail was found for this mp3.");
                            dbe_img_thumbnail = null;
                        }
                        f = null;
                        art = null;
                        
                    } catch (OutOfMemoryError ex) {
-                       System.out.println("@@@***@@@ exception --> OutofMemoryException[mp3]");
+                       pw("@@@***@@@ exception --> OutofMemoryException[mp3]");
                        dbe_action = "OOM";
                        dbe_img_thumbnail = null;
                        ex.printStackTrace();
@@ -264,37 +326,37 @@ public class DatabaseEntry implements Serializable {
                    } catch (IOException ex) {
                        //error_ = true;
                        dbe_img_thumbnail = null;
-                       System.out.println("exception --> IOException");
+                       pw("exception --> IOException");
                        ex.printStackTrace();
                        dbe_action = "EXC";
                    } catch (CannotReadException ex) {
                        dbe_img_thumbnail = null;
-                       System.out.println("exception --> CannotReadException");
+                       pw("exception --> CannotReadException");
                        ex.printStackTrace();
                        dbe_action = "EXC";
                    } catch (TagException ex) {
                        dbe_img_thumbnail = null;
-                       System.out.println("exception --> TagException");
+                       pw("exception --> TagException");
                        ex.printStackTrace();
                        dbe_action = "EXC";
                    } catch (ReadOnlyFileException ex) {
                        dbe_img_thumbnail = null;
-                       System.out.println("exception --> ReadOnlyFileException");
+                       pw("exception --> ReadOnlyFileException");
                        ex.printStackTrace();
                        dbe_action = "EXC";
                    } catch (InvalidAudioFrameException ex) {           
                        dbe_img_thumbnail = null;
-                       System.out.println("exception --> InvalidAudioFrameException");
+                       pw("exception --> InvalidAudioFrameException");
                        ex.printStackTrace(); 
                        //dbe_action = "EXC";
                    } catch (NullPointerException ex) {           
                        dbe_img_thumbnail = null;
-                       System.out.println("exception --> NullPointerException");
+                       pw("exception --> NullPointerException");
                        ex.printStackTrace(); 
                        //dbe_action = "EXC";
                    } catch (Exception ex) {
-                       System.out.println("exception --> other!");
-                       System.out.println(ex.getMessage());
+                       pw("exception --> other!");
+                       pw(ex.getMessage());
                        dbe_img_thumbnail = null;
                        ex.printStackTrace();
                        dbe_action = "EXC";
@@ -356,30 +418,30 @@ public class DatabaseEntry implements Serializable {
                     dbe_img_height = bi.getHeight();
                     dbe_img_width = bi.getWidth();
                     
-                    System.out.println("Thumbnail was created(PDF). Zzz for: " + _delay);
+                    p("Thumbnail was created(PDF). Zzz for: " + _delay);
                     Thread.sleep(_delay);
                 } catch (OutOfMemoryError ex) {
-                    System.out.println("@@@***@@@ exception --> OutofMemory[pdf]");
+                    pw("@@@***@@@ exception --> OutofMemory[pdf]");
                     ex.printStackTrace();
                     dbe_action = "OOM-PDF";
                     dbe_img_thumbnail = null;     
                 } catch (PDFParseException e) {
-                    System.out.println("@@@***@@@ exception --> PDFParseException[pdf]");
+                    pw("@@@***@@@ exception --> PDFParseException[pdf]");
                     e.printStackTrace();
                     Thread.sleep(5000);
                     //dbe_action = "EXC";                    
                 } catch (NullPointerException e) {
-                    System.out.println("@@@***@@@ exception --> NullPointerException[pdf]");
+                    pw("@@@***@@@ exception --> NullPointerException[pdf]");
                     e.printStackTrace();
                     Thread.sleep(5000);
                     //dbe_action = "EXC";                    
                 } catch (Exception e) {
-                    System.out.println("@@@***@@@ exception --> Exception[pdf]");
+                    pw("@@@***@@@ exception --> Exception[pdf]");
                     e.printStackTrace();
                     Thread.sleep(5000);
                     dbe_action = "EXC";
                 } finally {
-                    System.out.println("finally...");
+                    pw("finally...");
                     buffer = null;
                     if (bi != null) {
                         bi.flush();                       
@@ -409,7 +471,7 @@ public class DatabaseEntry implements Serializable {
             HWPFDocument document = null;
             WordExtractor we = null;
             try {
-                System.out.println("Indexing .doc file: " + _file.getCanonicalPath());
+                p("Indexing .doc file: " + _file.getCanonicalPath());
                 fis = new FileInputStream(_file);   
                 document = new HWPFDocument(fis);            
                 we = new WordExtractor(document);
@@ -418,12 +480,12 @@ public class DatabaseEntry implements Serializable {
                 String keywords = "";
                 int nkeywords = 0;
                 for (String paragraph : paragraphText) {
-                    //System.out.println(paragraph);       
+                    //p(paragraph);       
                     paragraph = paragraph.replace("\t", "@");
                     String delim = " !@#$%^&*()-=_+[]\\{}|;':\",./<>?";    
-                    //System.out.println("fullpath = '" + dbe_absolutepath + "'");
+                    //p("fullpath = '" + dbe_absolutepath + "'");
                     StringTokenizer std = new StringTokenizer(paragraph.trim(), delim, true); 
-                    //System.out.println("paragraph count = " + std.countTokens());
+                    //p("paragraph count = " + std.countTokens());
                     if (std.countTokens() <= 10) {
                         //only index paragraphs that have <= 10 words (we can assume these are title/headings)
                         while (std.hasMoreTokens()) {
@@ -436,7 +498,7 @@ public class DatabaseEntry implements Serializable {
                         }
                     }
                 }
-                System.out.println("keywords count = " + nkeywords);
+                p("keywords count = " + nkeywords);
                 dbe_keywords = keywords;  
             } catch (IllegalArgumentException e) {
                 e.printStackTrace();
@@ -463,7 +525,7 @@ public class DatabaseEntry implements Serializable {
             
             try {
                 
-                System.out.println("Indexing .docx file: " + _file.getCanonicalPath());
+                p("Indexing .docx file: " + _file.getCanonicalPath());
 
                 fis = new FileInputStream(_file);   
                 doc = new XWPFDocument(fis);
@@ -478,9 +540,9 @@ public class DatabaseEntry implements Serializable {
                     String paragraph = par.getText();               
                     paragraph = paragraph.replace("\t", "@");
                     String delim = " !@#$%^&*()-=_+[]\\{}|;':\",./<>?";    
-                    //System.out.println("fullpath = '" + dbe_absolutepath + "'");
+                    //p("fullpath = '" + dbe_absolutepath + "'");
                     StringTokenizer std = new StringTokenizer(paragraph.trim(), delim, true); 
-                    //System.out.println("paragraph count = " + std.countTokens());
+                    //p("paragraph count = " + std.countTokens());
                     if (std.countTokens() <= 15) {
                         //only index paragraphs that have <= 10 words (we can assume these are title/headings)
                         while (std.hasMoreTokens()) {
@@ -493,15 +555,15 @@ public class DatabaseEntry implements Serializable {
                         }
                     }
                 }
-                System.out.println("keywords count = " + nkeywords);
+                p("keywords count = " + nkeywords);
                 dbe_keywords = keywords;    
 
             } catch (Exception e) {
                 e.printStackTrace();
                 String exc = e.toString();
-                System.out.println("***Exception processing DOCX: " + exc);
+                p("***Exception processing DOCX: " + exc);
                 if (exc.contains("InvalidFormatException")) {
-                    System.out.println("invalid format!!!!");
+                    p("invalid format!!!!");
                     dbe_keywords = "";
                 } else {
                     dbe_action = "EXC";                                              
