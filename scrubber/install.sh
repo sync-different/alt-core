@@ -32,7 +32,10 @@ mvn install:install-file \
 
 GROUP_ID_PATH="com/alterante/rtserver/rtserver/1.0.0"
 JAR_NAME="rtserver-1.0.0.jar"
-if [ ! -f "$HOME/.m2/repository/$GROUP_ID_PATH/$JAR_NAME" ]; then
+UBER_JAR_NAME="./target/my-app-1.0-SNAPSHOT.jar"
+
+#if [ ! -f "$HOME/.m2/repository/$GROUP_ID_PATH/$JAR_NAME" ]; then
+if [ ! -f "$UBER_JAR_NAME" ]; then
   mvn install:install-file \
      -Dfile=./repo/WinRun4J.jar \
      -DgroupId=org.boris.win4j \

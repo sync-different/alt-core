@@ -38,6 +38,8 @@ import javax.mail.Store;
 import javax.mail.util.ByteArrayDataSource;
 import javax.mail.util.SharedByteArrayInputStream;
 
+import static utils.LocalFuncs.bConsole;
+
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.FileInputStream;
@@ -89,10 +91,60 @@ public class MailerFuncs {
     static String appendage = "";
     static String appendageRW = "";
 
+    public static final String ANSI_RED = "\u001B[31m";
+    public static final String ANSI_GREEN = "\u001B[32m";
+    public static final String ANSI_YELLOW = "\u001B[33m";
+    public static final String ANSI_RESET = "\u001B[0m";
+
+    protected static void pw(String s) {
+        Date ts_start = Calendar.getInstance().getTime();
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy/MM/dd hh:mm:ss");
+        String sDate = sdf.format(ts_start);
+
+        if (bConsole) {
+            long threadID = Thread.currentThread().getId();
+            System.out.println(ANSI_YELLOW + sDate + " [WARNING] [SC.MailerFuncs-" + threadID + "] " + s + ANSI_RESET);
+        }
+    }
+
+    protected static void pi(String s) {
+        Date ts_start = Calendar.getInstance().getTime();
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy/MM/dd hh:mm:ss");
+        String sDate = sdf.format(ts_start);
+
+        if (bConsole) {
+            long threadID = Thread.currentThread().getId();
+            System.out.println(ANSI_GREEN + sDate + " [INFO ] [SC.MailerFuncs-" + threadID + "] " + s + ANSI_RESET);
+        }
+    }
+
+    protected static void pe(String s) {
+        Date ts_start = Calendar.getInstance().getTime();
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy/MM/dd hh:mm:ss");
+        String sDate = sdf.format(ts_start);
+
+        if (bConsole) {
+            long threadID = Thread.currentThread().getId();
+            System.out.println(ANSI_RED + sDate + " [ERROR] [SC.MailerFuncs-" + threadID + "] " + s + ANSI_RESET);
+        }
+    }
+
+    /* print to stdout */
+    protected static void p(String s) {
+        Date ts_start = Calendar.getInstance().getTime();
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy/MM/dd hh:mm:ss");
+        String sDate = sdf.format(ts_start);
+
+        long threadID = Thread.currentThread().getId();
+        System.out.println(sDate + " [DEBUG] [SC.transfer_" + threadID + "] " + s);
+    }
+
+
+
     static void loadPropsDB() throws IOException {
         
         String r = "";
-        System.out.println(System.getProperty("java.home"));
+        p(System.getProperty("java.home"));
         File f = new File
             ("../rtserver/config/" + "www-server.properties");
         if (f.exists()) {
@@ -112,7 +164,7 @@ public class MailerFuncs {
     static void loadProps() throws IOException {
         
         String r = "";
-        System.out.println(System.getProperty("java.home"));
+        p(System.getProperty("java.home"));
         File f = new File
             (appendage + "../rtserver/config/" + "www-mailer.properties");
         if (f.exists()) {
@@ -211,14 +263,6 @@ public class MailerFuncs {
         p("scanmail="+bScanMail);        
         p("allowmail="+bAllowMail);
     }
-
-    
-    /* print to stdout */
-    protected static void p(String s) {
-
-        long threadID = Thread.currentThread().getId();
-        System.out.println("[" + threadID + "] " + s);
-    }
     
     protected static void log(String s) {
 
@@ -267,31 +311,31 @@ public class MailerFuncs {
         //File directory = new File("../app/projects/rtserver").getAbsoluteFile();
         if (directory.exists())
         {
-            System.out.println("[MailerFuncs] Found app directory. Setting working dir to it");
+            p("[MailerFuncs] Found app directory. Setting working dir to it");
             result = (System.setProperty("user.dir", directory.getAbsolutePath()) != null);
             
             appendage = "/Applications/Alterante.app/Contents/AlteranteJava.app/Contents/app/projects/rtserver/";
-            System.out.println("appendage  = " + appendage);            
+            p("appendage  = " + appendage);            
             //appendage = "../app/projects/rtserver/";        
         }
         
         String username = System.getProperty("user.name");
-        System.out.println("username: " + username);
+        p("username: " + username);
         File directoryRW = new File("/Users/" + username + "/Library/Containers/com.alterante.desktopapp1j");
         if (directoryRW.exists()) {
-            System.out.println("[WebServer] Found container directory. checking folders.");
+            p("[WebServer] Found container directory. checking folders.");
             appendageRW = "/Users/" + username + "/Library/Containers/com.alterante.desktopapp1j/Data/app/projects/rtserver";
             File dir = new File("/Users" + username + "/Library/Containers/com.alterante.desktopapp1j/Data/app/projects/rtserver");
             if (dir.exists()) {
-                System.out.println("appendageRW rtserver exists.");            
+                p("appendageRW rtserver exists.");            
             } else {
                 boolean res = new File(appendageRW).mkdirs();
-                System.out.println("appendageRW rtserver create = " + res);                            
+                p("appendageRW rtserver create = " + res);                            
                 res = new File(appendageRW + "/logs/").mkdirs();
-                System.out.println("appendageRW rtserver create logs = " + res);                            
+                p("appendageRW rtserver create logs = " + res);                            
             }               
         } else {
-            System.out.println("[WebServer] Container directory not found.");
+            p("[WebServer] Container directory not found.");
         }
 
     }
@@ -331,7 +375,7 @@ public class MailerFuncs {
                 
                 String replaced = spath.replace("\"", "");
                 
-                System.out.println("Adding token '" + replaced + "'");
+                p("Adding token '" + replaced + "'");
                 mapAllow.put(replaced, "");                                    
             }
             
@@ -360,7 +404,7 @@ public class MailerFuncs {
                 String w = "";
                 w = st.nextToken();
                 if (w.length() > 1) {
-                    System.out.println(" string name: '" + w + "'");
+                    p(" string name: '" + w + "'");
                 filename = w;
                 }    
             }
@@ -415,12 +459,12 @@ public class MailerFuncs {
                     log("multipart contains #attachments: " + multipart2.getCount());
 
                     int res = scan_multipart(multipart2, _sMailFrom2, _subject);
-                    System.out.println("res: " + res);
+                    p("res: " + res);
                 }
                 
                 if (sFileType.contains("text/plain")) {                    
                     String sContent = bodypart.getContent().toString();
-                    System.out.println("sContent = '" + sContent + "'");
+                    p("sContent = '" + sContent + "'");
 //                    
 //                    String delimiters = " \\n";
 //                    StringTokenizer st = new StringTokenizer(sContent, delimiters, true);
@@ -428,12 +472,12 @@ public class MailerFuncs {
 //                    String sQuery = "";
 //                    while (st.hasMoreTokens()) {                        
 //                        sQuery = st.nextToken();
-//                        System.out.println("query = '" + sQuery + "'");                        
+//                        p("query = '" + sQuery + "'");                        
 //                    }
 
                     String sQuery = sContent.replaceAll("\\s","");
 
-                    System.out.println("sQuery = '" + sQuery + "'");
+                    p("sQuery = '" + sQuery + "'");
                     
                     if (_subject.contains("alterante")) {
                         int nres = ProcessQuery(_sMailFrom2, sQuery);                           
@@ -453,10 +497,10 @@ public class MailerFuncs {
         Object Got;
 
         if ((Got = mapAllow.get(_user)) != null) {
-            System.out.println("User " + _user + " is allowed.");
+            p("User " + _user + " is allowed.");
             return true;
         } else {
-            System.out.println("User " + _user + " is NOT allowed.");
+            p("User " + _user + " is NOT allowed.");
             return false;
         }
 
@@ -466,7 +510,7 @@ public class MailerFuncs {
         try {
             if (isUserAllowed(_user)) {
 
-                System.out.println("User allowed. sending response");
+                p("User allowed. sending response");
 
                 //String sMailMessage = "hello " + _user + ". here are the results for query = " + _query;
 
@@ -482,7 +526,7 @@ public class MailerFuncs {
                 boolean bAWSHosted = false;
                 String ClientIP = "";
                             
-                System.out.println("root = " + root.toString());
+                p("root = " + root.toString());
                 
                 String sObjects = wf.echoh2m(_query, 
                                             root.toString(), 
@@ -503,7 +547,7 @@ public class MailerFuncs {
                                             false,
                                             null);
 
-                System.out.println("Objects returned : '" + sObjects + "'");
+                p("Objects returned : '" + sObjects + "'");
                
                 
                 String sMailTo = _user;
@@ -622,7 +666,7 @@ public class MailerFuncs {
                         Multipart multipart = (Multipart) message[i].getContent();
                         log("[2]");
                         int nres = scan_multipart(multipart, sMailFrom2, sSubject);
-                        System.out.println("nres scan_mulipart= " + nres);
+                        p("nres scan_mulipart= " + nres);
                     } else {
                         //not multipart
                         log("[3]");
@@ -639,7 +683,7 @@ public class MailerFuncs {
                         }    
                         
                             String sBody = message[i].getContent().toString();
-                            System.out.println("Body = '" + sBody + "'");
+                            p("Body = '" + sBody + "'");
                             if (message[i].getSubject().contains("alterante")) {
                                 int nres = ProcessQuery(sMailFrom2, sBody);                           
                             }
@@ -688,17 +732,17 @@ public class MailerFuncs {
             String _sFileName,
             Boolean _sHtmlMailMessage) throws MessagingException {
                 
-        System.out.println("send_tls");
+        p("send_tls");
         
         final String username = _sMailUser;
         final String password = _sMailPassword;
         
-        System.out.println("attachment: '" + _sMailAttachment + "'");
-        System.out.println("mailto: '" + _sMailTo + "'");
-        System.out.println("message: '" + _sMailMessage + "'");
-        System.out.println("user: '" + _sMailUser + "'");
-        System.out.println("host: '" + _sMailHost + "'");
-        System.out.println("port: '" + _sMailPort + "'");
+        p("attachment: '" + _sMailAttachment + "'");
+        p("mailto: '" + _sMailTo + "'");
+        p("message: '" + _sMailMessage + "'");
+        p("user: '" + _sMailUser + "'");
+        p("host: '" + _sMailHost + "'");
+        p("port: '" + _sMailPort + "'");
         
         
         String _sMailTo2 = "";
@@ -708,7 +752,7 @@ public class MailerFuncs {
             e.printStackTrace();
             return;
         }
-        System.out.println("mailto2: '" + _sMailTo2 + "'");
+        p("mailto2: '" + _sMailTo2 + "'");
 
         String _sMailMessage2 = "";
         try {
@@ -718,7 +762,7 @@ public class MailerFuncs {
             e.printStackTrace();
             return;
         }
-        System.out.println("mailto2: '" + _sMailTo2 + "'");
+        p("mailto2: '" + _sMailTo2 + "'");
 
         
         //String host = "smtp.live.com";
@@ -735,7 +779,7 @@ public class MailerFuncs {
         Session session = Session.getInstance(props, null);
 
         if (_sMailPort.equals("465")) {
-            System.out.println("-------SMTPS mode====");
+            p("-------SMTPS mode====");
             sProtocol = "smtps";
             props.put("mail.smtps.host", _sMailHost);
             //props.put("mail.transport.protocol", "smtp");
@@ -745,7 +789,7 @@ public class MailerFuncs {
             props.put("mail.smtps.port", _sMailPort);
             props.put("mail.smtps.ssl.trust", _sMailHost);
         } else {
-            System.out.println("-------SMTP mode====");
+            p("-------SMTP mode====");
             sProtocol = "smtp";
             props.put("mail.smtp.host", _sMailHost);
             props.put("mail.transport.protocol", "smtp");
@@ -765,7 +809,7 @@ public class MailerFuncs {
         
         
         try {
-            System.out.println("preparing message");
+            p("preparing message");
             Message message = new MimeMessage(session);
             
             message.setFrom(new InternetAddress(username));
@@ -807,7 +851,7 @@ public class MailerFuncs {
     //                String w = "";
     //                w = st.nextToken();
     //                if (w.length() > 1) {
-    //                    System.out.println(" string name: '" + w + "'");
+    //                    p(" string name: '" + w + "'");
     //                    filename = w;
     //                }
     //            }
@@ -825,17 +869,17 @@ public class MailerFuncs {
             message.setContent(multipart);
             
 
-            System.out.println("connecting");
+            p("connecting");
             SMTPTransport t =
 		(SMTPTransport)session.getTransport(sProtocol);   
             t.connect(_sMailHost, _sMailUser, password);
-            System.out.println("sending...");
+            p("sending...");
             
             //Transport transport = session.getTransport("smtp");
             //transport.connect(host, port, username, password);
-            System.out.println("sending");
+            p("sending");
             t.sendMessage(message, message.getAllRecipients());          
-            System.out.println("done");
+            p("done");
             t.close();
             
         } catch (MessagingException e) {
@@ -857,17 +901,17 @@ public class MailerFuncs {
             String _query,
             String _root) {
                 
-        System.out.println("send_tls3");
+        p("send_tls3");
         
         final String username = _sUser;
         final String password = _sMailPassword;
         
-        System.out.println("attachment: '" + _sMailAttachment + "'");
-        System.out.println("mailto: '" + _sMailTo + "'");
-        System.out.println("objects: '" + _sObjects + "'");
-        System.out.println("user: '" + _sUser + "'");
-        System.out.println("host: '" + _sHost + "'");
-        System.out.println("port: '" + _sPort + "'");
+        p("attachment: '" + _sMailAttachment + "'");
+        p("mailto: '" + _sMailTo + "'");
+        p("objects: '" + _sObjects + "'");
+        p("user: '" + _sUser + "'");
+        p("host: '" + _sHost + "'");
+        p("port: '" + _sPort + "'");
         
         
         String _sMailTo2 = "";
@@ -877,7 +921,7 @@ public class MailerFuncs {
             e.printStackTrace();
             return;
         }
-        System.out.println("mailto2: '" + _sMailTo2 + "'");
+        p("mailto2: '" + _sMailTo2 + "'");
 
         
         Properties props = new Properties();
@@ -908,7 +952,7 @@ public class MailerFuncs {
 //                });
 //        
         try {
-            System.out.println("preparing message");
+            p("preparing message");
             Message message = new MimeMessage(session);
             
             message.setFrom(new InternetAddress(username));
@@ -941,10 +985,10 @@ public class MailerFuncs {
                 String sToken = st.nextToken();
                 st.nextToken();
                 String sFile = _root + "/cass/pic/" + sToken + ".jpg";
-                System.out.println("File = '" + sFile + "'");
+                p("File = '" + sFile + "'");
                 File f = new File(sFile);
                 if (f.exists()) {                
-                    System.out.println("OK: File does exist.");
+                    p("OK: File does exist.");
                     messageBodyPart = new MimeBodyPart();
                     DataSource source = new FileDataSource(new File(sFile));
                     //messageBodyPart.setDataHandler(new DataHandler(source));
@@ -952,7 +996,7 @@ public class MailerFuncs {
                     messageBodyPart.setDisposition(MimeBodyPart.INLINE);
                     multipart.addBodyPart(messageBodyPart);           
                 } else {
-                    System.out.println("ERROR: File does not exist.");
+                    p("ERROR: File does not exist.");
                 }                
             }
 
@@ -974,7 +1018,7 @@ public class MailerFuncs {
 //                String w = "";
 //                w = st.nextToken();
 //                if (w.length() > 1) {
-//                    System.out.println(" string name: '" + w + "'");
+//                    p(" string name: '" + w + "'");
 //                    filename = w;
 //                }
 //            }
@@ -984,13 +1028,13 @@ public class MailerFuncs {
             
             message.setContent(multipart);
           
-            System.out.println("connecting...");        
+            p("connecting...");        
             SMTPTransport t =
 		(SMTPTransport)session.getTransport("smtps");   
             t.connect(_sHost, _sUser, password);
-            System.out.println("sending...");
+            p("sending...");
             t.sendMessage(message, message.getAllRecipients());
-            System.out.println("done!!!");
+            p("done!!!");
             t.close();
             
         } catch (MessagingException e) {
@@ -1030,12 +1074,12 @@ public class MailerFuncs {
                         });
 
                 Store store = session.getStore("pop3");
-                System.out.println("pop3: connecting");
-                System.out.println("pop3: _host " + _host);
-                System.out.println("pop3: _port " + _port);
-                System.out.println("pop3: _username " + _username);
+                p("pop3: connecting");
+                p("pop3: _host " + _host);
+                p("pop3: _port " + _port);
+                p("pop3: _username " + _username);
                 store.connect();
-                System.out.println("pop3: connected");
+                p("pop3: connected");
                 store.close();
             
     }
@@ -1047,14 +1091,14 @@ public class MailerFuncs {
             String _sMailUser,
             String _sMailPassword) throws MessagingException {
                 
-          System.out.println("send_tls");
+          p("send_tls");
         
         final String username = _sMailUser;
         final String password = _sMailPassword;
         
-        System.out.println("user: '" + _sMailUser + "'");
-        System.out.println("host: '" + _sMailHost + "'");
-        System.out.println("port: '" + _sMailPort + "'");
+        p("user: '" + _sMailUser + "'");
+        p("host: '" + _sMailHost + "'");
+        p("port: '" + _sMailPort + "'");
         
         
         
@@ -1066,7 +1110,7 @@ public class MailerFuncs {
         Session session = Session.getInstance(props, null);
 
         if (_sMailPort.equals("465")) {
-            System.out.println("-------SMTPS mode====");
+            p("-------SMTPS mode====");
             sProtocol = "smtps";
             props.put("mail.smtps.host", _sMailHost);
             //props.put("mail.transport.protocol", "smtp");
@@ -1076,7 +1120,7 @@ public class MailerFuncs {
             props.put("mail.smtps.port", _sMailPort);
             props.put("mail.smtps.ssl.trust", _sMailHost);
         } else {
-            System.out.println("-------SMTP mode====");
+            p("-------SMTP mode====");
             sProtocol = "smtp";
             props.put("mail.smtp.host", _sMailHost);
             props.put("mail.transport.protocol", "smtp");
@@ -1091,12 +1135,12 @@ public class MailerFuncs {
             
             SMTPTransport t =
 		(SMTPTransport)session.getTransport(sProtocol);   
-            System.out.println("smtp: connecting");
-            System.out.println("smtp: _host " + _sMailHost);
-            System.out.println("smtp: _port " + _sMailPort);
-            System.out.println("smtp: _username " + _sMailUser);
+            p("smtp: connecting");
+            p("smtp: _host " + _sMailHost);
+            p("smtp: _port " + _sMailPort);
+            p("smtp: _username " + _sMailUser);
             t.connect(_sMailHost, _sMailUser, password);
-            System.out.println("smtp: connected");           
+            p("smtp: connected");           
             t.close();
             
         } catch (MessagingException e) {
