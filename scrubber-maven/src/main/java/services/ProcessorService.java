@@ -551,6 +551,19 @@ public class ProcessorService implements Runnable{
                         }
                         if(totalparts == nropart){
                             //final part arrived, time to build large file
+                            boolean allChunksExist = true;
+                            for (int i = 1; i<=totalparts && allChunksExist; i++) {
+                                String filePartName = mScanDirectory + "/" + deviceid + "." + name + "." + totalparts + "." + i + ".p";
+                                p("file part name: " + filePartName);
+                                File filePart = new File(filePartName);
+                                if (!filePart.exists()) {
+                                    allChunksExist=false;
+                                    p("file part does not exist: " + filePart.getAbsolutePath());
+                                }
+                            }
+                            if(!allChunksExist)
+                                continue;
+                            p("All file parts exist. Merging...");
                             File ofile = new File(mScanDirectory + "/" + deviceid + "." + name + ".b");
 
                             p("output large file = " + ofile.getAbsolutePath());
