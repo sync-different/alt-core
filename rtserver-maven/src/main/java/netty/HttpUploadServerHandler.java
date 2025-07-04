@@ -53,11 +53,8 @@ import io.netty.util.CharsetUtil;
 import java.io.File;
 import java.io.IOException;
 import java.net.URI;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.Map.Entry;
-import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -65,6 +62,7 @@ import static io.netty.buffer.Unpooled.*;
 import static io.netty.handler.codec.http.HttpHeaders.Names.*;
 
 public class HttpUploadServerHandler extends SimpleChannelInboundHandler<HttpObject> {
+    HashMap<String,String> formData = new HashMap<>();
 
     private static final Logger logger = Logger.getLogger(HttpUploadServerHandler.class.getName());
 
@@ -101,6 +99,7 @@ public class HttpUploadServerHandler extends SimpleChannelInboundHandler<HttpObj
 
     @Override
     public void channelRead0(ChannelHandlerContext ctx, HttpObject msg) throws Exception {
+
         if (msg instanceof HttpRequest) {
             HttpRequest request = this.request = (HttpRequest) msg;
             URI uri = new URI(request.getUri());
@@ -180,6 +179,7 @@ public class HttpUploadServerHandler extends SimpleChannelInboundHandler<HttpObj
         // check if the decoder was constructed before
         // if not it handles the form get
         if (decoder != null) {
+
             if (msg instanceof HttpContent) {
                 // New chunk is received
                 HttpContent chunk = (HttpContent) msg;
@@ -227,7 +227,7 @@ public class HttpUploadServerHandler extends SimpleChannelInboundHandler<HttpObj
                 if (data != null) {
                     try {
                         // new value
-                        writeHttpData(data);
+                        writeHttpData(data );
                     } finally {
                         data.release();
                     }
@@ -240,11 +240,13 @@ public class HttpUploadServerHandler extends SimpleChannelInboundHandler<HttpObj
     }
 
     private void writeHttpData(InterfaceHttpData data) {
+
         if (data.getHttpDataType() == HttpDataType.Attribute) {
             Attribute attribute = (Attribute) data;
             String value;
             try {
                 value = attribute.getValue();
+                formData.put(attribute.getName(),value);
             } catch (IOException e1) {
                 // Error while reading data from File, only print name and error
                 e1.printStackTrace();
@@ -279,10 +281,19 @@ public class HttpUploadServerHandler extends SimpleChannelInboundHandler<HttpObj
                     }
                     // fileUpload.isInMemory();// tells if the file is in Memory
                     // or on File
-                    
-                    File dest = new File("../rtserver/incoming" + File.separator + fileUpload.getName());
-                    System.out.println("incoming getFileName () (netty): " + fileUpload.getFilename());
-                    System.out.println("incoming getName() (netty): " + fileUpload.getName());
+                    boolean isChunked = formData.containsKey("dzchunkindex");
+                    File dest =null;
+                    if(isChunked) {
+                        Integer chunkIndex= Integer.parseInt(formData.get("dzchunkindex"))+1;
+                        String chunkTotal= formData.get("dztotalchunkcount");
+                        dest=new File("../rtserver/incoming" + File.separator +"upload."+ fileUpload.getFilename()+"."+chunkTotal+"."+chunkIndex+".p");
+                        System.out.println("incoming Chunked getFileName () (netty): " + fileUpload.getFilename());
+                        System.out.println("incoming Chunked getName() (netty): " + fileUpload.getName());
+                    }else{
+                        dest=new File("../rtserver/incoming" + File.separator + fileUpload.getName());
+                        System.out.println("incoming getFileName () (netty): " + fileUpload.getFilename());
+                        System.out.println("incoming getName() (netty): " + fileUpload.getName());
+                    }
                     try {
                         fileUpload.renameTo(dest);
                     } catch (Exception e) {

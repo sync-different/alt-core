@@ -52,9 +52,9 @@ angular.module('app.controllers').controller('FilterController', function (Conf,
             retryChunks: true,
             retryChunksLimit: 3,
             init: function() {
-                var chunkIndex=0;
                 this.on("sending", function(file, xhr, formData) {
                   // Change the file name sent to the server
+                    var chunkIndex = this.options.chunkIndex;
                     var lasIndex= Math.ceil(file.size/chunkSize);
                     this.options.paramName="upload."+file.name+'.'+lasIndex+'.'+(++chunkIndex)+".p";
                     var parser = document.createElement('a');
@@ -64,21 +64,22 @@ angular.module('app.controllers').controller('FilterController', function (Conf,
                     else{
                         this.options.url = "https://"+parser.hostname+"/"+this.options.paramName;
                         // Suppose 'formData' is your FormData instance
-                        formData.delete('dzchunkindex');
+                        /*formData.delete('dzchunkindex');
                         formData.delete('dztotalfilesize');
                         formData.delete('dzchunksize');
                         formData.delete('dztotalchunkcount');
                         formData.delete('dzchunkbyteoffset');
                         formData.delete('WebKitFormBoundary5iwA0HqPfTOnv1OH');
                         formData.delete(this.options.paramName);
-
+                        */
                         // Repeat for any other keys you want to remove
                     }
+                    this.options.chunkIndex=chunkIndex;
 
                 });
 
 				this.on("processing", function(file) {
-                    chunkIndex=0;
+                    var chunkIndex=0;
 					var lasIndex= Math.ceil(file.size/chunkSize);
                     this.options.paramName="upload."+file.name+'.'+lasIndex+'.'+(++chunkIndex)+".p";
                     this.options.header="Access-Control-Allow-Origin: https://web.alterante.com";
@@ -88,12 +89,24 @@ angular.module('app.controllers').controller('FilterController', function (Conf,
 				    	this.options.url = "http://"+parser.hostname+":"+netty_port_post+"/formpost";//+file.name;
 					else
 						this.options.url = "https://"+parser.hostname+"/"+this.options.paramName;
-
+                    this.options.chunkIndex=chunkIndex;
+                    this.options.chunkError=false;
 				});
+
+				this.on("success", function(file) {
+                  this.options.chunkError=false;
+                });
+
+                this.on("error", function(file, message) {
+                 if(!this.options.chunkError){
+                    this.options.chunkError=true;
+                    this.options.chunkIndex--;
+                 }
+                });
 			}
 	});
  	 
-	
+
 	$(document).on('dragover', function(e) {
 		var dt = e.originalEvent.dataTransfer;
 		if(dt.types != null && (dt.types.indexOf ? dt.types.indexOf('Files') != -1 : dt.types.contains('application/x-moz-file'))) {

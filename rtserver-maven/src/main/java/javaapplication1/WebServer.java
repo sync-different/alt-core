@@ -8804,36 +8804,31 @@ class Worker extends WebServer implements HttpConstants, Runnable {
         }
         sFileName=sFileName.trim();
         if(sFileName.endsWith(".p")){
+             if(!connectToNetty(buf)){
 
-            //String data = new String(buf, end, nread - end, "UTF-8");
-            //int iInitialIndex=data.indexOf("-----WebKitFormBoundary");
-            //int iContentType=data.substring(iInitialIndex).indexOf("Content-Type");
-            //int iContentTypeEnd=data.substring(iContentType).indexOf("\r\n\r\n");
-            //int eIndex=data.substring(iContentType,iContentTypeEnd).indexOf("\r\n------WebKitFormBoundary");
+                 FileOutputStream outFile = new FileOutputStream(sFileNew + "r");
+                 outFile.write(buf, end, nread - end);
+                 outFile.close();
 
-            //byte[] fileContent = data.substring(iContentTypeEnd,eIndex-("\r\n------WebKitFormBoundary".length())).getBytes("UTF-8");
+                 boolean success = BinaryExtractorUtil.extractBinarySection(
+                         sFileNew + "r",
+                         sFileNew
+                 );
+                 new File(sFileNew + "r").delete();
 
-            FileOutputStream outFile = new FileOutputStream(sFileNew + "r");
-            outFile.write(buf, end, nread - end);
-            outFile.close();
+                 if (success) {
+                     p("✓ Binary extraction successful!");
 
-            boolean success = BinaryExtractorUtil.extractBinarySection(
-                    sFileNew + "r",
-                    sFileNew
-            );
-            new File(sFileNew + "r").delete();
+                     // Read and display the extracted content
+                     //byte[] extractedData = Files.readAllBytes(Paths.get("extracted-binary.bin"));
+                     //p("Extracted " + extractedData.length + " bytes");
+                     //p("Content preview: " + new String(extractedData).substring(0,
+                     //Math.min(100, extractedData.length)) + "...");
+                 } else {
+                     pw("✗ WARNING: Binary extraction failed");
+                 }
 
-            if (success) {
-                p("✓ Binary extraction successful!");
-
-                // Read and display the extracted content
-                //byte[] extractedData = Files.readAllBytes(Paths.get("extracted-binary.bin"));
-                //p("Extracted " + extractedData.length + " bytes");
-                //p("Content preview: " + new String(extractedData).substring(0,
-                //Math.min(100, extractedData.length)) + "...");
-            } else {
-                pw("✗ WARNING: Binary extraction failed");
-            }
+             }
 
         }else {
             FileOutputStream outFile = new FileOutputStream(sFileNew);
@@ -8851,6 +8846,26 @@ class Worker extends WebServer implements HttpConstants, Runnable {
         }
 
         return sQueryString;
+    }
+
+    private boolean connectToNetty(byte[] buf) {
+        String host ="localhost" ;
+        int port = 8087;
+
+        try (
+                Socket socket = new Socket(host, port);
+                BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()))) {
+                socket.getOutputStream().write(buf);
+                String response = in.readLine();
+                System.out.println("Server response: " + response);
+                socket.close();
+                in.close();
+
+            return response.contains("HTTP/1.1 200 OK");
+        } catch (IOException e) {
+            e.printStackTrace();
+            return false;
+        }
     }
 
     boolean isUUIDValid(String sUUID) {
