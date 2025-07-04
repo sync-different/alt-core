@@ -9,7 +9,10 @@ import java.io.InputStreamReader;
 import java.io.UnsupportedEncodingException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.Date;
 import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -18,6 +21,62 @@ import utils.NetUtils;
 
 public class FfmpegExecutor {
     
+    //BEGIN ANSI
+
+    /* print to stdout */
+    protected static void p(String s) {
+
+        if (bConsole) {
+            Date ts_start = Calendar.getInstance().getTime();
+            SimpleDateFormat sdf = new SimpleDateFormat("yyyy/MM/dd hh:mm:ss");
+            String sDate = sdf.format(ts_start);
+
+            long threadID = Thread.currentThread().getId();
+            p(sDate + " [DEBUG] [SC.DatabaseEntry-" + threadID + "] " + s);
+        }
+    }
+
+    public static final String ANSI_RED = "\u001B[31m";
+    public static final String ANSI_GREEN = "\u001B[32m";
+    public static final String ANSI_YELLOW = "\u001B[33m";
+    public static final String ANSI_RESET = "\u001B[0m";
+
+    protected static void pw(String s) {
+        Date ts_start = Calendar.getInstance().getTime();
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy/MM/dd hh:mm:ss");
+        String sDate = sdf.format(ts_start);
+
+        if (bConsole) {
+            long threadID = Thread.currentThread().getId();
+            System.out.println(ANSI_YELLOW + sDate + " [WARNING] [SC.FFmpegExecutor-" + threadID + "] " + s + ANSI_RESET);
+        }
+    }
+
+    protected static void pi(String s) {
+        Date ts_start = Calendar.getInstance().getTime();
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy/MM/dd hh:mm:ss");
+        String sDate = sdf.format(ts_start);
+
+        if (bConsole) {
+            long threadID = Thread.currentThread().getId();
+            System.out.println(ANSI_GREEN + sDate + " [INFO ] [SC.FFmpegExecutor-" + threadID + "] " + s + ANSI_RESET);
+        }
+    }
+
+    protected static void pe(String s) {
+        Date ts_start = Calendar.getInstance().getTime();
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy/MM/dd hh:mm:ss");
+        String sDate = sdf.format(ts_start);
+
+        if (bConsole) {
+            long threadID = Thread.currentThread().getId();
+            System.out.println(ANSI_RED + sDate + " [ERROR] [SC.FFmpegExecutor-" + threadID + "] " + s + ANSI_RESET);
+        }
+    }
+
+    static boolean bConsole = true; //if true, print to console
+
+    //END ANSI
     
     
     public void execute(File _input, String _md5, String _outputfolderPath, String _projectsFolderPath, boolean _isWindows){
@@ -65,7 +124,7 @@ public class FfmpegExecutor {
                     logFilePath = _projectsFolderPath + "/rtserver/streaming/"+ _md5 + "/log.txt";
                 }
                 File logFile = new File(logFilePath);
-                System.out.println(logFile.getCanonicalPath());
+                p(logFile.getCanonicalPath());
 
                 logwriter = new BufferedWriter(new FileWriter(logFile));
 
@@ -79,9 +138,9 @@ public class FfmpegExecutor {
 
                     List<String> arguments = getCommandWin("\\..\\ffmpeg_win.txt", _projectsFolderPath, ffmpegexeFile, _input, outputm3u8File, _md5, outputtsFile, _outputthumbFile);
                     
-                    System.out.println("----calling ffmpeg------");
-                    System.out.println(arguments.toString());
-                    System.out.println("----calling ffmpeg[end]------");
+                    p("----calling ffmpeg------");
+                    p(arguments.toString());
+                    p("----calling ffmpeg[end]------");
                     
                     Process proc = new ProcessBuilder(arguments).redirectErrorStream(true).start();
                     
@@ -92,19 +151,19 @@ public class FfmpegExecutor {
                     String s2 = null;
                     while ((s2 = stdInput2.readLine()) != null) {
                         logwriter.write("[O]" + s2 + "\n");
-                        System.out.println("[O]" + s2);
+                        p("[O]" + s2);
                     }
 
                     while ((s2 = stdError2.readLine()) != null) {
                         logwriter.write("[E]" + s2 + "\n");
-                        System.out.println("[E]" + s2);
+                        p("[E]" + s2);
                     }
                     
                     List<String> arguments2 = getCommandWin("\\..\\ffmpeg_win_thumb.txt", _projectsFolderPath, ffmpegexeFile, _input, outputm3u8File, _md5, outputtsFile, _outputthumbFile);
                     
-                    System.out.println("----calling ffmpeg--thumbnail----");
-                    System.out.println(arguments2.toString());
-                    System.out.println("----calling ffmpeg--thumnail---[end]------");
+                    p("----calling ffmpeg--thumbnail----");
+                    p(arguments2.toString());
+                    p("----calling ffmpeg--thumnail---[end]------");
                     
                     Process proc2 = new ProcessBuilder(arguments2).redirectErrorStream(true).start();
                     
@@ -115,12 +174,12 @@ public class FfmpegExecutor {
                     String s3 = null;
                     while ((s3 = stdInput3.readLine()) != null) {
                         logwriter.write("[O]" + s3 + "\n");
-                        System.out.println("[O]" + s3);
+                        p("[O]" + s3);
                     }
 
                     while ((s3 = stdError3.readLine()) != null) {
                         logwriter.write("[E]" + s3 + "\n");
-                        System.out.println("[E]" + s3);
+                        p("[E]" + s3);
                     }
                     
                 
@@ -141,7 +200,7 @@ public class FfmpegExecutor {
                     scriptFile.write(command + "\n");
                     scriptFile.close();
 
-                    System.out.println(command);
+                    p(command);
 
                     Process p = null;
                     BufferedReader stdError = null;
@@ -155,31 +214,31 @@ public class FfmpegExecutor {
 
                     while ((s = stdError.readLine()) != null) {
                         logwriter.write("[E]" + s + "\n");
-                        System.out.println("[E]" + s);
+                        p("[E]" + s);
                     }
 
                     stdOutput = new BufferedReader(new InputStreamReader(p.getInputStream()));
 
                     while ((s = stdOutput.readLine()) != null) {
-                        System.out.println("[O]" + s);
+                        p("[O]" + s);
                         logwriter.write("[O]" + s + "\n");
                     }
 
                     p = Runtime.getRuntime().exec(scriptName);
-                    System.out.println(outputm3u8File.getCanonicalPath());
+                    p(outputm3u8File.getCanonicalPath());
 
                     stdError = new BufferedReader(new InputStreamReader(p.getErrorStream()));
                     s = null;
 
                     while ((s = stdError.readLine()) != null) {
                         logwriter.write("[E]" + s + "\n");
-                        System.out.println("[E]" + s);
+                        p("[E]" + s);
                     }
 
                     stdOutput = new BufferedReader(new InputStreamReader(p.getInputStream()));
 
                     while ((s = stdOutput.readLine()) != null) {
-                        System.out.println("[O]" + s);
+                        p("[O]" + s);
                         logwriter.write("[O]" + s + "\n");
                     }
                     
@@ -224,11 +283,11 @@ public class FfmpegExecutor {
         String clusteridUUIDPath = "../scrubber/data/clusterid";
         String clusteridUUID = NetUtils.getUUID(clusteridUUIDPath);
         
-        System.out.println("-----getCommandWin------");
-        System.out.println("outputm3u8File   : '" + outputm3u8File.getCanonicalPath()+ "'");
-        System.out.println("outputtsFile     : '" + outputtsFile.getCanonicalPath() + "'");
-        System.out.println("thumbfile        : '" + outputthumbnailFile.getCanonicalPath() + "'");
-        System.out.println("-----getCommandWin-end-----");
+        p("-----getCommandWin------");
+        p("outputm3u8File   : '" + outputm3u8File.getCanonicalPath()+ "'");
+        p("outputtsFile     : '" + outputtsFile.getCanonicalPath() + "'");
+        p("thumbfile        : '" + outputthumbnailFile.getCanonicalPath() + "'");
+        p("-----getCommandWin-end-----");
         
         for (String arg : args) {
             if(arg.equals("$$ffmpegexePath$$")) arg = ffmpegexeFile.getCanonicalPath();
