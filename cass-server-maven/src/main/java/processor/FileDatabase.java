@@ -101,6 +101,7 @@ public final class FileDatabase {
             
     }
 
+    // BEGIN ANSI
     static boolean bConsole = true;
 
     public static final String ANSI_RED = "\u001B[31m";
@@ -132,9 +133,12 @@ public final class FileDatabase {
 
     /* print to stdout */
     protected static void p(String s) {
+        Date ts_start = Calendar.getInstance().getTime();
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy/MM/dd hh:mm:ss");
+        String sDate = sdf.format(ts_start);
 
         long threadID = Thread.currentThread().getId();
-        System.out.println("[CS.FileDatabase_" + threadID + "] " + s);
+        System.out.println(sDate + "[DEBUG] [CS.FileDatabase_" + threadID + "] " + s);
     }
 
     /* print to the log file */
@@ -151,6 +155,8 @@ public final class FileDatabase {
         }
         p(s);
     }
+
+    // END ANSI
 
     void loadBackupProps() throws IOException {
     

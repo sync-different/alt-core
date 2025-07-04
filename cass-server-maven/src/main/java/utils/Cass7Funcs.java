@@ -197,12 +197,58 @@ public class Cass7Funcs {
             }
         }
     }
-    
+
+    // ***** BEGIN ANSI *****
+
+    static boolean bConsole = true;
+
+    public static final String ANSI_RED = "\u001B[31m";
+    public static final String ANSI_GREEN = "\u001B[32m";
+    public static final String ANSI_YELLOW = "\u001B[33m";
+    public static final String ANSI_RESET = "\u001B[0m";
+
+    protected static void pw(String s) {
+        Date ts_start = Calendar.getInstance().getTime();
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy/MM/dd hh:mm:ss");
+        String sDate = sdf.format(ts_start);
+
+        if (bConsole) {
+            long threadID = Thread.currentThread().getId();
+            System.out.println(ANSI_YELLOW + sDate + " [WARNING] [CS.Cass7Funcs-" + threadID + "] " + s + ANSI_RESET);
+        }
+    }
+
+    protected static void pi(String s) {
+        Date ts_start = Calendar.getInstance().getTime();
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy/MM/dd hh:mm:ss");
+        String sDate = sdf.format(ts_start);
+
+        if (bConsole) {
+            long threadID = Thread.currentThread().getId();
+            System.out.println(ANSI_GREEN + sDate + " [INFO ] [CS.Cass7Funcs-" + threadID + "] " + s + ANSI_RESET);
+        }
+    }
+
+    protected static void pe(String s) {
+        Date ts_start = Calendar.getInstance().getTime();
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy/MM/dd hh:mm:ss");
+        String sDate = sdf.format(ts_start);
+
+        if (bConsole) {
+            long threadID = Thread.currentThread().getId();
+            System.out.println(ANSI_RED + sDate + " [ERROR] [CS.Cass7Funcs-" + threadID + "] " + s + ANSI_RESET);
+        }
+    }
+
     /* print to stdout */
-    protected static void p(String s) {
+    static protected void p(String s) {
+
+        Date ts_start = Calendar.getInstance().getTime();
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy/MM/dd hh:mm:ss");
+        String sDate = sdf.format(ts_start);
 
         long threadID = Thread.currentThread().getId();
-        System.out.println("[" + threadID + "] " + s);
+        System.out.println(sDate + " [DEBUG] [CS.Cass7Funcs_" + threadID + "] " + s);
     }
 
     public boolean connect(String host, int port) throws UnsupportedEncodingException,
@@ -730,31 +776,31 @@ public class Cass7Funcs {
         //File directory = new File("../app/projects/rtserver").getAbsoluteFile();
         if (directory.exists())
         {
-            System.out.println("[loadfuncs] Found app directory. Setting working dir to it");
+            p("[loadfuncs] Found app directory. Setting working dir to it");
             result = (System.setProperty("user.dir", directory.getAbsolutePath()) != null);
             
             appendage = "/Applications/Alterante.app/Contents/AlteranteJava.app/Contents/app/projects/rtserver/";
-            System.out.println("appendage  = " + appendage);            
+            p("appendage  = " + appendage);
             //appendage = "../app/projects/rtserver/";        
         }
         
         String username = System.getProperty("user.name");
-        System.out.println("username: " + username);
+        p("username: " + username);
         File directoryRW = new File("/Users/" + username + "/Library/Containers/com.alterante.desktopapp1j");
         if (directoryRW.exists()) {
-            System.out.println("[Cass7Funcs] Found container directory. checking folders.");
+            p("[Cass7Funcs] Found container directory. checking folders.");
             appendageRW = "/Users/" + username + "/Library/Containers/com.alterante.desktopapp1j/Data/app/projects/rtserver/";
             File dir = new File("/Users" + username + "/Library/Containers/com.alterante.desktopapp1j/Data/app/projects/rtserver");
             if (dir.exists()) {
-                System.out.println("appendageRW rtserver exists.");            
+                p("appendageRW rtserver exists.");
             } else {
                 boolean res = new File(appendageRW).mkdirs();
-                System.out.println("appendageRW rtserver create = " + res);                            
+                p("appendageRW rtserver create = " + res);
                 res = new File(appendageRW + "/logs/").mkdirs();
-                System.out.println("appendageRW rtserver create logs = " + res);                            
+                p("appendageRW rtserver create logs = " + res);
             }               
         } else {
-            System.out.println("[Cass7Funcs] Container directory not found.");
+            p("[Cass7Funcs] Container directory not found.");
         }
         
     }
@@ -3420,7 +3466,7 @@ public class Cass7Funcs {
                             res.append("\"img_width\": \"" + sWidth + "\",\n");                                
                         
                         } else {
-                            System.out.println("WARNING: Thumbnail 64 not found: " + fh64.getCanonicalPath() );
+                            pw("WARNING: Thumbnail 64 not found: " + fh64.getCanonicalPath() );
                         }                        
                     }
                     

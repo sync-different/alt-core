@@ -60,9 +60,53 @@ import org.apache.hc.core5.http.ContentType;
 
 //import org.apache.hc.core5.http.ClassicHttpRequest;
 
+import java.util.Date;
+import java.util.Calendar;
+import java.text.SimpleDateFormat;
 
-        
 public class HTTPRequestPoster {
+
+    // BEGIN ANSI
+    static boolean bConsole = true;
+
+    public static final String ANSI_RED = "\u001B[31m";
+    public static final String ANSI_GREEN = "\u001B[32m";
+    public static final String ANSI_YELLOW = "\u001B[33m";
+    public static final String ANSI_RESET = "\u001B[0m";
+
+    protected static void pw(String s) {
+        Date ts_start = Calendar.getInstance().getTime();
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy/MM/dd hh:mm:ss");
+        String sDate = sdf.format(ts_start);
+
+        if (bConsole) {
+            long threadID = Thread.currentThread().getId();
+            System.out.println(ANSI_YELLOW + sDate + " [WARNING] [CS.HTTPRequestPoster-" + threadID + "] " + s + ANSI_RESET);
+        }
+    }
+
+    protected static void pi(String s) {
+        Date ts_start = Calendar.getInstance().getTime();
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy/MM/dd hh:mm:ss");
+        String sDate = sdf.format(ts_start);
+
+        if (bConsole) {
+            long threadID = Thread.currentThread().getId();
+            System.out.println(ANSI_GREEN + sDate + " [INFO ] [CS.HTTPRequestPoster-" + threadID + "] " + s + ANSI_RESET);
+        }
+    }
+
+    /* print to stdout */
+    protected static void p(String s) {
+        Date ts_start = Calendar.getInstance().getTime();
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy/MM/dd hh:mm:ss");
+        String sDate = sdf.format(ts_start);
+
+        long threadID = Thread.currentThread().getId();
+        System.out.println(sDate + " [DEBUG] [CS.HTTPRequestPoster_" + threadID + "] " + s);
+    }
+
+    // END ANSI
     
 public static void main(String[] args) throws Exception {
     
@@ -189,16 +233,16 @@ public static boolean postData(InputStream data, URL endpoint, Writer output) th
         urlc.setAllowUserInteraction(false);
         urlc.setRequestProperty("Content-type", "application/octet-stream; charset=" + "UTF-8");
 
-        System.out.println("[0a]");
+        p("[0a]");
         int timeout = 30;
         
-        System.out.println("timeout = " + timeout);
+        p("timeout = " + timeout);
         urlc.setReadTimeout(timeout* 1000);  
         urlc.setConnectTimeout(timeout* 1000);  
                         
         urlc.connect();
         
-        System.out.println("[0b]");
+        p("[0b]");
         
         OutputStream out = null;
         try {
@@ -208,11 +252,11 @@ public static boolean postData(InputStream data, URL endpoint, Writer output) th
             //writer.close();
         } catch (IOException e) {
             e.printStackTrace();
-            System.out.println("IOException while posting data");
+            pw("IOException while posting data");
             return false;
         } catch (Exception e) {
             e.printStackTrace();
-            System.out.println("Exception while posting data");            
+            pw("Exception while posting data");
             return false;
         } finally {
             if (out != null) {
@@ -220,29 +264,29 @@ public static boolean postData(InputStream data, URL endpoint, Writer output) th
             }
         }
 
-        System.out.println("[1]");
+        p("[1]");
 
         InputStream in = null;
         try {
-            System.out.println("[1a]");
-            System.out.println("[1b]");
+            p("[1a]");
+            p("[1b]");
             in = urlc.getInputStream();
-            System.out.println("[1c]");
+            p("[1c]");
             Reader reader = new InputStreamReader(in);
-            System.out.println("[1d]");
+            pw("[1d]");
             pipe2(reader, output);
-            System.out.println("[1e]");
+            pw("[1e]");
             reader.close();
         } catch (SocketTimeoutException e) {            
-            System.out.println("Socket Timeout.");
+            pw("Socket Timeout.");
             e.printStackTrace();
             return false;
         } catch (IOException e) {
-            System.out.println("IOException while reading response.");
+            pw("IOException while reading response.");
             e.printStackTrace();
             return false;
         } catch (Exception e) {
-            System.out.println("Unknown exception.");
+            pw("Unknown exception.");
             e.printStackTrace();
             return false;
         } finally {
@@ -250,19 +294,19 @@ public static boolean postData(InputStream data, URL endpoint, Writer output) th
                 in.close();
             }
         }
-        System.out.println("[2]");
+        p("[2]");
         bAllOK = true;
 
     } catch (IOException e) {
-        System.out.println("Connection error (is server running at " + endpoint);
+        pw("Connection error (is server running at " + endpoint);
         e.printStackTrace();
         return false;
     } finally {
         if (urlc != null) {
-            System.out.println("[3]");
+            p("[3]");
             urlc.disconnect();
         } else {
-            System.out.println("[3b]");  
+            p("[3b]");
         }
         if (bAllOK) {
             return true;
@@ -278,11 +322,11 @@ public boolean postDataHttps_new(InputStream data, String _relayHost, String _re
         //PostMethod postFile = null;
         //HttpClient httpclient = null;
         
-        System.out.println("postDataHttps_new --------");
-        System.out.println("_relayhost: '" + _relayHost);
-        System.out.println("_relayport: '" + _relayPort);
-        System.out.println("_clusterID: '" + _clusterId);
-        System.out.println("_cluterToken: '" + _clusterToken);
+        p("postDataHttps_new --------");
+        p("_relayhost: '" + _relayHost);
+        p("_relayport: '" + _relayPort);
+        p("_clusterID: '" + _clusterId);
+        p("_cluterToken: '" + _clusterToken);
         
         try {
             String _protocol;
@@ -298,7 +342,7 @@ public boolean postDataHttps_new(InputStream data, String _relayHost, String _re
             String responseUrl = String.format("%s://%s:%s/clusters/%s/share?access-token=%s", 
                                                _protocol, _relayHost, _relayPort, _clusterId, _clusterToken); 
             
-            System.out.println("ResponseURL = " + responseUrl);
+            p("ResponseURL = " + responseUrl);
             
             PostMethod postFile = new PostMethod(responseUrl);                
 
@@ -315,8 +359,8 @@ public boolean postDataHttps_new(InputStream data, String _relayHost, String _re
             // Get the contents of the response
             String res = postFile.getResponseBodyAsString();
                        
-            System.out.println("code = " + statusCode);
-            System.out.println("res = " + res);
+            p("code = " + statusCode);
+            p("res = " + res);
                                                 
             if (statusCode == 200) {
                 //all ok , write output 
@@ -328,7 +372,7 @@ public boolean postDataHttps_new(InputStream data, String _relayHost, String _re
                 e.printStackTrace();
                 return false;
             } finally {
-                System.out.println("FINALLY...");
+                p("FINALLY...");
                 return true;                
             }            
         }
@@ -340,7 +384,7 @@ public static boolean postDataHttps(InputStream data, URL endpoint, Writer outpu
     try
     {
     String ep = endpoint.toString();
-    System.out.println("endpoint: " + ep);
+    p("endpoint: " + ep);
     
     TrustManager[] trustAllCerts = new TrustManager[]{
     new X509TrustManager() {
@@ -377,16 +421,16 @@ public static boolean postDataHttps(InputStream data, URL endpoint, Writer outpu
         urlc.setAllowUserInteraction(false);
         urlc.setRequestProperty("Content-type", "application/octet-stream; charset=" + "UTF-8");
 
-        System.out.println("[0a]");
+        p("[0a]");
         int timeout = 30;
         
-        System.out.println("timeout = " + timeout);
+        p("timeout = " + timeout);
         urlc.setReadTimeout(timeout* 1000);  
         urlc.setConnectTimeout(timeout* 1000);  
                         
         urlc.connect();
         
-        System.out.println("[0b]");
+        p("[0b]");
         
         OutputStream out = null;
         try {
@@ -396,11 +440,11 @@ public static boolean postDataHttps(InputStream data, URL endpoint, Writer outpu
             //writer.close();
         } catch (IOException e) {
             e.printStackTrace();
-            System.out.println("IOException while posting data");
+            pw("IOException while posting data");
             return false;
         } catch (Exception e) {
             e.printStackTrace();
-            System.out.println("Exception while posting data");            
+            pw("Exception while posting data");
             return false;
         } finally {
             if (out != null) {
@@ -408,29 +452,29 @@ public static boolean postDataHttps(InputStream data, URL endpoint, Writer outpu
             }
         }
 
-        System.out.println("[1]");
+        p("[1]");
 
         InputStream in = null;
         try {
-            System.out.println("[1a]");
-            System.out.println("[1b]");
+            p("[1a]");
+            p("[1b]");
             in = urlc.getInputStream();
-            System.out.println("[1c]");
+            p("[1c]");
             Reader reader = new InputStreamReader(in);
-            System.out.println("[1d]");
+            p("[1d]");
             pipe2(reader, output);
-            System.out.println("[1e]");
+            p("[1e]");
             reader.close();
         } catch (SocketTimeoutException e) {            
-            System.out.println("Socket Timeout.");
+            pw("Socket Timeout.");
             e.printStackTrace();
             return false;
         } catch (IOException e) {
-            System.out.println("IOException while reading response.");
+            pw("IOException while reading response.");
             e.printStackTrace();
             return false;
         } catch (Exception e) {
-            System.out.println("Unknown exception.");
+            pw("Unknown exception.");
             e.printStackTrace();
             return false;
         } finally {
@@ -438,19 +482,19 @@ public static boolean postDataHttps(InputStream data, URL endpoint, Writer outpu
                 in.close();
             }
         }
-        System.out.println("[2]");
+        p("[2]");
         bAllOK = true;
 
     } catch (IOException e) {
-        System.out.println("Connection error (is server running at " + endpoint);
+        pw("Connection error (is server running at " + endpoint);
         e.printStackTrace();
         return false;
     } finally {
         if (urlc != null) {
-            System.out.println("[3]");
+            p("[3]");
             urlc.disconnect();
         } else {
-            System.out.println("[3b]");  
+            p("[3b]");
         }
         if (bAllOK) {
             return true;
@@ -473,7 +517,7 @@ private static void pipe(InputStream reader, OutputStream writer) throws IOExcep
     
     while ((read = reader.read(buf)) >= 0) {
         writer.write(buf, 0, read);
-        System.out.println("wrote chunk #: " + chunk);
+        p("wrote chunk #: " + chunk);
         chunk++;
         try {
             Thread.sleep(200);
@@ -490,13 +534,13 @@ private static void pipe2(Reader reader, Writer writer) throws IOException {
     char[] buf = new char[10240];
     int read = 0;
     
-    System.out.println("Entering pipe2");
+    p("Entering pipe2");
     while ((read = reader.read(buf)) >= 0) {
         writer.write(buf, 0, read);
     }
     writer.flush();
     buf = null;
-    System.out.println("Leaving pipe2");
+    p("Leaving pipe2");
 }
 
 public static int sendGetRequest(String endpoint, String requestParameters, String outfileName, int nTimeout) throws FileNotFoundException
@@ -504,7 +548,7 @@ public static int sendGetRequest(String endpoint, String requestParameters, Stri
     byte[] data;
     boolean bSourceExists = false;
    
-    System.out.println("***** sendGetRequest");
+    p("***** sendGetRequest");
     
     String result = null;
     if (endpoint.startsWith("http://")) {
@@ -520,21 +564,21 @@ public static int sendGetRequest(String endpoint, String requestParameters, Stri
                 }
             URL url = new URL(urlStr);
             URLConnection conn = url.openConnection ();
-            System.out.println("[a]");
+            p("[a]");
             // Get the response
 
             try {
 
                 Stopwatch timer = new Stopwatch().start();
 
-                //System.out.println("(getfile) [b] timeout: " + nTimeout);
+                //p("(getfile) [b] timeout: " + nTimeout);
                 conn.setReadTimeout(nTimeout);
                 
                 InputStream rd = conn.getInputStream();
                 
-                System.out.println("(getfile) [c]");
+                p("(getfile) [c]");
                 
-                System.out.println("(getfile) source file exists, dest file = '" + outfileName + "'");
+                p("(getfile) source file exists, dest file = '" + outfileName + "'");
                 bSourceExists = true;
 
                 FileOutputStream outFile = new FileOutputStream(outfileName);
@@ -544,7 +588,7 @@ public static int sendGetRequest(String endpoint, String requestParameters, Stri
 
                 int n;
 
-                //System.out.println("(getfile) [0]");
+                //p("(getfile) [0]");
 
                 while ((numRead = rd.read(data)) >= 0) {
                     outFile.write(data,0,numRead);
@@ -555,7 +599,7 @@ public static int sendGetRequest(String endpoint, String requestParameters, Stri
                 //while ((line = rd.readLine()) != null) {
                 //    sb.append(line);
                 //}
-                //System.out.println("(getfile) [1]");
+                //p("(getfile) [1]");
                 rd.close();
                 outFile.close();                
                 result =  String.valueOf(total);
@@ -563,7 +607,7 @@ public static int sendGetRequest(String endpoint, String requestParameters, Stri
                 
                 data = null;
 
-                //System.out.println("(getfile) [2]");
+                //p("(getfile) [2]");
                 if (total != 0) {
                     long elapsedtime = timer.getElapsedTime();
                     long speed = 0;
@@ -571,30 +615,30 @@ public static int sendGetRequest(String endpoint, String requestParameters, Stri
                         speed = total / (long) timer.getElapsedTime() * 1000 / 1024;
                     }
                     String sTime = "(getfile) Size: " + result + " Query time: " + timer.getElapsedTime() + " ms Speed: " + speed + "KB/s";
-                    System.out.println(sTime);
+                    p(sTime);
                     return 1;
                 } else {
-                    System.out.println("(getfile) length == 0; returning error -2");
+                    p("(getfile) length == 0; returning error -2");
                     return -2;
                 }
                 
             } catch (FileNotFoundException e) {
                 if (!bSourceExists) {
-                    System.out.println("(getfile) Source File not found: '" + urlStr + "'");
+                    pw("(getfile) Source File not found: '" + urlStr + "'");
                     return -1;
                 } else {
-                    System.out.println("(getfile) Unable to open dest file: " + outfileName);
+                    pw("(getfile) Unable to open dest file: " + outfileName);
                     return -3;
                 }
             } catch (Exception e ) {
-                System.out.println("(getfile) Other exception...");
-                System.out.println(e.getMessage());
+                pw("(getfile) Other exception...");
+                pw(e.getMessage());
                 e.printStackTrace();
                 return -2;
             }
 
         } catch (IOException e) {
-            System.out.println("(getfile) IOException");
+            pw("(getfile) IOException");
             e.printStackTrace();
         }
     }

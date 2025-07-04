@@ -13,27 +13,69 @@ import java.util.ArrayList;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import java.util.Calendar;
+import java.util.Date;
+import java.text.SimpleDateFormat;
 
-    
 public class UserCollection {
     
     private static ArrayList<User>  users;
-    
     private static UserCollection instance = null;
-    
     static String appendage = "";
-    
+
+    // BEGIN ANSI
+    static boolean bConsole = true;
+
+    public static final String ANSI_RED = "\u001B[31m";
+    public static final String ANSI_GREEN = "\u001B[32m";
+    public static final String ANSI_YELLOW = "\u001B[33m";
+    public static final String ANSI_RESET = "\u001B[0m";
+
+    protected static void pw(String s) {
+        Date ts_start = Calendar.getInstance().getTime();
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy/MM/dd hh:mm:ss");
+        String sDate = sdf.format(ts_start);
+
+        if (bConsole) {
+            long threadID = Thread.currentThread().getId();
+            System.out.println(ANSI_YELLOW + sDate + " [WARNING] [CS.UserCollection-" + threadID + "] " + s + ANSI_RESET);
+        }
+    }
+
+    protected static void pi(String s) {
+        Date ts_start = Calendar.getInstance().getTime();
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy/MM/dd hh:mm:ss");
+        String sDate = sdf.format(ts_start);
+
+        if (bConsole) {
+            long threadID = Thread.currentThread().getId();
+            System.out.println(ANSI_GREEN + sDate + " [INFO ] [CS.UserCollection-" + threadID + "] " + s + ANSI_RESET);
+        }
+    }
+
+    /* print to stdout */
+    protected static void p(String s) {
+        Date ts_start = Calendar.getInstance().getTime();
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy/MM/dd hh:mm:ss");
+        String sDate = sdf.format(ts_start);
+
+        long threadID = Thread.currentThread().getId();
+        System.out.println(sDate + " [DEBUG] [CS.UserCollection_" + threadID + "] " + s);
+    }
+
+    // END ANSI
+
      void setAppendage() {
         boolean result = false;
         File directory = new File("/Applications/Alterante.app/Contents/AlteranteJava.app/Contents/MacOS").getAbsoluteFile();
         //File directory = new File("../app/projects/rtserver").getAbsoluteFile();
         if (directory.exists())
         {
-            System.out.println("[loadfuncs] Found app directory. Setting working dir to it");
+            p("[loadfuncs] Found app directory. Setting working dir to it");
             result = (System.setProperty("user.dir", directory.getAbsolutePath()) != null);
             
             appendage = "/Applications/Alterante.app/Contents/AlteranteJava.app/Contents/app/projects/rtserver/";
-            System.out.println("appendage  = " + appendage);            
+            p("appendage  = " + appendage);
         
         }
     }

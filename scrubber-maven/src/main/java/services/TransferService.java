@@ -389,7 +389,7 @@ public class TransferService implements Runnable {
                                     log("nres addzip = " + nres, 2);
                                     zip.flush();                               
                                   } else {
-                                    //System.out.println("leaving file for next round...");
+                                    //p("leaving file for next round...");
                                   }    
                             } else {
                                 log("Skipped ZIP creation. Client==SERVER",2);
@@ -469,7 +469,7 @@ public class TransferService implements Runnable {
     }
     
     void loadProps() throws IOException {
-        System.out.println(System.getProperty("java.home"));
+        p(System.getProperty("java.home"));
         File f = new File
                 (
                 "config"+
@@ -488,13 +488,12 @@ public class TransferService implements Runnable {
     }
     
     void printProps() {
-        System.out.println("outgoing=" + mScanDirectory);        
-
+        p("outgoing=" + mScanDirectory);
     }
     
     void loadBackupProps() throws IOException {
-        //System.out.println(System.getProperty("java.home"));
-        System.out.println("loadProps()");
+        //p(System.getProperty("java.home"));
+        p("loadProps()");
         File f = new File(mCONFIG_PATH);
         if (f.exists()) {
             InputStream is =new BufferedInputStream(new

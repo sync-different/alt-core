@@ -80,30 +80,30 @@ public class NetUtils {
     boolean bReachable = false;
     InetAddress addr_res = null;
 
-    System.out.println("get interfaces");
+    p("get interfaces");
     Enumeration<NetworkInterface> ifaces = NetworkInterface.getNetworkInterfaces();
-    System.out.println("done get interfaces");
+    p("done get interfaces");
     while (ifaces.hasMoreElements()) {
         NetworkInterface iface = ifaces.nextElement();
         Enumeration<InetAddress> addresses = iface.getInetAddresses();
         while (addresses.hasMoreElements()) {
             InetAddress addr = addresses.nextElement();
             
-            //System.out.println ("-main nonloopback---");
-            //System.out.println ("main addr.getHostAddress() = " + addr.getHostAddress());
-            //System.out.println ("main addr.getHostName() = " + addr.getHostName());
-            //System.out.println ("main addr.isAnyLocalAddress() = " + addr.isAnyLocalAddress());
-            //System.out.println ("main addr.isLinkLocalAddress() = " + addr.isLinkLocalAddress());
-            //System.out.println ("main addr.isLoopbackAddress() = " + addr.isLoopbackAddress());
-            //System.out.println ("main addr.isMulticastAddress() = " + addr.isMulticastAddress());
-            //System.out.println ("main addr.isSiteLocalAddress() = " + addr.isSiteLocalAddress());
+            //p ("-main nonloopback---");
+            //p ("main addr.getHostAddress() = " + addr.getHostAddress());
+            //p ("main addr.getHostName() = " + addr.getHostName());
+            //p ("main addr.isAnyLocalAddress() = " + addr.isAnyLocalAddress());
+            //p ("main addr.isLinkLocalAddress() = " + addr.isLinkLocalAddress());
+            //p ("main addr.isLoopbackAddress() = " + addr.isLoopbackAddress());
+            //p ("main addr.isMulticastAddress() = " + addr.isMulticastAddress());
+            //p ("main addr.isSiteLocalAddress() = " + addr.isSiteLocalAddress());
             
             try {
                 //NOTE: assume reachable is BUGGY and therefore returns always true.
                 bReachable = true;
                 //bReachable = addr.isReachable(5000);
-                //System.out.println ("main addr.isReachable() = " + bReachable);
-                //System.out.println ("main addr.isSiteLocalAddress() = " + addr.isSiteLocalAddress());
+                //p ("main addr.isReachable() = " + bReachable);
+                //p ("main addr.isSiteLocalAddress() = " + addr.isSiteLocalAddress());
             } catch (Exception e) {
                 e.printStackTrace();
                 bReachable = false;
@@ -156,14 +156,14 @@ public class NetUtils {
         while (addresses.hasMoreElements()) {
             InetAddress addr = addresses.nextElement();
             
-            System.out.println ("-main loopback----");
-            System.out.println ("main addr.getHostAddress() = " + addr.getHostAddress());
-            //System.out.println ("main addr.getHostName() = " + addr.getHostName());
-            //System.out.println ("main addr.isAnyLocalAddress() = " + addr.isAnyLocalAddress());
-            //System.out.println ("main addr.isLinkLocalAddress() = " + addr.isLinkLocalAddress());
-            //System.out.println ("main addr.isLoopbackAddress() = " + addr.isLoopbackAddress());
-            //System.out.println ("main addr.isMulticastAddress() = " + addr.isMulticastAddress());
-            //System.out.println ("main addr.isSiteLocalAddress() = " + addr.isSiteLocalAddress());
+            p ("-main loopback----");
+            p ("main addr.getHostAddress() = " + addr.getHostAddress());
+            //p ("main addr.getHostName() = " + addr.getHostName());
+            //p ("main addr.isAnyLocalAddress() = " + addr.isAnyLocalAddress());
+            //p ("main addr.isLinkLocalAddress() = " + addr.isLinkLocalAddress());
+            //p ("main addr.isLoopbackAddress() = " + addr.isLoopbackAddress());
+            //p ("main addr.isMulticastAddress() = " + addr.isMulticastAddress());
+            //p ("main addr.isSiteLocalAddress() = " + addr.isSiteLocalAddress());
 
             if (addr instanceof Inet4Address && addr.isLoopbackAddress()) {
                 addr_res = addr;
