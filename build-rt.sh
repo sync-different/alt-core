@@ -1,5 +1,5 @@
-echo "building extractor"
-cd binary-extractor
+echo "building commons"
+cd alt-common
 mvn clean
 mvn compile
 mvn package
