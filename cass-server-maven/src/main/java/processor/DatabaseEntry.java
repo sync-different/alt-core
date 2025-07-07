@@ -266,7 +266,7 @@ public class DatabaseEntry implements Serializable {
                        dbe_action = "OOM";
                        dbe_img_thumbnail = null;                       
                    } finally {
-                       pw("@@@***@@@ finally...");
+                       p("@@@***@@@ finally...");
                        try {
                            close(fis);
                             if (b!= null) {
