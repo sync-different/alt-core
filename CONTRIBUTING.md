@@ -1,6 +1,6 @@
 ## Contributing by reporting issues
-* Always report bugs via Github by submitting an [issue]("https://www.github.com/sync-different/alt-core/issues")
-* For questions join our Discord chat [server]("https://discord.com/invite/Gjw9sqYuUY")
+* Always report bugs via Github by submitting an [issue](https://www.github.com/sync-different/alt-core/issues)
+* For questions join our Discord chat [server](https://discord.com/invite/Gjw9sqYuUY)
 
 ### Bug reporting guidelines
 * Search existing issues first, before creating a new issue
