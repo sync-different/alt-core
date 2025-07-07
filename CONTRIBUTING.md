@@ -4,7 +4,7 @@
 
 ### Bug reporting guidelines
 * Search existing issues first, before creating a new issue
-* Please do not report security vulnerability through public Github issues. Instead email support@alterante.com
+* Please do not report security vulnerability through public Github issues. Instead email support@alterante.com or send msg in Discord channel #security
   
 ## Contributing to Source Code
 * Please follow our [code of conduct](CODE_OF_CONDUCT.md)
