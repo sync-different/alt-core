@@ -1,5 +1,5 @@
 ## Contributing by reporting issues
-* Always report bugs via Github by submitting an [issue](www.github.com/sync-different/alt-core/issues)
+* Always report bugs via Github by submitting an [issue](https://www.github.com/sync-different/alt-core/issues)
 * For questions join our Discord
 
 ### Bug reporting guidelines
