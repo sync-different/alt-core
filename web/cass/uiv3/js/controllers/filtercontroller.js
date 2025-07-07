@@ -52,8 +52,24 @@ angular.module('app.controllers').controller('FilterController', function (Conf,
             retryChunks: true,
             retryChunksLimit: 3,
             init: function() {
+                let startTime = 0;
+                let lastLoaded = 0;
+
+
+                this.on("uploadprogress", function(file, progress, bytesSent) {
+                  const elapsed = (Date.now() - startTime) / 1000; // seconds
+                  if (elapsed > 0) {
+                    const uploadedMB = bytesSent / (1024 * 1024);
+                    const speedMbps = (uploadedMB * 8) / elapsed;
+                    console.log(`Speed: ${speedMbps.toFixed(2)} Mbps`);
+                  }
+                  lastLoaded = bytesSent;
+                });
+
                 this.on("sending", function(file, xhr, formData) {
                   // Change the file name sent to the server
+                    startTime = Date.now();
+                    lastLoaded = 0;
                     var chunkIndex = this.options.chunkIndex;
                     var lasIndex= Math.ceil(file.size/chunkSize);
                     this.options.paramName="upload."+file.name+'.'+lasIndex+'.'+(++chunkIndex)+".p";
