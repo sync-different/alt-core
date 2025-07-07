@@ -49,6 +49,8 @@ import io.netty.handler.codec.http.multipart.HttpPostRequestDecoder.ErrorDataDec
 import io.netty.handler.codec.http.multipart.InterfaceHttpData;
 import io.netty.handler.codec.http.multipart.InterfaceHttpData.HttpDataType;
 import io.netty.util.CharsetUtil;
+import io.netty.util.IllegalReferenceCountException;
+import io.netty.util.ReferenceCountUtil;
 
 import java.io.File;
 import java.io.IOException;
@@ -85,9 +87,9 @@ public class HttpUploadServerHandler extends SimpleChannelInboundHandler<HttpObj
         DiskAttribute.deleteOnExitTemporaryFile = true; // should delete file on
                                                         // exit (in normal exit)
         DiskAttribute.baseDirectory = null; // system temp directory
-        
-        
-                
+
+
+
     }
 
     @Override
@@ -210,11 +212,17 @@ public class HttpUploadServerHandler extends SimpleChannelInboundHandler<HttpObj
     }
 
     private void reset() {
-        request = null;
-
         // destroy the decoder to release all resources
-        decoder.destroy();
-        decoder = null;
+        if (decoder != null) {
+            try {
+                decoder.destroy();
+            } catch (IllegalReferenceCountException e) {
+                //Hidden exception that can happen if already released
+            }finally {
+                decoder = null;
+                request = null;
+            }
+        }
     }
 
     /**
