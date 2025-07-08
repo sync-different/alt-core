@@ -25,6 +25,9 @@ import java.io.IOException;
 import java.io.File;
 import java.io.InputStream;
 import java.io.FileInputStream;
+
+import static utils.Cass7Funcs.bConsole;
+
 import java.io.BufferedInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.FileWriter;
@@ -34,7 +37,7 @@ import java.util.Properties;
 import utils.Stopwatch;
 
 import java.util.StringTokenizer;
-import static utils.Cass7Funcs.p;
+//import static utils.Cass7Funcs.p;
 
 import java.util.Iterator;
 import java.util.concurrent.ConcurrentNavigableMap;
@@ -59,7 +62,54 @@ public class WebFuncs {
         
         static int nErrors = 0;
 
-  
+    public static final String ANSI_RED = "\u001B[31m";
+    public static final String ANSI_GREEN = "\u001B[32m";
+    public static final String ANSI_YELLOW = "\u001B[33m";
+    public static final String ANSI_RESET = "\u001B[0m";
+
+    protected static void pw(String s) {
+        Date ts_start = Calendar.getInstance().getTime();
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy/MM/dd hh:mm:ss");
+        String sDate = sdf.format(ts_start);
+
+        if (bConsole) {
+            long threadID = Thread.currentThread().getId();
+            System.out.println(ANSI_YELLOW + sDate + " [WARNING] [CS.WebFuncs-" + threadID + "] " + s + ANSI_RESET);
+        }
+    }
+
+    protected static void pi(String s) {
+        Date ts_start = Calendar.getInstance().getTime();
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy/MM/dd hh:mm:ss");
+        String sDate = sdf.format(ts_start);
+
+        if (bConsole) {
+            long threadID = Thread.currentThread().getId();
+            System.out.println(ANSI_GREEN + sDate + " [INFO ] [CS.WebFuncs-" + threadID + "] " + s + ANSI_RESET);
+        }
+    }
+
+    protected static void pe(String s) {
+        Date ts_start = Calendar.getInstance().getTime();
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy/MM/dd hh:mm:ss");
+        String sDate = sdf.format(ts_start);
+
+        if (bConsole) {
+            long threadID = Thread.currentThread().getId();
+            System.out.println(ANSI_RED + sDate + " [ERROR] [CS.WebFuncs-" + threadID + "] " + s + ANSI_RESET);
+        }
+    }
+
+    /* print to stdout */
+    static protected void p(String s) {
+        Date ts_start = Calendar.getInstance().getTime();
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy/MM/dd hh:mm:ss");
+        String sDate = sdf.format(ts_start);
+
+        long threadID = Thread.currentThread().getId();
+        System.out.println(sDate + " [DEBUG] [CS.WebFuncs_" + threadID + "] " + s);
+    }
+
 
 class MailProcessor implements Runnable {
     
@@ -128,10 +178,10 @@ class UpdateCheck implements Runnable {
                     p("shutdown not detected.");
                 }                    
             } else {
-                p("WARNING: file not found:" + f.getCanonicalPath());
+                pw("WARNING: file not found:" + f.getCanonicalPath());
             }                
         } catch (Exception e) {
-            p("Warning: There was an exception checking update.");
+            pw("Warning: There was an exception checking update.");
             e.printStackTrace();
         }
     }
@@ -204,7 +254,7 @@ class UpdateCheck implements Runnable {
                 nres = c8.loadNumberOfCopies(mLocalIP, false, true, b1, b2);                
                 p("nres loadnumberofcopies = " + nres);
                 if (nres < 0) {
-                    p("WARNING: There was an ERROR loading number. Retry after 10s...");
+                    pw("WARNING: There was an ERROR loading number. Retry after 10s...");
                     nTries++;
                     Thread.sleep(10000);
                 }
@@ -266,7 +316,7 @@ Thread.UncaughtExceptionHandler h = new Thread.UncaughtExceptionHandler() {
                 e.printStackTrace();
             }
             if (nres < 0) {
-                p("WARNING: There was an error loading MapDB. Waiting 5s.");
+                pw("WARNING: There was an error loading MapDB. Waiting 5s.");
             } else {
                 if (nres == 2) {
                     //new db was created, reindex
@@ -317,7 +367,7 @@ Thread.UncaughtExceptionHandler h = new Thread.UncaughtExceptionHandler() {
           int nres = c8.check_commit(mapBatches);
           p("res check_commit:" + nres);
           if (nres < 0) {
-            p("WARNING: There was an ERROR in the commit. Shutting down RT.");
+            pw("WARNING: There was an ERROR in the commit. Shutting down RT.");
             p("closedb");
             c8.closeMapDB();  
             System.exit(-1);  
@@ -360,7 +410,7 @@ Thread.UncaughtExceptionHandler h = new Thread.UncaughtExceptionHandler() {
                                 //boolean res = f.delete();
                                 //p("res delete:" + res);
                             } else {
-                                p("WARNING BATCH #" + nErrors + ": There was an error processing batch: " + sBatchID);
+                                pw("WARNING BATCH #" + nErrors + ": There was an error processing batch: " + sBatchID);
                                 String sNewFileName = f.getName();
                                 sNewFileName = sNewFileName.replace(".idx", ".bad");
                                 p("Renaming to : " + sNewFileName);
@@ -1738,7 +1788,17 @@ public int getBatchId(String _key, String _dbmode) {
     else {
         batchid = c8.get_batch_id("batchid","BatchJobs", "idx");
     }
-    return Integer.parseInt(batchid);
+    int nbatchid = 0;
+    if (batchid.length() > 0) {
+        try {
+            nbatchid = Integer.parseInt(batchid);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    } else {
+        pw("WARNING: Batch ID is null or blank");
+    }
+    return nbatchid; //Integer.parseInt(batchid);
 }
 
 public String echobackup(String _key, String _dbmode) {
