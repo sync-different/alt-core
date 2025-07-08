@@ -37,7 +37,9 @@ angular.module('app.controllers').controller('FilterController', function (Conf,
 	var previewNode = document.querySelector("#template");
 	var previewTemplate = previewNode.parentNode.innerHTML;
 	previewNode.parentNode.removeChild(previewNode);
-	var chunkSize=1024 * 1024*10;
+
+
+   	var chunkSize=1024 * 1024*5;
 	var fileupload=new Dropzone("#my-dropzone",
 		{	
 			url:'/cass/file',
@@ -122,6 +124,33 @@ angular.module('app.controllers').controller('FilterController', function (Conf,
 			}
 	});
  	 
+	// In your controller or after DOM is ready
+    noUiSlider.create(document.getElementById('speedSlider'), {
+      start: [$scope.selectedSpeed],
+      step: null,
+      range: {
+        'min': 5,
+        '10%': 5,
+        '30%': 10,
+        '60%': 15,
+        '100%': 20,
+        'max': 20
+      },
+      snap: true,
+      pips: {
+        mode: 'values',
+        values: [5, 10, 15, 20],
+        density: 10
+      }
+    });
+
+    $scope.onSpeedChange=function(speedValue){
+        fileupload.options.chunkSize = speedValue*1024*1024;
+    }
+
+    document.getElementById('speedSlider').noUiSlider.on('update', function(values, handle) {
+      $scope.onSpeedChange(Number(values[handle]));
+    });
 
 	$(document).on('dragover', function(e) {
 		var dt = e.originalEvent.dataTransfer;
