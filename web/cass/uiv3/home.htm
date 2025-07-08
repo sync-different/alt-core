@@ -39,7 +39,7 @@
 	
 		<script src="js/app.js"></script>
 		<script src="js/appconf.js"></script>
-		<script src="js/controllers/filtercontroller.js?v=16"></script>
+		<script src="js/controllers/filtercontroller.js?v=22"></script>
 		<script src="js/controllers/rigthbarcontroller.js"></script>
 		<script src="js/controllers/myfilescontroller.js"></script>
 		<script src="js/controllers/homecontroller.js"></script>
@@ -61,6 +61,14 @@
 	<div class="container-fluid p-0">
 		<div ng-controller="FilterController">
 			<div class="dragzonebox" id="my-dropzone">
+				<div class="row text-center d-flex justify-content-center align-items-center" style="height: 50px; font-size: 17px; color: #6c757d; font-weight: bold;">
+					Upload Chunk Size
+				</div>
+				<div class="row text-center d-flex justify-content-center align-items-center" style="height: 50px; font-size: 17px; color: #6c757d; font-weight: bold;">
+					<div style="width:200px" id="speedSlider"></div>
+				</div>
+				<br>
+				<br>
 				<div class="row text-center d-flex justify-content-center align-items-center" style="height: 50px; font-size: 17px; color: #6c757d; font-weight: bold;">
 					Drop files here
 				</div>
