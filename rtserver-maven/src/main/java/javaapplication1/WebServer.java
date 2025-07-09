@@ -111,7 +111,7 @@ import utils.UserMessage;
 import utils.UserMessageCollection;
 
 import org.apache.hc.core5.http.ClassicHttpRequest;
-import com.alterante.utils.BinaryExtractorUtil;
+import com.alterante.utils.extractor.BinaryExtractorUtil;
 
 public class WebServer extends AbstractService {
 

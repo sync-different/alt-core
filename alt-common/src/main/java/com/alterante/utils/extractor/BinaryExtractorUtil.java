@@ -1,4 +1,4 @@
-package com.alterante.utils;
+package com.alterante.utils.extractor;
 
 import java.io.*;
 import java.nio.file.Files;

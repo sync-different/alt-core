@@ -1,4 +1,4 @@
-package com.alterante.utils;
+package com.alterante.utils.extractor;
 
 import java.awt.*;
 import java.io.FileInputStream;

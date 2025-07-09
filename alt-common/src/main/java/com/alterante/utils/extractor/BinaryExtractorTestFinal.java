@@ -1,19 +1,19 @@
-package com.alterante.utils;
+package com.alterante.utils.extractor;
 
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 
 /**
- * Comprehensive test class to verify BinaryExtractorUtil handles all newline variations.
+ * Final comprehensive test class to verify BinaryExtractorUtil handles all patterns including \r\n-.
  */
-public class BinaryExtractorTestCRLF {
+public class BinaryExtractorTestFinal {
     
     public static void main(String[] args) {
-        System.out.println("Testing BinaryExtractorUtil with all newline variations...\n");
+        System.out.println("Testing BinaryExtractorUtil with all trailing patterns...\n");
         
-        // Test 1: Binary data without any trailing newlines
-        testWithoutTrailingNewlines();
+        // Test 1: Binary data without any trailing patterns
+        testWithoutTrailingPatterns();
         
         // Test 2: Binary data with trailing \n
         testWithTrailingLF();
@@ -24,14 +24,17 @@ public class BinaryExtractorTestCRLF {
         // Test 4: Binary data with trailing \r\n
         testWithTrailingCRLF();
         
+        // Test 5: Binary data with trailing \r\n- pattern
+        testWithTrailingCRLFDash();
+        
         System.out.println("\nAll tests completed!");
     }
     
     /**
-     * Test 1: Binary data without any trailing newlines.
+     * Test 1: Binary data without any trailing patterns.
      */
-    private static void testWithoutTrailingNewlines() {
-        System.out.println("=== Test 1: Binary data WITHOUT trailing newlines ===");
+    private static void testWithoutTrailingPatterns() {
+        System.out.println("=== Test 1: Binary data WITHOUT trailing patterns ===");
         
         byte[] binaryContent = {
             0x48, 0x65, 0x6C, 0x6C, 0x6F, // "Hello"
@@ -39,9 +42,9 @@ public class BinaryExtractorTestCRLF {
             0x57, 0x6F, 0x72, 0x6C, 0x64  // "World"
         };
         
-        createTestFile("test-no-newlines.dat", binaryContent);
-        testExtraction("test-no-newlines.dat", "extracted-no-newlines.bin", binaryContent, "No trailing newlines");
-        cleanupFiles("test-no-newlines.dat", "extracted-no-newlines.bin");
+        createTestFile("test-no-patterns.dat", binaryContent);
+        testExtraction("test-no-patterns.dat", "extracted-no-patterns.bin", binaryContent, "No trailing patterns");
+        cleanupFiles("test-no-patterns.dat", "extracted-no-patterns.bin");
     }
     
     /**
@@ -114,6 +117,30 @@ public class BinaryExtractorTestCRLF {
         createTestFile("test-with-crlf.dat", binaryContentWithCRLF);
         testExtraction("test-with-crlf.dat", "extracted-with-crlf.bin", expectedContent, "Trailing \\r\\n should be removed");
         cleanupFiles("test-with-crlf.dat", "extracted-with-crlf.bin");
+    }
+    
+    /**
+     * Test 5: Binary data with trailing \r\n- pattern.
+     */
+    private static void testWithTrailingCRLFDash() {
+        System.out.println("\n=== Test 5: Binary data WITH trailing \\r\\n- pattern ===");
+        
+        byte[] binaryContentWithCRLFDash = {
+            0x48, 0x65, 0x6C, 0x6C, 0x6F, // "Hello"
+            0x00, 0x01, 0x02, 0x03,       // Some binary bytes
+            0x57, 0x6F, 0x72, 0x6C, 0x64, // "World"
+            0x0D, 0x0A, 0x2D              // Trailing CRLF + dash (boundary start)
+        };
+        
+        byte[] expectedContent = {
+            0x48, 0x65, 0x6C, 0x6C, 0x6F, // "Hello"
+            0x00, 0x01, 0x02, 0x03,       // Some binary bytes
+            0x57, 0x6F, 0x72, 0x6C, 0x64  // "World" (no CRLF-)
+        };
+        
+        createTestFile("test-with-crlf-dash.dat", binaryContentWithCRLFDash);
+        testExtraction("test-with-crlf-dash.dat", "extracted-with-crlf-dash.bin", expectedContent, "Trailing \\r\\n- pattern should be removed");
+        cleanupFiles("test-with-crlf-dash.dat", "extracted-with-crlf-dash.bin");
     }
     
     /**

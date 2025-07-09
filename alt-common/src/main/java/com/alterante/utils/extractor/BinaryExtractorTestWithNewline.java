@@ -1,146 +1,68 @@
-package com.alterante.utils;
+package com.alterante.utils.extractor;
 
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 
 /**
- * Final comprehensive test class to verify BinaryExtractorUtil handles all patterns including \r\n-.
+ * Test class to verify the BinaryExtractorUtil fix for trailing newline removal.
  */
-public class BinaryExtractorTestFinal {
+public class BinaryExtractorTestWithNewline {
     
     public static void main(String[] args) {
-        System.out.println("Testing BinaryExtractorUtil with all trailing patterns...\n");
+        System.out.println("Testing BinaryExtractorUtil with trailing newline removal...\n");
         
-        // Test 1: Binary data without any trailing patterns
-        testWithoutTrailingPatterns();
+        // Test 1: Binary data without trailing newline
+        testWithoutTrailingNewline();
         
-        // Test 2: Binary data with trailing \n
-        testWithTrailingLF();
-        
-        // Test 3: Binary data with trailing \r
-        testWithTrailingCR();
-        
-        // Test 4: Binary data with trailing \r\n
-        testWithTrailingCRLF();
-        
-        // Test 5: Binary data with trailing \r\n- pattern
-        testWithTrailingCRLFDash();
+        // Test 2: Binary data with trailing newline
+        testWithTrailingNewline();
         
         System.out.println("\nAll tests completed!");
     }
     
     /**
-     * Test 1: Binary data without any trailing patterns.
+     * Test extraction of binary data without trailing newline.
      */
-    private static void testWithoutTrailingPatterns() {
-        System.out.println("=== Test 1: Binary data WITHOUT trailing patterns ===");
+    private static void testWithoutTrailingNewline() {
+        System.out.println("=== Test 1: Binary data WITHOUT trailing newline ===");
         
+        // Create binary content without any trailing newlines
         byte[] binaryContent = {
             0x48, 0x65, 0x6C, 0x6C, 0x6F, // "Hello"
             0x00, 0x01, 0x02, 0x03,       // Some binary bytes
             0x57, 0x6F, 0x72, 0x6C, 0x64  // "World"
         };
         
-        createTestFile("test-no-patterns.dat", binaryContent);
-        testExtraction("test-no-patterns.dat", "extracted-no-patterns.bin", binaryContent, "No trailing patterns");
-        cleanupFiles("test-no-patterns.dat", "extracted-no-patterns.bin");
+        createTestFile("test-no-newline.dat", binaryContent);
+        testExtraction("test-no-newline.dat", "extracted-no-newline.bin", binaryContent);
+        cleanupFiles("test-no-newline.dat", "extracted-no-newline.bin");
     }
     
     /**
-     * Test 2: Binary data with trailing \n (LF).
+     * Test extraction of binary data with trailing newline.
      */
-    private static void testWithTrailingLF() {
-        System.out.println("\n=== Test 2: Binary data WITH trailing \\n (LF) ===");
+    private static void testWithTrailingNewline() {
+        System.out.println("\n=== Test 2: Binary data WITH trailing newline ===");
         
-        byte[] binaryContentWithLF = {
+        // Create binary content WITH a trailing newline
+        byte[] binaryContentWithNewline = {
             0x48, 0x65, 0x6C, 0x6C, 0x6F, // "Hello"
             0x00, 0x01, 0x02, 0x03,       // Some binary bytes
             0x57, 0x6F, 0x72, 0x6C, 0x64, // "World"
-            0x0A                          // Trailing LF
+            0x0A                          // Trailing newline
         };
         
+        // Expected content after newline removal
         byte[] expectedContent = {
             0x48, 0x65, 0x6C, 0x6C, 0x6F, // "Hello"
             0x00, 0x01, 0x02, 0x03,       // Some binary bytes
-            0x57, 0x6F, 0x72, 0x6C, 0x64  // "World" (no LF)
+            0x57, 0x6F, 0x72, 0x6C, 0x64  // "World" (no newline)
         };
         
-        createTestFile("test-with-lf.dat", binaryContentWithLF);
-        testExtraction("test-with-lf.dat", "extracted-with-lf.bin", expectedContent, "Trailing \\n should be removed");
-        cleanupFiles("test-with-lf.dat", "extracted-with-lf.bin");
-    }
-    
-    /**
-     * Test 3: Binary data with trailing \r (CR).
-     */
-    private static void testWithTrailingCR() {
-        System.out.println("\n=== Test 3: Binary data WITH trailing \\r (CR) ===");
-        
-        byte[] binaryContentWithCR = {
-            0x48, 0x65, 0x6C, 0x6C, 0x6F, // "Hello"
-            0x00, 0x01, 0x02, 0x03,       // Some binary bytes
-            0x57, 0x6F, 0x72, 0x6C, 0x64, // "World"
-            0x0D                          // Trailing CR
-        };
-        
-        byte[] expectedContent = {
-            0x48, 0x65, 0x6C, 0x6C, 0x6F, // "Hello"
-            0x00, 0x01, 0x02, 0x03,       // Some binary bytes
-            0x57, 0x6F, 0x72, 0x6C, 0x64  // "World" (no CR)
-        };
-        
-        createTestFile("test-with-cr.dat", binaryContentWithCR);
-        testExtraction("test-with-cr.dat", "extracted-with-cr.bin", expectedContent, "Trailing \\r should be removed");
-        cleanupFiles("test-with-cr.dat", "extracted-with-cr.bin");
-    }
-    
-    /**
-     * Test 4: Binary data with trailing \r\n (CRLF).
-     */
-    private static void testWithTrailingCRLF() {
-        System.out.println("\n=== Test 4: Binary data WITH trailing \\r\\n (CRLF) ===");
-        
-        byte[] binaryContentWithCRLF = {
-            0x48, 0x65, 0x6C, 0x6C, 0x6F, // "Hello"
-            0x00, 0x01, 0x02, 0x03,       // Some binary bytes
-            0x57, 0x6F, 0x72, 0x6C, 0x64, // "World"
-            0x0D, 0x0A                    // Trailing CRLF
-        };
-        
-        byte[] expectedContent = {
-            0x48, 0x65, 0x6C, 0x6C, 0x6F, // "Hello"
-            0x00, 0x01, 0x02, 0x03,       // Some binary bytes
-            0x57, 0x6F, 0x72, 0x6C, 0x64  // "World" (no CRLF)
-        };
-        
-        createTestFile("test-with-crlf.dat", binaryContentWithCRLF);
-        testExtraction("test-with-crlf.dat", "extracted-with-crlf.bin", expectedContent, "Trailing \\r\\n should be removed");
-        cleanupFiles("test-with-crlf.dat", "extracted-with-crlf.bin");
-    }
-    
-    /**
-     * Test 5: Binary data with trailing \r\n- pattern.
-     */
-    private static void testWithTrailingCRLFDash() {
-        System.out.println("\n=== Test 5: Binary data WITH trailing \\r\\n- pattern ===");
-        
-        byte[] binaryContentWithCRLFDash = {
-            0x48, 0x65, 0x6C, 0x6C, 0x6F, // "Hello"
-            0x00, 0x01, 0x02, 0x03,       // Some binary bytes
-            0x57, 0x6F, 0x72, 0x6C, 0x64, // "World"
-            0x0D, 0x0A, 0x2D              // Trailing CRLF + dash (boundary start)
-        };
-        
-        byte[] expectedContent = {
-            0x48, 0x65, 0x6C, 0x6C, 0x6F, // "Hello"
-            0x00, 0x01, 0x02, 0x03,       // Some binary bytes
-            0x57, 0x6F, 0x72, 0x6C, 0x64  // "World" (no CRLF-)
-        };
-        
-        createTestFile("test-with-crlf-dash.dat", binaryContentWithCRLFDash);
-        testExtraction("test-with-crlf-dash.dat", "extracted-with-crlf-dash.bin", expectedContent, "Trailing \\r\\n- pattern should be removed");
-        cleanupFiles("test-with-crlf-dash.dat", "extracted-with-crlf-dash.bin");
+        createTestFile("test-with-newline.dat", binaryContentWithNewline);
+        testExtraction("test-with-newline.dat", "extracted-with-newline.bin", expectedContent);
+        cleanupFiles("test-with-newline.dat", "extracted-with-newline.bin");
     }
     
     /**
@@ -174,7 +96,7 @@ public class BinaryExtractorTestFinal {
     /**
      * Tests binary extraction and verifies the result.
      */
-    private static void testExtraction(String inputFile, String outputFile, byte[] expectedContent, String testDescription) {
+    private static void testExtraction(String inputFile, String outputFile, byte[] expectedContent) {
         try {
             boolean success = BinaryExtractorUtil.extractBinarySection(inputFile, outputFile);
             
@@ -184,7 +106,6 @@ public class BinaryExtractorTestFinal {
                 System.out.println("✓ Extraction successful");
                 System.out.println("  Extracted " + extractedData.length + " bytes");
                 System.out.println("  Expected " + expectedContent.length + " bytes");
-                System.out.println("  Test: " + testDescription);
                 
                 if (extractedData.length == expectedContent.length) {
                     boolean contentMatches = true;

@@ -1,32 +1,31 @@
-package com.alterante.utils;
+package com.alterante.utils.extractor;
 
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 
 /**
- * Test class to verify the BinaryExtractorUtil fix for trailing newline removal.
+ * Test class to verify the BinaryExtractorUtil fix for the extra 0x0A byte issue.
  */
-public class BinaryExtractorTestWithNewline {
+public class BinaryExtractorTest {
     
     public static void main(String[] args) {
-        System.out.println("Testing BinaryExtractorUtil with trailing newline removal...\n");
+        System.out.println("Testing BinaryExtractorUtil fix for extra 0x0A byte...\n");
         
-        // Test 1: Binary data without trailing newline
-        testWithoutTrailingNewline();
+        // Create a test multipart file with known binary content
+        createTestMultipartFile();
         
-        // Test 2: Binary data with trailing newline
-        testWithTrailingNewline();
+        // Test the extraction
+        testBinaryExtraction();
         
-        System.out.println("\nAll tests completed!");
+        // Clean up test files
+        //cleanupTestFiles();
     }
     
     /**
-     * Test extraction of binary data without trailing newline.
+     * Creates a test multipart file with specific binary content.
      */
-    private static void testWithoutTrailingNewline() {
-        System.out.println("=== Test 1: Binary data WITHOUT trailing newline ===");
-        
+    private static void createTestMultipartFile() {
         // Create binary content without any trailing newlines
         byte[] binaryContent = {
             0x48, 0x65, 0x6C, 0x6C, 0x6F, // "Hello"
@@ -34,41 +33,7 @@ public class BinaryExtractorTestWithNewline {
             0x57, 0x6F, 0x72, 0x6C, 0x64  // "World"
         };
         
-        createTestFile("test-no-newline.dat", binaryContent);
-        testExtraction("test-no-newline.dat", "extracted-no-newline.bin", binaryContent);
-        cleanupFiles("test-no-newline.dat", "extracted-no-newline.bin");
-    }
-    
-    /**
-     * Test extraction of binary data with trailing newline.
-     */
-    private static void testWithTrailingNewline() {
-        System.out.println("\n=== Test 2: Binary data WITH trailing newline ===");
-        
-        // Create binary content WITH a trailing newline
-        byte[] binaryContentWithNewline = {
-            0x48, 0x65, 0x6C, 0x6C, 0x6F, // "Hello"
-            0x00, 0x01, 0x02, 0x03,       // Some binary bytes
-            0x57, 0x6F, 0x72, 0x6C, 0x64, // "World"
-            0x0A                          // Trailing newline
-        };
-        
-        // Expected content after newline removal
-        byte[] expectedContent = {
-            0x48, 0x65, 0x6C, 0x6C, 0x6F, // "Hello"
-            0x00, 0x01, 0x02, 0x03,       // Some binary bytes
-            0x57, 0x6F, 0x72, 0x6C, 0x64  // "World" (no newline)
-        };
-        
-        createTestFile("test-with-newline.dat", binaryContentWithNewline);
-        testExtraction("test-with-newline.dat", "extracted-with-newline.bin", expectedContent);
-        cleanupFiles("test-with-newline.dat", "extracted-with-newline.bin");
-    }
-    
-    /**
-     * Creates a test multipart file with the given binary content.
-     */
-    private static void createTestFile(String filename, byte[] binaryContent) {
+        // Create the multipart structure
         String header = "-----WebKitFormBoundary7MA4YWxkTrZu0gW\r\n" +
                        "Content-Disposition: form-data; name=\"file\"; filename=\"test.bin\"\r\n" +
                        "Content-Type: octet-stream\r\n" +
@@ -77,6 +42,7 @@ public class BinaryExtractorTestWithNewline {
         String footer = "\r\n-----WebKitFormBoundary7MA4YWxkTrZu0gW--\r\n";
         
         try {
+            // Combine header + binary content + footer
             byte[] headerBytes = header.getBytes();
             byte[] footerBytes = footer.getBytes();
             
@@ -85,8 +51,8 @@ public class BinaryExtractorTestWithNewline {
             System.arraycopy(binaryContent, 0, fullContent, headerBytes.length, binaryContent.length);
             System.arraycopy(footerBytes, 0, fullContent, headerBytes.length + binaryContent.length, footerBytes.length);
             
-            Files.write(Paths.get(filename), fullContent);
-            System.out.println("✓ Created test file: " + filename + " with " + binaryContent.length + " bytes of binary data");
+            Files.write(Paths.get("test-multipart.dat"), fullContent);
+            System.out.println("✓ Created test multipart file with " + binaryContent.length + " bytes of binary data");
             
         } catch (IOException e) {
             System.err.println("✗ Failed to create test file: " + e.getMessage());
@@ -94,19 +60,30 @@ public class BinaryExtractorTestWithNewline {
     }
     
     /**
-     * Tests binary extraction and verifies the result.
+     * Tests the binary extraction and verifies no extra bytes are added.
      */
-    private static void testExtraction(String inputFile, String outputFile, byte[] expectedContent) {
+    private static void testBinaryExtraction() {
         try {
-            boolean success = BinaryExtractorUtil.extractBinarySection(inputFile, outputFile);
+            boolean success = BinaryExtractorUtil.extractBinarySection(
+                "test-multipart.dat", 
+                "extracted-test.bin"
+            );
             
             if (success) {
-                byte[] extractedData = Files.readAllBytes(Paths.get(outputFile));
+                // Read the extracted file and check its contents
+                byte[] extractedData = Files.readAllBytes(Paths.get("extracted-test.bin"));
                 
                 System.out.println("✓ Extraction successful");
                 System.out.println("  Extracted " + extractedData.length + " bytes");
-                System.out.println("  Expected " + expectedContent.length + " bytes");
                 
+                // Expected binary content
+                byte[] expectedContent = {
+                    0x48, 0x65, 0x6C, 0x6C, 0x6F, // "Hello"
+                    0x00, 0x01, 0x02, 0x03,       // Some binary bytes
+                    0x57, 0x6F, 0x72, 0x6C, 0x64  // "World"
+                };
+                
+                // Verify the content matches exactly
                 if (extractedData.length == expectedContent.length) {
                     boolean contentMatches = true;
                     for (int i = 0; i < expectedContent.length; i++) {
@@ -120,20 +97,23 @@ public class BinaryExtractorTestWithNewline {
                     }
                     
                     if (contentMatches) {
-                        System.out.println("✓ Content matches exactly!");
+                        System.out.println("✓ Content matches exactly - no extra bytes added!");
                     }
                 } else {
-                    System.out.println("✗ Length mismatch!");
-                    if (extractedData.length > expectedContent.length) {
-                        System.out.println("  Extra bytes detected:");
-                        for (int i = expectedContent.length; i < extractedData.length; i++) {
-                            System.out.println("    Byte " + i + ": 0x" + String.format("%02X", extractedData[i]));
+                    System.out.println("✗ Length mismatch: expected " + expectedContent.length + 
+                                     " bytes, got " + extractedData.length + " bytes");
+                    
+                    if (extractedData.length == expectedContent.length + 1) {
+                        byte lastByte = extractedData[extractedData.length - 1];
+                        System.out.println("  Extra byte at end: 0x" + String.format("%02X", lastByte));
+                        if (lastByte == 0x0A) {
+                            System.out.println("  ✗ ISSUE: Extra 0x0A (newline) byte detected!");
                         }
                     }
                 }
                 
-                // Print hex dump
-                System.out.println("  Hex dump of extracted content:");
+                // Print hex dump of extracted content for verification
+                System.out.println("\nHex dump of extracted content:");
                 printHexDump(extractedData);
                 
             } else {
@@ -150,7 +130,7 @@ public class BinaryExtractorTestWithNewline {
      */
     private static void printHexDump(byte[] data) {
         for (int i = 0; i < data.length; i += 16) {
-            System.out.printf("    %08X  ", i);
+            System.out.printf("%08X  ", i);
             
             // Print hex values
             for (int j = 0; j < 16; j++) {
@@ -181,14 +161,13 @@ public class BinaryExtractorTestWithNewline {
     /**
      * Cleans up test files.
      */
-    private static void cleanupFiles(String... filenames) {
-        for (String filename : filenames) {
-            try {
-                Files.deleteIfExists(Paths.get(filename));
-            } catch (IOException e) {
-                System.err.println("Warning: Could not delete " + filename + ": " + e.getMessage());
-            }
+    private static void cleanupTestFiles() {
+        try {
+            Files.deleteIfExists(Paths.get("test-multipart.dat"));
+            Files.deleteIfExists(Paths.get("extracted-test.bin"));
+            System.out.println("\n✓ Cleaned up test files");
+        } catch (IOException e) {
+            System.err.println("Warning: Could not clean up test files: " + e.getMessage());
         }
-        System.out.println("✓ Cleaned up test files");
     }
 }
