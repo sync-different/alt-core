@@ -105,8 +105,9 @@ public class TransferService implements Runnable {
           log = new PrintStream(new BufferedOutputStream(
                             new FileOutputStream(sLog,true)));
           
+          p("HERE-------_TransferService");
           p("log file = '" + sLog + "'");
-          log("opening log file: " + sLog, 2);
+          log("opening log file: " + sLog, 0);
       
         if (_dothread) {
             t = new Thread(this, "sc_t");

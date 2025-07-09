@@ -654,13 +654,17 @@ public class FileUtils {
                                         }                             
                                     }
                                     if (bGenerateRecord) {
+
+                                            p("bGenerateRecord = " + bGenerateRecord);
                                             node_UUID = UUID.fromString(mUUID);                                   
 
                                             DatabaseEntry dbe = new DatabaseEntry(sMD5, node_UUID, f, (float)0.9, mDelayThumb);
 
+                                            p("Action = " + dbe.dbe_action);
+
                                             if (dbe.dbe_action.equals("NEW")) {
                                                 Boolean bres = saveDatabaseEntry(dbe, "A");
-                                                p("bres = " + bres);
+                                                p("case new bres = " + bres);
                                             } 
                                             if (dbe.dbe_action.equals("OOM-PDF")) {
                                                 Boolean bres = saveDatabaseEntry(dbe, "A");

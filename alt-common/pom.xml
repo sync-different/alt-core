@@ -20,7 +20,13 @@
 
     <dependencies>
         <!-- Optionally: parameterized tests support -->
-    </dependencies>
+       <dependency>
+            <groupId>net.coobird</groupId>
+            <artifactId>thumbnailator</artifactId>
+            <version>0.4.19</version>
+        </dependency>
+
+     </dependencies>
 
     <build>
         <plugins>

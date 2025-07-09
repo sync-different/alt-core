@@ -28,6 +28,7 @@ rm -r ./scrubber/data/localdb/Super2/paths/*
 rm -r ./scrubber/logs/*
 rm -r ./scrubber/outgoing/*
 rm -r ./scrubber/mobilebackup/upload/*
+rm -r ./scrubber/batch*.idx
 
 rm -r ./scrubber/data/localdb/Standard1/.*
 

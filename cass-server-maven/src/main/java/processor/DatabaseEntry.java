@@ -162,7 +162,7 @@ public class DatabaseEntry implements Serializable {
             dbe_filetype = dbe_filename.substring(dbe_filename.lastIndexOf(".") + 1, dbe_filename.length());
 
             String delimiters = "/\\";
-            //p("fullpath = '" + dbe_absolutepath + "'");
+            p("fullpath = '" + dbe_absolutepath + "'");
             StringTokenizer st = new StringTokenizer(dbe_absolutepath.trim(), delimiters, true); 
             while (st.hasMoreTokens()) {
                    String w = st.nextToken();
@@ -177,6 +177,8 @@ public class DatabaseEntry implements Serializable {
                    }
             }
 
+            p("filetype = " + dbe_filetype);
+
             if (is_photo(dbe_filetype.toLowerCase())){
                        FileInputStream fis = null;
                        BufferedImage originalImage = null;
@@ -184,6 +186,7 @@ public class DatabaseEntry implements Serializable {
                        Thumbnails.Builder b = null;
                        
                   //ThumbnailGenerator thumbnail_generator = new ThumbnailGenerator(_file);
+                   p("is_photo = true");
                    try {
 //                       boolean newFormat=false;
 //                       if(dbe_filetype.toLowerCase().endsWith("png") ||dbe_filetype.toLowerCase().endsWith("gif")  ){
@@ -191,9 +194,14 @@ public class DatabaseEntry implements Serializable {
 //                       }
                        
                        //get the image dimensions
+                       p("processing photo file" + _file.getAbsolutePath());
+                       p("[1a]");
                        fis = new FileInputStream(_file);
+                       p("[1b]");
                        originalImage = ImageIO.read(fis);
+                       p("[1c]");
                        dbe_img_height = originalImage.getHeight();
+                       p("[1d]");
                        dbe_img_width = originalImage.getWidth();
                                                                    
 //                       image.flush();                       
@@ -212,8 +220,10 @@ public class DatabaseEntry implements Serializable {
                        //method #1 (thumbnailator)
                        //thumbnail_image = Thumbnails.of(originalImage).size(200, 200).asBufferedImage();
                        ByteArrayOutputStream baos = new ByteArrayOutputStream();  
+                       p("before thumbnails");
                        Thumbnails.of(_file).size(200, 200).outputFormat("jpg").toOutputStream(baos);
-                       
+                       p("after thumbnails");
+
                        //method #2 (thumbnailator with builder)
                        //b = Thumbnails.of(_file.getAbsoluteFile());
                        //b.height(200);
@@ -233,13 +243,14 @@ public class DatabaseEntry implements Serializable {
                        //method #1
                        //ByteArrayOutputStream baos = new ByteArrayOutputStream();                      
                        //ImageIO.write(thumbnail_image, "jpg", baos);
+
                        baos.flush();
                        dbe_img_thumbnail = baos.toByteArray();
                                               
                        //method #2
                        //dbe_img_thumbnail = toByteArray(thumbnail_image, "jpg", _thumbnail_compression);
                                  
-                       p("Thumbnail was created. Zzz for: " + _delay);
+                       pw("Thumbnail was created. Zzz for: " + _delay);
                        Thread.sleep(_delay);
 
                    } catch (java.awt.color.CMMException ex) {                           
@@ -247,6 +258,8 @@ public class DatabaseEntry implements Serializable {
                        ex.printStackTrace();
                        dbe_img_thumbnail = null;
                        dbe_action = "EXC";
+                   } catch (javax.imageio.IIOException ex) {                    
+                        pw ("ssss");
                    } catch (IOException ex) {
                        pw("exception --> IOException");
                        ex.printStackTrace();
@@ -265,6 +278,7 @@ public class DatabaseEntry implements Serializable {
                        ex.printStackTrace();
                        dbe_action = "OOM";
                        dbe_img_thumbnail = null;                       
+                                       
                    } finally {
                        p("@@@***@@@ finally...");
                        try {
@@ -283,6 +297,7 @@ public class DatabaseEntry implements Serializable {
                             }
                             System.gc();
                        } catch (Exception e) {
+                           pw("WARNING: there was exception in Databaseentry constructor finally...");
                            e.printStackTrace();
                        }
 

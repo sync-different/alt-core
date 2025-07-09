@@ -259,6 +259,7 @@ public class Main extends AbstractService {
         long mDelayV = 3000;   //3 seconds for vault
         
         String _configpath = "";
+        String _flags = "";
 
         p("args.length = " + args.length);
         if (args.length < 4 || args.length > 8) {
@@ -316,7 +317,7 @@ public class Main extends AbstractService {
             String sMode = getConfig("mode", _configpath);
             sModeAtLoad = sMode;
                 
-            String _flags = "cstbvpra";
+            _flags = "cstbvpra";
             if (args.length >= 8 ) {
                 _flags = args[7];
             } else {
@@ -415,7 +416,6 @@ public class Main extends AbstractService {
             
             
         }
-        
         long checkTimeout = DELAY_UPDATE / DELAY_MAIN;
         while (!mTerminated) {
             p("Main thread#: " + checkTimeout);
@@ -426,7 +426,7 @@ public class Main extends AbstractService {
             }
             //changes for vault settings is checked every second (Server Only)
             String sMode = getConfig("mode", _configpath);
-            if (sMode.equals("server")) vaultCheckSettings();
+            if (sMode.equals("server") && _flags.contains("v")) vaultCheckSettings();
             //check for mode change (from client to server)
             checkModeChange();
             Thread.sleep(DELAY_MAIN*1000);           

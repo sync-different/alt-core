@@ -60,3 +60,4 @@ web/.DS_Store
 .idea/*
 /alt-common/target
 web/temp_post.txt
+/alt-common/target
