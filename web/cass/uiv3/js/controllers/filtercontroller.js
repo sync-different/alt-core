@@ -39,7 +39,7 @@ angular.module('app.controllers').controller('FilterController', function (Conf,
 	previewNode.parentNode.removeChild(previewNode);
 
 
-   	var chunkSize=1024 * 1024*5;
+   	var chunkSize=1024 * 1024*10;
 	var fileupload=new Dropzone("#my-dropzone",
 		{	
 			url:'/cass/file',
@@ -63,7 +63,8 @@ angular.module('app.controllers').controller('FilterController', function (Conf,
                   if (elapsed > 0) {
                     const uploadedMB = bytesSent / (1024 * 1024);
                     const speedMbps = (uploadedMB * 8) / elapsed;
-                    console.log(`Speed: ${speedMbps.toFixed(2)} Mbps`);
+                    const speedKBs= speedMbps * 122.07;
+                    document.getElementById("showSpeedUpload").innerHTML='Speed: '+speedKBs.toFixed(0)+ 'KB/s';
                   }
                   lastLoaded = bytesSent;
                 });
@@ -111,28 +112,20 @@ angular.module('app.controllers').controller('FilterController', function (Conf,
                     this.options.chunkError=false;
 				});
 
-				this.on("success", function(file) {
-                  this.options.chunkError=false;
-                });
 
-                this.on("error", function(file, message) {
-                 if(!this.options.chunkError){
-                    this.options.chunkError=true;
-                    this.options.chunkIndex--;
-                 }
-                });
+
 			}
 	});
  	 
 	// In your controller or after DOM is ready
     noUiSlider.create(document.getElementById('speedSlider'), {
-      start: [$scope.selectedSpeed],
+      start: [10],
       step: null,
       range: {
         'min': 5,
-        '10%': 5,
-        '30%': 10,
-        '60%': 15,
+        '0%': 5,
+        '33%': 10,
+        '66%': 15,
         '100%': 20,
         'max': 20
       },
@@ -140,7 +133,7 @@ angular.module('app.controllers').controller('FilterController', function (Conf,
       pips: {
         mode: 'values',
         values: [5, 10, 15, 20],
-        density: 10
+        density: 5
       }
     });
 
