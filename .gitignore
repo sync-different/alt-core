@@ -58,5 +58,5 @@ web/.DS_Store
 /scrubber/data/localdb/Super2/hashesm
 
 .idea/*
-/binary-extractor/target
+/alt-common/target
 web/temp_post.txt
