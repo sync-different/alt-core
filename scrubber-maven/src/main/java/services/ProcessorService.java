@@ -2098,7 +2098,7 @@ public class ProcessorService implements Runnable{
             String sStorePath = "updateNumberofCopies.txt";
             //int nres = NetUtils.getfile(urlStr, sStorePath, 1, 500, 10000);  //1 try, timeout10s    
             
-            File fh = new File("../scrubber/batch_" + _batchid + ".idx");
+            File fh = new File("../rtserver/batch_" + _batchid + ".idx");
             FileWriter fw = new FileWriter(fh, true);
             fw.write("done");
             fw.close();
