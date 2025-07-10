@@ -257,7 +257,7 @@
 			try {
 				var data = xhr.responseText;
 				if (data == null || data == undefined || data == '') {
-					document.location.href = "/cass/uiv2/indexv2.htm";
+					document.location.href = "/cass/uiv3/indexv2.htm";
 				}
 			} catch (e) {
 			}
@@ -267,7 +267,7 @@
 			try {
 				var data = xhr.responseText;
 				if (data == null || data == undefined || data == '') {
-					document.location.href = "/cass/uiv2/indexv2.htm";
+					document.location.href = "/cass/uiv3/indexv2.htm";
 				}
 			} catch (e) {
 			}
@@ -277,7 +277,7 @@
 			try {
 				var data = xhr.responseText;
 				if (data == null || data == undefined || data == '') {
-					document.location.href = "/cass/uiv2/indexv2.htm";
+					document.location.href = "/cass/uiv3/indexv2.htm";
 				}
 			} catch (e) {
 			}
