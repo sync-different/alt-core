@@ -14,6 +14,7 @@ A big thanks to all the contributors worldwide. This is a global effort with col
 <br><br>
 ![USA](https://raw.githubusercontent.com/stevenrskelton/flag-icon/master/png/75/country-4x3/us.png "United States")
 ![Uruguay](https://raw.githubusercontent.com/stevenrskelton/flag-icon/master/png/75/country-4x3/uy.png "Uruguay")
+![Pakistan](https://raw.githubusercontent.com/stevenrskelton/flag-icon/master/png/75/country-4x3/pk.png "Pakistan")
 
 ## Get started
 
