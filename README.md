@@ -26,7 +26,7 @@ Step 2 - Familiarize yourself with the technical documentation in the companion 
 
 Step 3 - Clone this repo and follow steps to build & run alt-core (instructions below)
 
-Step 4 - Check out the open issues <a href="https://github.com/orgs/sync-different/alt-core/issues">issues</a>
+Step 4 - Check out the backlog open issues. Look for issues marked `good first issue`. these are good starting points to contribute if you are new to the project. <a href="https://github.com/sync-different/alt-core/issues">issues</a>
 
 ## repo structure
 
