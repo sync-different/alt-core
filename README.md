@@ -20,13 +20,13 @@ A big thanks to all the contributors worldwide. This is a global effort with col
 
 Welcome aboard! Follow these steps to get started.
 
-Step 1 - Familiarize yourself with the technical documentation in the companion repo <a href="https://github.com/sync-different/alt-core-docs">alt-core-docs</a>
+Step 1 - Join the discord and introduce yourself to the community <a href="https://discord.com/invite/Gjw9sqYuUY">join discord</a>
 
-Step 2 - Clone this repo and follow steps to build & run alt-core (instructions below)
+Step 2 - Familiarize yourself with the technical documentation in the companion repo <a href="https://github.com/sync-different/alt-core-docs">alt-core-docs</a>
 
-Step 3 - Check out the discussion board to understand the roadmap and ideas WIP <a href="https://github.com/orgs/sync-different/discussions">discussions</a>
+Step 3 - Clone this repo and follow steps to build & run alt-core (instructions below)
 
-Step 4 - Join the discord and introduce yourself to the community <a href="https://discord.com/invite/Gjw9sqYuUY">join discord</a>
+Step 4 - Check out the open issues <a href="https://github.com/orgs/sync-different/alt-core/issues">issues</a>
 
 ## repo structure
 
