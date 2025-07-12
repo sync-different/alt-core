@@ -10,7 +10,7 @@ public class AudioTranscriptionUpload {
         String boundary = "----WebKitFormBoundary" + System.currentTimeMillis();
         String LINE_FEED = "\r\n";
         String charset = "UTF-8";
-        String filePath = "WhatsApp Video 2025-06-28 at 12.46.52.mp4"; // Update path
+        String filePath = "audio.aac"; // Update path
 
         URL url = new URL("http://localhost:8080/v1/audio/transcriptions");
         HttpURLConnection conn = (HttpURLConnection) url.openConnection();

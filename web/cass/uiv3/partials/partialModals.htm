@@ -406,6 +406,9 @@
 											  <td class="text-center" ng-click="showComments='tags';" ng-class="{activeTab: showComments == 'tags'}">
 												  <i class="fas fa-tags text-dark"></i>
 											  </td>
+											  <td class="text-center" ng-click="showComments='translate';" ng-class="{activeTab: showComments == 'translate'}">
+												  <i class="fas fa-address-book text-dark"></i>
+											  </td>
 										  </tr>
 									  </table>
 								  </div>
@@ -428,6 +431,10 @@
 									  </div>
 									  <div ng-show="showComments == 'tags'" ng-style="{height: commentsHeight - 80}" class="w-100 ms-0 me-4 overflow-scroll">
 										  <input type="text" id="tagsvideo" tagpvideo="tags" placeholder="Add Tags" class="form-control">
+									  </div>
+								  </div>
+								  <div class="row w-100 ms-0 mt-3 position-relative" align="center">
+									  <div id="translatecontainer" style="height: 200px;overflow: scroll;" ng-show="showComments == 'translate'" class="w-100">
 									  </div>
 								  </div>
 							  </div>
