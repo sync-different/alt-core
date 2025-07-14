@@ -13,6 +13,7 @@ package javaapplication1;
 //import java.awt.Desktop;
 import netty.HttpStaticFileServer;
 import netty.HttpUploadServer;
+import processor.FileDatabaseEntry;
 import utils.PasswordHash;
 import utils.UserCollection;
 import utils.User;
@@ -111,7 +112,7 @@ import utils.UserMessage;
 import utils.UserMessageCollection;
 
 import org.apache.hc.core5.http.ClassicHttpRequest;
-import com.alterante.utils.BinaryExtractorUtil;
+import com.alterante.utils.extractor.BinaryExtractorUtil;
 
 public class WebServer extends AbstractService {
 
@@ -1594,6 +1595,7 @@ class Worker extends WebServer implements HttpConstants, Runnable {
                                 fname.contains("initscan.fn")||
                                 fname.contains("startscan.fn")||
                                 fname.contains("getfolders.fn")||
+                                fname.contains("gettranslate_json.fn")||
                                 fname.contains("getfolders-json.fn")||
                                 fname.contains("getfolders_json.fn")||
                                 fname.contains("getscannews.fn")||
@@ -3328,7 +3330,38 @@ class Worker extends WebServer implements HttpConstants, Runnable {
                         }  // end case scanfolders
 
                     } // end getfolders json
+                    if(fname.contains("gettranslate_json.fn")){
+                        sMD5=fname.split("=")[1];
+                        p("   ***   -----gettranslate_json.fn - sMD5: '" + sMD5+ "'");
+                        p("   ***   bUserAuthenticated          : " + bUserAuthenticated);
+                        p("   ***   bMobile                     : " + bMobile);
+                        p("   ***   scanTreeVariant             : " + scanTreeVariant);
+                        p("   ***   scanTreeMode                : " + scanTreeMode);
 
+                        String projectsFolderPath;
+                        String OS = System.getProperty("os.name").toLowerCase();
+                        boolean isWin = OS.contains("win");
+                        if (isWin) {
+                            projectsFolderPath = "..\\";
+                        } else {
+                            projectsFolderPath = "../";
+                        }
+
+
+                        String outputfolderPath;
+                        if (isWin) {
+                            outputfolderPath = projectsFolderPath + "\\rtserver\\streaming\\" + sMD5;
+                        }else{
+                            outputfolderPath = projectsFolderPath + "rtserver/streaming/" + sMD5;
+                        }
+                        File audioJsonFile = new File(outputfolderPath + "/audio.json");
+                        if(audioJsonFile.exists()) {
+                            String result = loadFileStr(audioJsonFile);
+                            outFile.write(result.getBytes());
+                        } else {
+                            outFile.write("{segments:[]}".getBytes());
+                        }
+                    }
                     if (fname.contains("getfolders.fn")) {
 
                         p("   ***   -----getfolders.fn - sFolder: '" + sFolder+ "'");

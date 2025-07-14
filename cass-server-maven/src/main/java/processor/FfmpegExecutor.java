@@ -172,8 +172,10 @@ public class FfmpegExecutor {
                     
                     File ffmpegexeFile = new File(ffmpegexePath);
                     File _outputthumbFile = new File(_outputfolderPath + "/thumbnail.jpg");
-                    
-                    String command = getCommandMac(_projectsFolderPath, ffmpegexeFile, _input, outputm3u8File, _md5, outputtsFile, _outputthumbFile);
+                    File _outputtAudioFile = new File(_outputfolderPath + "/audio.aac");
+                    File _outputAudioJSOnFile = new File(_outputfolderPath + "/audio.json");
+
+                    String command = getCommandMac(_projectsFolderPath, ffmpegexeFile, _input, outputm3u8File, _md5, outputtsFile, _outputthumbFile, _outputtAudioFile,_outputAudioJSOnFile);
                     
 //                    String pp = ffmpegexePath + " -y -ss 0 -i " + "'" + _input.getPath() + "' -sn -c copy -map 0:0 -map 0:1 -codec:v libx264 -vf scale=-2:320 -codec:a libvo_aacenc -ac 2 -f ssegment -segment_list '"+ outputm3u8File.getCanonicalPath() +
 //                            "' -segment_time 8 -segment_list_entry_prefix '/getts.fn?md5=" + _md5 + "&ts=' '" + outputtsFile.getCanonicalPath() + "'";                                    
@@ -238,20 +240,23 @@ public class FfmpegExecutor {
 
     }
 
-    private String getCommandMac(String _projectsFolderPath, File ffmpegexeFile, File _input, File outputm3u8File, String _md5, File outputtsFile, File outputthumbnailFile) throws UnsupportedEncodingException, IOException {
+    private String getCommandMac(String _projectsFolderPath, File ffmpegexeFile, File _input, File outputm3u8File, String _md5, File outputtsFile, File outputthumbnailFile,File outputAudioFile,File outputAudioJsonFile) throws UnsupportedEncodingException, IOException {
         String ffmpegtxtPath = _projectsFolderPath + "/../ffmpeg.txt";
         File ffmpegtxtFile = new File(ffmpegtxtPath);
         byte[] encoded = Files.readAllBytes(Paths.get(ffmpegtxtFile.getCanonicalPath()));
         String commandFile = new String(encoded, "UTF-8");
         String command = "nice -n 20 " + commandFile.trim();
-        command = command.replace("$$ffmpegexePath$$", "'" + ffmpegexeFile.getCanonicalPath() + "'");
-        command = command.replace("$$inputPath$$", "'" + _input.getPath() + "'");
+        command = command.replaceAll("\\$\\$ffmpegexePath\\$\\$", "'" + ffmpegexeFile.getCanonicalPath() + "'");
+        command = command.replaceAll("\\$\\$inputPath\\$\\$", "'" + _input.getPath() + "'");
         command = command.replace("$$outputm3u8FilePath$$", "'" + outputm3u8File.getCanonicalPath() + "'");
         String clusteridUUIDPath = "../scrubber/data/clusterid";
         String clusteridUUID = NetUtils.getUUID(clusteridUUIDPath);
         command = command.replace("$$prefix$$", "'" + "/getts.fn?md5=" + _md5 +"&multiclusterid="+clusteridUUID+ "&ts=" + "'");
         command = command.replace("$$outputtsFile$$", "'" + outputtsFile.getCanonicalPath() + "'");
         command = command.replace("$$thumbFile$$", "'" + outputthumbnailFile.getCanonicalPath() + "'");
+        command = command.replace("$$outputPathAudio$$", "'" + outputAudioFile.getCanonicalPath() + "'");
+        command = command.replace("$$outputTextJson$$", "'" + outputAudioJsonFile.getCanonicalPath() + "'");
+        command = command.replace("$$inputPathAudio$$", "'@" + outputAudioFile.getCanonicalPath() + "'");
 
         return command;
     }

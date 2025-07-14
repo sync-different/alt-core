@@ -19,6 +19,12 @@
     </properties>
 
     <dependencies>
+        <!-- https://mvnrepository.com/artifact/com.alphacephei/vosk -->
+        <dependency>
+            <groupId>com.alphacephei</groupId>
+            <artifactId>vosk</artifactId>
+            <version>0.3.45</version>
+        </dependency>
         <!-- Optionally: parameterized tests support -->
        <dependency>
             <groupId>net.coobird</groupId>
@@ -98,4 +104,5 @@
             </plugin>
         </plugins>
     </build>
+
 </project>

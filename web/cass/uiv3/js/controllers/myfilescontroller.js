@@ -1041,8 +1041,7 @@ angular.module('app.controllers').controller('MyFilesController', function (Conf
 		}
 		
 		if(showVideo){
-			
-			$scope.close = function () {
+		       $scope.close = function () {
 			   $scope.alerts.splice(0,$scope.alerts.length);
 			   clearTimeout($scope.timePull);
 			   $(document).off('key_escape');
@@ -1061,20 +1060,51 @@ angular.module('app.controllers').controller('MyFilesController', function (Conf
 			
 			closeAudio();
 			$scope.commentsHeight=($(window).innerWidth()*0.95-270)*(264/640)+45;
-			$scope.commentMD5=file.nickname;
+			var sMD5=file.nickname;
+			$scope.commentMD5=sMD5;
 			$scope.msgs=[];
 			$scope.lastComment=0;
 			$scope.pullComments();
 			$scope.showComments="comment";
 			
 			$("#footerVideoBar").modal({backdrop:'static',keyboard: false});
-			
+			$scope.loadTranslate("#translatecontainer",sMD5);
 			$scope.loadingSystemTags("#tagsvideo",file);
+
+		    var video=document.getElementById("video");
+            video.addEventListener('timeupdate', function() {
+                const currentTime = video.currentTime;
+                  // Find the segment for the current time
+                const data = $scope.segments.find(s => currentTime >= s.start/1000000000 && currentTime <= s.end/1000000000);
+                if (data) {
+                    $('#translatecontainer').html('<div style="color:black"" class="translate-item" data-start="'+data.start+'" data-end="'+data.end+'">'+data.text+"</div><br/>");
+                 } else {
+                    $('#translatecontainer').html('');
+                 }
+            });
+
 		}else{
 			$("#leftMenu").show();
 		}	
 	}
-	
+	$scope.loadTranslate=function(selector,md5){
+	    fetch('/cass/gettranslate_json.fn?sMD5='+md5)
+          .then(response => {
+            return response.json();
+          })
+          .then(data => {
+            var html="";
+            for(var i=0; i<data.segments.length;i++){
+                var dataS=data.segments[i];
+                html+='<div style="color:black"" class="translate-item" data-start="'+dataS.start+'" data-end="'+dataS.end+'">'+dataS.text+"</div><br/>";
+            }
+            //$(selector).html(html);
+            $scope.segments = data.segments;
+          })
+          .catch(error => {
+            console.error('Fetch error:', error);
+          });
+	}
 	$scope.shareFB=function(){
 		$scope.fbtext="";
 		$("#sharefacebookloading").hide();

@@ -7,7 +7,8 @@ import static com.alterante.ollama.OllamaImage.localOllamaImage;
 public class AbstractOllamaInfrastructure {
 
     public static final String OLLAMA_BASE_URL = System.getenv("OLLAMA_BASE_URL");
-    public static final String MODEL_NAME = LLAMA_3_1;
+    //public static final String MODEL_NAME = LLAMA_3_1;
+    public static final String MODEL_NAME = "whisper-1";
 
     public static LangChain4jOllamaContainer ollama;
 
