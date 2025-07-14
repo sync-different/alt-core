@@ -246,8 +246,8 @@ public class FfmpegExecutor {
         byte[] encoded = Files.readAllBytes(Paths.get(ffmpegtxtFile.getCanonicalPath()));
         String commandFile = new String(encoded, "UTF-8");
         String command = "nice -n 20 " + commandFile.trim();
-        command = command.replaceAll("--ffmpegexePath--", "'" + ffmpegexeFile.getCanonicalPath() + "'");
-        command = command.replaceAll("--inputPath--", "'" + _input.getPath() + "'");
+        command = command.replaceAll("\\$\\$ffmpegexePath\\$\\$", "'" + ffmpegexeFile.getCanonicalPath() + "'");
+        command = command.replaceAll("\\$\\$inputPath\\$\\$", "'" + _input.getPath() + "'");
         command = command.replace("$$outputm3u8FilePath$$", "'" + outputm3u8File.getCanonicalPath() + "'");
         String clusteridUUIDPath = "../scrubber/data/clusterid";
         String clusteridUUID = NetUtils.getUUID(clusteridUUIDPath);
