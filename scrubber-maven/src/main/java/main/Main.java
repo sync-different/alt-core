@@ -34,6 +34,7 @@ import services.BackupServerService;
 
 import services.ScannerLauncher;
 import services.ClientLauncher;
+import services.DockerLauncher;
 import services.TransferLauncher;
 import services.BackupClientLauncher;
 import services.VaultLauncher;
@@ -64,6 +65,8 @@ public class Main extends AbstractService {
     static ProcessorService ps = null;
     static BroadcastService bs = null;
     static BackupServerService bss = null;
+
+    static DockerLauncher dl = null;
     
     static AmazonDrive acd = null;
     
@@ -317,7 +320,8 @@ public class Main extends AbstractService {
             String sMode = getConfig("mode", _configpath);
             sModeAtLoad = sMode;
                 
-            _flags = "cstbvpra";
+            _flags = "cstbvprad";
+
             if (args.length >= 8 ) {
                 _flags = args[7];
             } else {
@@ -404,16 +408,23 @@ public class Main extends AbstractService {
                 //Client - Transfer
                 p("[spawning a backup client]");
                 //new TransferService("outgoing/",_server,_serverport, mDelay, _signature, true);   
-                    bcl = new BackupClientLauncher(_server,_serverport, _signature, _hostfound, _configpath, mDelay, mLogLevel);   
+                bcl = new BackupClientLauncher(_server,_serverport, _signature, _hostfound, _configpath, mDelay, mLogLevel);   
             }
             
             if (_flags.contains("z")) {
                 //Client - Transfer
                 p("[spawning amazon cloud drive]");
                 //new TransferService("outgoing/",_server,_serverport, mDelay, _signature, true);   
-                    acd = new AmazonDrive(2);   
+                acd = new AmazonDrive(2);   
             }
-            
+
+            if (_flags.contains("d")) {
+                //Docker service
+                p("[spawning docker service]");
+                //new TransferService("outgoing/",_server,_serverport, mDelay, _signature, true);   
+                dl = new DockerLauncher();   
+            }
+
             
         }
         long checkTimeout = DELAY_UPDATE / DELAY_MAIN;
