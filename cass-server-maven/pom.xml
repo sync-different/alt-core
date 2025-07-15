@@ -13,6 +13,19 @@
     <name>Cass Server</name>
     <description>Cassandra-based file server with web interface</description>
 
+    <repositories>
+        <repository>
+            <id>central</id>
+            <url>https://repo.maven.apache.org/maven2</url>
+            <releases>
+                <enabled>true</enabled>
+            </releases>
+            <snapshots>
+                <enabled>false</enabled>
+            </snapshots>
+        </repository>
+    </repositories>
+
     <properties>
         <maven.compiler.source>17</maven.compiler.source>
         <maven.compiler.target>17</maven.compiler.target>
@@ -29,7 +42,7 @@
     <dependencies>
 
         <dependency>
-            <groupId>com.alterante</groupId>
+            <groupId>org.audiotagger</groupId>
             <artifactId>jaudiotagger</artifactId>
             <version>2.2.0</version>
             <scope>system</scope>
@@ -99,13 +112,6 @@
             <groupId>commons-httpclient</groupId>
             <artifactId>commons-httpclient</artifactId>
             <version>3.1</version>
-        </dependency>
-
-        <!-- JAudioTagger for audio file processing -->
-        <dependency>
-            <groupId>org</groupId>
-            <artifactId>jaudiotagger</artifactId>
-            <version>2.0.3</version>
         </dependency>
 
         <!-- Thumbnailator for image processing -->

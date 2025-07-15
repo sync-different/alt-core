@@ -48,12 +48,12 @@
             <systemPath>${project.basedir}/lib/mailer.jar</systemPath>
         </dependency>
 
+
+        <!-- https://mvnrepository.com/artifact/xyz.cofe/winrun4j -->
         <dependency>
-            <groupId>com.alterante</groupId>
+            <groupId>xyz.cofe</groupId>
             <artifactId>winrun4j</artifactId>
-            <version>1.0</version>
-            <scope>system</scope>
-            <systemPath>${project.basedir}/lib/WinRun4J.jar</systemPath>
+            <version>0.4.5</version>
         </dependency>
 
         <!-- Netty -->

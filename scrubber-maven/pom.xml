@@ -42,20 +42,19 @@
             <systemPath>${project.basedir}/lib/PDFRenderer-0.9.1.jar</systemPath>
         </dependency>
 
+
+        <!-- https://mvnrepository.com/artifact/com.restfb/restfb -->
         <dependency>
-            <groupId>com.alterante</groupId>
-            <artifactId>winrun4j</artifactId>
-            <version>1.0</version>
-            <scope>system</scope>
-            <systemPath>${project.basedir}/lib/WinRun4J.jar</systemPath>
+            <groupId>com.restfb</groupId>
+            <artifactId>restfb</artifactId>
+            <version>1.18.1</version>
         </dependency>
 
+        <!-- https://mvnrepository.com/artifact/xyz.cofe/winrun4j -->
         <dependency>
-            <groupId>com.alterante</groupId>
-            <artifactId>restFB</artifactId>
-            <version>1.0</version>
-            <scope>system</scope>
-            <systemPath>${project.basedir}/lib/restfb-1.18.1.jar</systemPath>
+            <groupId>xyz.cofe</groupId>
+            <artifactId>winrun4j</artifactId>
+            <version>0.4.5</version>
         </dependency>
 
         <!-- Apache Cassandra Thrift -->
@@ -201,13 +200,6 @@
             <groupId>jakarta.activation</groupId>
             <artifactId>jakarta.activation-api</artifactId>
             <version>2.1.2</version>
-        </dependency>
-
-        <!-- RestFB for Facebook integration -->
-        <dependency>
-            <groupId>com.restfb</groupId>
-            <artifactId>restfb</artifactId>
-            <version>2023.12.0</version>
         </dependency>
 
         <!-- XBean - commented out as not available in Maven Central -->
