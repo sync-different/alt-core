@@ -94,19 +94,6 @@
             <version>${mapdb.version}</version>
         </dependency>
 
-        <!-- Apache HttpComponents Client (for HTTPRequestPoster) -->
-        <dependency>
-            <groupId>org.apache.httpcomponents</groupId>
-            <artifactId>httpclient</artifactId>
-            <version>4.5.14</version>
-        </dependency>
-
-        <dependency>
-            <groupId>org.apache.httpcomponents</groupId>
-            <artifactId>httpmime</artifactId>
-            <version>4.5.14</version>
-        </dependency>
-
         <!-- Commons HttpClient (legacy) -->
         <dependency>
             <groupId>commons-httpclient</groupId>
@@ -119,13 +106,6 @@
             <groupId>net.coobird</groupId>
             <artifactId>thumbnailator</artifactId>
             <version>0.4.19</version>
-        </dependency>
-
-        <!-- Apache POI for Office document processing -->
-        <dependency>
-            <groupId>org.apache.poi</groupId>
-            <artifactId>poi</artifactId>
-            <version>5.2.4</version>
         </dependency>
 
         <dependency>
@@ -168,33 +148,14 @@
             <version>2.1.2</version>
         </dependency>
 
-        <!-- PDF processing (PDFBox as alternative to com.sun.pdfview) -->
+        <!-- Commons Codec -->
         <dependency>
-            <groupId>org.apache.pdfbox</groupId>
-            <artifactId>pdfbox</artifactId>
-            <version>2.0.29</version>
+            <groupId>commons-codec</groupId>
+            <artifactId>commons-codec</artifactId>
+            <version>1.8</version>
         </dependency>
 
-        <!-- Logging -->
-        <dependency>
-            <groupId>org.slf4j</groupId>
-            <artifactId>slf4j-api</artifactId>
-            <version>${slf4j.version}</version>
-        </dependency>
 
-        <dependency>
-            <groupId>ch.qos.logback</groupId>
-            <artifactId>logback-classic</artifactId>
-            <version>${logback.version}</version>
-        </dependency>
-
-        <!-- JUnit for testing -->
-        <dependency>
-            <groupId>junit</groupId>
-            <artifactId>junit</artifactId>
-            <version>4.13.2</version>
-            <scope>test</scope>
-        </dependency>
     </dependencies>
 
     <build>
