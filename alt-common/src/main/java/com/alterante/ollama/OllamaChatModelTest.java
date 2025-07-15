@@ -13,7 +13,7 @@ import dev.langchain4j.model.chat.response.ChatResponse;
 import dev.langchain4j.model.ollama.OllamaChatModel;
 import dev.langchain4j.service.AiServices;
 import org.junit.jupiter.api.Test;
-import com.alterante.ollama.AbstractOllamaInfrastructure;
+//import com.alterante.ollama.AbstractOllamaInfrastructure;
 
 import java.util.Map;
 

@@ -1,6 +1,6 @@
 package com.alterante.utils.extractor;
 
-import java.awt.*;
+//import java.awt.*;
 import java.io.FileInputStream;
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
