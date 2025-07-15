@@ -19,11 +19,11 @@
     </properties>
 
     <dependencies>
-        <!-- https://mvnrepository.com/artifact/com.alphacephei/vosk -->
+        <!-- https://mvnrepository.com/artifact/dev.langchain4j/langchain4j-local-ai -->
         <dependency>
-            <groupId>com.alphacephei</groupId>
-            <artifactId>vosk</artifactId>
-            <version>0.3.45</version>
+            <groupId>dev.langchain4j</groupId>
+            <artifactId>langchain4j-local-ai</artifactId>
+            <version>1.1.0-beta7</version>
         </dependency>
         <!-- Optionally: parameterized tests support -->
        <dependency>
@@ -31,7 +31,11 @@
             <artifactId>thumbnailator</artifactId>
             <version>0.4.19</version>
         </dependency>
-
+        <dependency>
+            <groupId>com.github.docker-java</groupId>
+            <artifactId>docker-java</artifactId>
+            <version>3.3.6</version>
+        </dependency>
       <dependency>
             <groupId>dev.langchain4j</groupId>
             <artifactId>langchain4j</artifactId>
