@@ -241,7 +241,7 @@ public class Cass7Funcs {
     }
 
     /* print to stdout */
-    static protected void p(String s) {
+    static public void p(String s) {
 
         Date ts_start = Calendar.getInstance().getTime();
         SimpleDateFormat sdf = new SimpleDateFormat("yyyy/MM/dd hh:mm:ss");
@@ -8549,7 +8549,7 @@ String gen_view_link(String _host, String _port, String sViewURL, boolean bHaveS
         return tmpURLpack;
     }
     
-    static String getConfig(String _name, String _config) {
+    public static String getConfig(String _name, String _config) {
         
         try {
             File f = new File(_config);

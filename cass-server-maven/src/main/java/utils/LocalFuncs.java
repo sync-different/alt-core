@@ -233,7 +233,7 @@ public class LocalFuncs {
     static String appendage = "";
     static String appendageRW = "";
 
-    static boolean bConsole = true;
+    public static boolean bConsole = true;
 
     public static final String ANSI_RED = "\u001B[31m";
     public static final String ANSI_GREEN = "\u001B[32m";
