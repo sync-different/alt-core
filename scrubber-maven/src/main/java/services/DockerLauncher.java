@@ -4,7 +4,7 @@ public class DockerLauncher implements Runnable {
 
     boolean bTerminated = false;
     DockerService ds = null;
-
+    Thread t=null;
     public DockerLauncher() {
         Thread t = new Thread(this, "DockerLauncher Thread");
         System.out.println("Child thread: " + t);
@@ -17,6 +17,6 @@ public class DockerLauncher implements Runnable {
     }   
 
     public void terminate() {
-        ds.terminate();
+        //ds.terminate();
     }
 }
