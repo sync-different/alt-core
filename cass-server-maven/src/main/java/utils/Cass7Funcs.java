@@ -241,7 +241,7 @@ public class Cass7Funcs {
     }
 
     /* print to stdout */
-    static protected void p(String s) {
+    static public void p(String s) {
 
         Date ts_start = Calendar.getInstance().getTime();
         SimpleDateFormat sdf = new SimpleDateFormat("yyyy/MM/dd hh:mm:ss");
@@ -5439,7 +5439,8 @@ public class Cass7Funcs {
                     if ((Got = numbers.get(_key)) != null) {
                         was = (((Integer) Got).intValue());
                     }
-                    numbers.put(_key, new Integer(was + 1));
+                    //numbers.put(_key, new Integer(was + 1));
+                    numbers.put(_key, Integer.valueOf(was+1));
                     //p("added" + _key + "->" + name2 + " -> " + val2);
 
                 } else {
@@ -7178,7 +7179,7 @@ public boolean syncObject(final String _key, final String superColumnName, Strin
                                 boolean bNodeDead = get_deadnode(sUUID);
                                 if (!bNodeDead) {
                                     //p("addding case for UUID = " + sUUID);
-                                    occurences_uuid.put(sUUID, new Integer(was + 1));
+                                    occurences_uuid.put(sUUID, Integer.valueOf(was + 1));
                                 } else {
                                     p("Skipped - Node is DEAD: " + sUUID + " " + _key + " : " + colName + " " + colValue);
                                 }
@@ -7319,7 +7320,7 @@ public boolean syncObject(final String _key, final String superColumnName, Strin
                             if (!colValue.equals("DELETED")) {
                                 boolean bNodeDead = get_deadnode(sUUID);
                                 if (!bNodeDead) {
-                                    occurences_uuid.put(sUUID, new Integer(was + 1));
+                                    occurences_uuid.put(sUUID, Integer.valueOf(was + 1));
                                     String sAdd = "";
                                     String sIP = "";
                                     String sPort = "";
@@ -7391,7 +7392,7 @@ public boolean syncObject(final String _key, final String superColumnName, Strin
                                         if ((Got2 = occurences_uuid_files.get(sNamer)) != null) {
                                             was = (((Integer) Got2).intValue());
                                         }
-                                        occurences_uuid_files.put(sNamer, new Integer(was + 1));
+                                        occurences_uuid_files.put(sNamer, Integer.valueOf(was + 1));
 
                                         boolean bNodeDead = get_deadnode(sNamer);
                                         if (!bNodeDead) {
@@ -7441,7 +7442,7 @@ public boolean syncObject(final String _key, final String superColumnName, Strin
                                 if ((Got2 = occurences_uuid_files.get(sNamer)) != null) {
                                     was = (((Integer) Got2).intValue());
                                 }
-                                occurences_uuid_files.put(sNamer, new Integer(was + 1));
+                                occurences_uuid_files.put(sNamer, Integer.valueOf(was + 1));
 
                                 //write to temp file
                                 String sFileName = sRoot + "backup_" + sNodeName + "_" + sSeqID + "_" + nBatch + ".tmp";
@@ -8548,7 +8549,7 @@ String gen_view_link(String _host, String _port, String sViewURL, boolean bHaveS
         return tmpURLpack;
     }
     
-    static String getConfig(String _name, String _config) {
+    public static String getConfig(String _name, String _config) {
         
         try {
             File f = new File(_config);
@@ -8861,7 +8862,6 @@ String gen_view_link(String _host, String _port, String sViewURL, boolean bHaveS
             }
 
             return String.valueOf(res_code);
-
         } catch (UnsupportedEncodingException ex) {
             Logger.getLogger(WebFuncs.class.getName()).log(Level.SEVERE, null, ex);
         } catch (InvalidRequestException ex) {
@@ -8873,8 +8873,6 @@ String gen_view_link(String _host, String _port, String sViewURL, boolean bHaveS
         } catch (TException ex) {
             Logger.getLogger(WebFuncs.class.getName()).log(Level.SEVERE, null, ex);
         } catch (NotFoundException ex) {
-            Logger.getLogger(WebFuncs.class.getName()).log(Level.SEVERE, null, ex);
-        } catch (IOException ex) {
             Logger.getLogger(WebFuncs.class.getName()).log(Level.SEVERE, null, ex);
         }
         return "ERROR";

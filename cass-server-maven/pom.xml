@@ -13,10 +13,23 @@
     <name>Cass Server</name>
     <description>Cassandra-based file server with web interface</description>
 
+    <repositories>
+        <repository>
+            <id>central</id>
+            <url>https://repo.maven.apache.org/maven2</url>
+            <releases>
+                <enabled>true</enabled>
+            </releases>
+            <snapshots>
+                <enabled>false</enabled>
+            </snapshots>
+        </repository>
+    </repositories>
+
     <properties>
-        <maven.compiler.source>17</maven.compiler.source>
-        <maven.compiler.target>17</maven.compiler.target>
-        <maven.compiler.release>17</maven.compiler.release>
+        <maven.compiler.source>11</maven.compiler.source>
+        <maven.compiler.target>11</maven.compiler.target>
+        <maven.compiler.release>11</maven.compiler.release>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <cassandra.version>1.2.0</cassandra.version>
         <thrift.version>0.7.0</thrift.version>
@@ -29,11 +42,9 @@
     <dependencies>
 
         <dependency>
-            <groupId>com.alterante</groupId>
+            <groupId>org.jaudiotagger</groupId>
             <artifactId>jaudiotagger</artifactId>
-            <version>2.2.0</version>
-            <scope>system</scope>
-            <systemPath>${project.basedir}/lib/jaudiotagger-2.2.0-20130321.162819-3.jar</systemPath>
+            <version>2.2.0-SNAPSHOT</version>
         </dependency>
 
         <!-- https://mvnrepository.com/artifact/com.sun.pdfview/PDFRenderer -->
@@ -41,8 +52,6 @@
             <groupId>com.sun.pdfview</groupId>
             <artifactId>PDFRenderer</artifactId>
             <version>0.9.1</version>
-            <scope>system</scope>
-            <systemPath>${project.basedir}/lib/PDFRenderer-0.9.1.jar</systemPath>
         </dependency>
 
         <!-- HttpClient5 -->
@@ -81,19 +90,6 @@
             <version>${mapdb.version}</version>
         </dependency>
 
-        <!-- Apache HttpComponents Client (for HTTPRequestPoster) -->
-        <dependency>
-            <groupId>org.apache.httpcomponents</groupId>
-            <artifactId>httpclient</artifactId>
-            <version>4.5.14</version>
-        </dependency>
-
-        <dependency>
-            <groupId>org.apache.httpcomponents</groupId>
-            <artifactId>httpmime</artifactId>
-            <version>4.5.14</version>
-        </dependency>
-
         <!-- Commons HttpClient (legacy) -->
         <dependency>
             <groupId>commons-httpclient</groupId>
@@ -101,25 +97,11 @@
             <version>3.1</version>
         </dependency>
 
-        <!-- JAudioTagger for audio file processing -->
-        <dependency>
-            <groupId>org</groupId>
-            <artifactId>jaudiotagger</artifactId>
-            <version>2.0.3</version>
-        </dependency>
-
         <!-- Thumbnailator for image processing -->
         <dependency>
             <groupId>net.coobird</groupId>
             <artifactId>thumbnailator</artifactId>
             <version>0.4.19</version>
-        </dependency>
-
-        <!-- Apache POI for Office document processing -->
-        <dependency>
-            <groupId>org.apache.poi</groupId>
-            <artifactId>poi</artifactId>
-            <version>5.2.4</version>
         </dependency>
 
         <dependency>
@@ -162,33 +144,14 @@
             <version>2.1.2</version>
         </dependency>
 
-        <!-- PDF processing (PDFBox as alternative to com.sun.pdfview) -->
+        <!-- Commons Codec -->
         <dependency>
-            <groupId>org.apache.pdfbox</groupId>
-            <artifactId>pdfbox</artifactId>
-            <version>2.0.29</version>
+            <groupId>commons-codec</groupId>
+            <artifactId>commons-codec</artifactId>
+            <version>1.8</version>
         </dependency>
 
-        <!-- Logging -->
-        <dependency>
-            <groupId>org.slf4j</groupId>
-            <artifactId>slf4j-api</artifactId>
-            <version>${slf4j.version}</version>
-        </dependency>
 
-        <dependency>
-            <groupId>ch.qos.logback</groupId>
-            <artifactId>logback-classic</artifactId>
-            <version>${logback.version}</version>
-        </dependency>
-
-        <!-- JUnit for testing -->
-        <dependency>
-            <groupId>junit</groupId>
-            <artifactId>junit</artifactId>
-            <version>4.13.2</version>
-            <scope>test</scope>
-        </dependency>
     </dependencies>
 
     <build>

@@ -28,32 +28,20 @@
             <groupId>com.alterante.utils</groupId>
             <artifactId>alt-common</artifactId>
             <version>1.0</version>
-            <scope>system</scope>
-            <systemPath>${project.basedir}/lib/alt-common-1.0-SNAPSHOT.jar</systemPath>
         </dependency>
 
         <dependency>
             <groupId>com.alterante</groupId>
             <artifactId>cass-server</artifactId>
             <version>1.0</version>
-            <scope>system</scope>
-            <systemPath>${project.basedir}/lib/cass-server.jar</systemPath>
         </dependency>
         
-        <dependency>
-            <groupId>com.alterante</groupId>
-            <artifactId>mailer</artifactId>
-            <version>1.0</version>
-            <scope>system</scope>
-            <systemPath>${project.basedir}/lib/mailer.jar</systemPath>
-        </dependency>
 
+        <!-- https://mvnrepository.com/artifact/xyz.cofe/winrun4j -->
         <dependency>
-            <groupId>com.alterante</groupId>
+            <groupId>xyz.cofe</groupId>
             <artifactId>winrun4j</artifactId>
-            <version>1.0</version>
-            <scope>system</scope>
-            <systemPath>${project.basedir}/lib/WinRun4J.jar</systemPath>
+            <version>0.4.5</version>
         </dependency>
 
         <!-- Netty -->
@@ -62,27 +50,7 @@
             <artifactId>netty-all</artifactId>
             <version>${netty.version}</version>
         </dependency>
-        
-        <!-- Apache Cassandra Thrift -->
-        <dependency>
-            <groupId>org.apache.cassandra</groupId>
-            <artifactId>cassandra-thrift</artifactId>
-            <version>1.2.0</version>
-            <exclusions>
-                <exclusion>
-                    <groupId>org.slf4j</groupId>
-                    <artifactId>slf4j-log4j12</artifactId>
-                </exclusion>
-            </exclusions>
-        </dependency>
-        
-        <!-- MapDB -->
-        <dependency>
-            <groupId>org.mapdb</groupId>
-            <artifactId>mapdb</artifactId>
-            <version>1.0.9</version>
-        </dependency>
-        
+                
         <!-- Commons Codec -->
         <dependency>
             <groupId>commons-codec</groupId>
@@ -96,27 +64,8 @@
             <artifactId>commons-httpclient</artifactId>
             <version>3.1</version>
         </dependency>
+                
         
-        <!-- Commons Logging -->
-        <dependency>
-            <groupId>commons-logging</groupId>
-            <artifactId>commons-logging</artifactId>
-            <version>1.1.3</version>
-        </dependency>
-        
-        <!-- DOM4J -->
-        <dependency>
-            <groupId>dom4j</groupId>
-            <artifactId>dom4j</artifactId>
-            <version>1.6.1</version>
-        </dependency>
-        
-        <!-- HttpCore5 -->
-        <dependency>
-            <groupId>org.apache.httpcomponents.core5</groupId>
-            <artifactId>httpcore5</artifactId>
-            <version>5.3.1</version>
-        </dependency>
         
         <!-- Jakarta Activation -->
         <dependency>
@@ -131,27 +80,20 @@
             <artifactId>json-smart</artifactId>
             <version>1.2</version>
         </dependency>
-        
-        <!-- Apache Thrift -->
-        <dependency>
-            <groupId>org.apache.thrift</groupId>
-            <artifactId>libthrift</artifactId>
-            <version>0.7.0</version>
-        </dependency>
-        
+                
         <!-- JavaMail -->
         <dependency>
             <groupId>com.sun.mail</groupId>
             <artifactId>javax.mail</artifactId>
             <version>1.6.2</version>
         </dependency>
-        
-        <!-- Logging implementation -->
-        <dependency>
-            <groupId>org.slf4j</groupId>
-            <artifactId>slf4j-simple</artifactId>
-            <version>1.7.32</version>
-        </dependency>
+
+       <dependency>
+            <groupId>org.apache.httpcomponents.core5</groupId>
+            <artifactId>httpcore5</artifactId>
+            <version>5.3.1</version>
+        </dependency>        
+
     </dependencies>
     
     <build>
@@ -205,10 +147,18 @@
                             <goal>shade</goal>
                         </goals>
                         <configuration>
+                            <filters>
+                                <filter>
+                                    <artifact>*:*</artifact>
+                                    <excludes>
+                                        <exclude>META-INF/MANIFEST.MF</exclude>
+                                        <exclude>META-INF/NOTICE.TXT</exclude>
+                                        <exclude>META-INF/LICENSE.TXT</exclude>
+                                    </excludes>
+                                </filter>
+                            </filters>
                             <transformers>
-                                <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
-                                    <mainClass>javaapplication1.Main</mainClass>
-                                </transformer>
+                                <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer"/>
                             </transformers>
                             <createDependencyReducedPom>false</createDependencyReducedPom>
                         </configuration>
@@ -220,7 +170,7 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-dependency-plugin</artifactId>
-                <version>3.1.2</version>
+                <version>3.6.0</version>
                 <executions>
                     <execution>
                         <id>copy-dependencies</id>

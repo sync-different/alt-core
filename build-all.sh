@@ -4,9 +4,11 @@ mvn clean
 mvn compile
 mvn package
 cd ..
+cp alt-common/target/alt-common-1.0-SNAPSHOT.jar ./rtserver-maven/lib/
 
 echo "-------------------building cass-server.jar"
 cd cass-server-maven
+./install-local-deps.sh
 mvn clean
 mvn compile
 mvn package

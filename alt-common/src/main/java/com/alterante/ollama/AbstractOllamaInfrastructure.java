@@ -1,7 +1,7 @@
 package com.alterante.ollama;
 
 import static dev.langchain4j.internal.Utils.isNullOrEmpty;
-import static com.alterante.ollama.OllamaImage.LLAMA_3_1;
+//import static com.alterante.ollama.OllamaImage.LLAMA_3_1;
 import static com.alterante.ollama.OllamaImage.localOllamaImage;
 
 public class AbstractOllamaInfrastructure {

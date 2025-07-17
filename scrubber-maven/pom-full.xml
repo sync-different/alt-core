@@ -27,27 +27,12 @@
 
         <dependency>
             <groupId>com.alterante</groupId>
-            <artifactId>cass-server</artifactId>
-            <version>1.0</version>
-        </dependency>
-
-        <dependency>
-            <groupId>com.alterante</groupId>
             <artifactId>jaudiotagger</artifactId>
             <version>2.2.0</version>
             <scope>system</scope>
             <systemPath>${project.basedir}/lib/jaudiotagger-2.2.0-20130321.162819-3.jar</systemPath>
         </dependency>
-        <dependency>
-            <groupId>com.github.docker-java</groupId>
-            <artifactId>docker-java</artifactId>
-            <version>3.3.6</version>
-        </dependency>
-        <dependency>
-            <groupId>com.github.docker-java</groupId>
-            <artifactId>docker-java-transport-httpclient5</artifactId>
-            <version>3.4.0</version>
-        </dependency>
+
         <!-- https://mvnrepository.com/artifact/com.sun.pdfview/PDFRenderer -->
         <dependency>
             <groupId>com.sun.pdfview</groupId>
@@ -252,6 +237,38 @@
                         </manifest>
                     </archive>
                 </configuration>
+            </plugin>
+
+            <!-- Maven Shade Plugin for creating fat JAR -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-shade-plugin</artifactId>
+                <version>${maven.shade.plugin.version}</version>
+                <executions>
+                    <execution>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>shade</goal>
+                        </goals>
+                        <configuration>
+                            <transformers>
+                                <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
+                                    <mainClass>main.Main</mainClass>
+                                </transformer>
+                            </transformers>
+                            <filters>
+                                <filter>
+                                    <artifact>*:*</artifact>
+                                    <excludes>
+                                        <exclude>META-INF/*.SF</exclude>
+                                        <exclude>META-INF/*.DSA</exclude>
+                                        <exclude>META-INF/*.RSA</exclude>
+                                    </excludes>
+                                </filter>
+                            </filters>
+                        </configuration>
+                    </execution>
+                </executions>
             </plugin>
 
             <!-- Maven Resources Plugin -->

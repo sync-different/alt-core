@@ -101,7 +101,7 @@ public class WebFuncs {
     }
 
     /* print to stdout */
-    static protected void p(String s) {
+     protected static void p(String s) {
         Date ts_start = Calendar.getInstance().getTime();
         SimpleDateFormat sdf = new SimpleDateFormat("yyyy/MM/dd hh:mm:ss");
         String sDate = sdf.format(ts_start);
@@ -125,6 +125,16 @@ class MailProcessor implements Runnable {
 }
 
 class UpdateCheck implements Runnable {
+
+    /* print to stdout */
+      protected void p(String s) {
+          Date ts_start = Calendar.getInstance().getTime();
+          SimpleDateFormat sdf = new SimpleDateFormat("yyyy/MM/dd hh:mm:ss");
+          String sDate = sdf.format(ts_start);
+
+          long threadID = Thread.currentThread().getId();
+          System.out.println(sDate+ " [DEBUG] [CS.WebFuncs_" + threadID + "] " + s);
+      }
       
       
       String sVersionRunning = "";
@@ -228,17 +238,6 @@ class UpdateCheck implements Runnable {
             
         }
     }
-
-      /* print to stdout */
-      protected void p(String s) {
-          Date ts_start = Calendar.getInstance().getTime();
-          SimpleDateFormat sdf = new SimpleDateFormat("yyyy/MM/dd hh:mm:ss");
-          String sDate = sdf.format(ts_start);
-
-          long threadID = Thread.currentThread().getId();
-          System.out.println(sDate+ " [DEBUG] [CS.WebFuncs_" + threadID + "] " + s);
-      }
-
 
       public void run() {
         try {      
@@ -368,7 +367,7 @@ Thread.UncaughtExceptionHandler h = new Thread.UncaughtExceptionHandler() {
           p("res check_commit:" + nres);
           if (nres < 0) {
             pw("WARNING: There was an ERROR in the commit. Shutting down RT.");
-            p("closedb");
+            pw("closedb");
             c8.closeMapDB();  
             System.exit(-1);  
             return -1;
@@ -418,7 +417,7 @@ Thread.UncaughtExceptionHandler h = new Thread.UncaughtExceptionHandler() {
                                 p("Rename res = " + bres);
                                 nErrors++;
                                 if (nErrors > 5) {
-                                    p("Too many errors. Exiting RT.");
+                                    pw("Too many errors. Exiting RT.");
                                     c8.closeMapDB();
                                     System.exit(-1);
                                 }

@@ -1,5 +1,6 @@
 echo "-------------------building cass-server.jar"
 cd cass-server-maven
+./install-local-deps.sh
 mvn clean
 mvn compile
 mvn package

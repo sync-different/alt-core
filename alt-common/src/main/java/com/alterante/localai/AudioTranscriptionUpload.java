@@ -9,7 +9,7 @@ public class AudioTranscriptionUpload {
     public static void main(String[] args) throws Exception {
         String boundary = "----WebKitFormBoundary" + System.currentTimeMillis();
         String LINE_FEED = "\r\n";
-        String charset = "UTF-8";
+        //String charset = "UTF-8";
         String filePath = "audio.aac"; // Update path
 
         URL url = new URL("http://localhost:8080/v1/audio/transcriptions");

@@ -5,7 +5,7 @@ import dev.langchain4j.model.chat.response.StreamingChatResponseHandler;
 import dev.langchain4j.model.ollama.OllamaStreamingChatModel;
 import org.junit.jupiter.api.Test;
 import org.testcontainers.junit.jupiter.Testcontainers;
-import com.alterante.ollama.AbstractOllamaInfrastructure;
+//import com.alterante.ollama.AbstractOllamaInfrastructure;
 
 import java.util.concurrent.CompletableFuture;
 

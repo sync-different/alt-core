@@ -96,20 +96,6 @@
       <scope>system</scope>
       <systemPath>${project.basedir}/lib/PDFRenderer-0.9.1.jar</systemPath>
     </dependency>
-    <dependency>
-      <groupId>com.alterante</groupId>
-      <artifactId>winrun4j</artifactId>
-      <version>1.0</version>
-      <scope>system</scope>
-      <systemPath>${project.basedir}/lib/WinRun4J.jar</systemPath>
-    </dependency>
-    <dependency>
-      <groupId>com.alterante</groupId>
-      <artifactId>restFB</artifactId>
-      <version>1.0</version>
-      <scope>system</scope>
-      <systemPath>${project.basedir}/lib/restfb-1.18.1.jar</systemPath>
-    </dependency>
   </dependencies>
   <properties>
     <maven.compiler.release>17</maven.compiler.release>

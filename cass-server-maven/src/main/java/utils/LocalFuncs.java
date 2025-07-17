@@ -2,8 +2,6 @@ package utils;
 
 import org.mapdb.*;
 
-import org.mapdb.TxMaker;
-
 import java.text.DateFormat;
 import java.text.ParseException;
 import java.io.BufferedInputStream;
@@ -235,17 +233,7 @@ public class LocalFuncs {
     static String appendage = "";
     static String appendageRW = "";
 
-    /* print to stdout */
-    static protected void p(String s) {
-        Date ts_start = Calendar.getInstance().getTime();
-        SimpleDateFormat sdf = new SimpleDateFormat("yyyy/MM/dd hh:mm:ss");
-        String sDate = sdf.format(ts_start);
-
-        long threadID = Thread.currentThread().getId();
-        System.out.println(sDate + " [DEBUG] [CS.localfuncs_" + threadID + "] " + s);
-    }
-
-    static boolean bConsole = true;
+    public static boolean bConsole = true;
 
     public static final String ANSI_RED = "\u001B[31m";
     public static final String ANSI_GREEN = "\u001B[32m";
@@ -274,6 +262,26 @@ public class LocalFuncs {
         }
     }
 
+    protected static void pe(String s) {
+        Date ts_start = Calendar.getInstance().getTime();
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy/MM/dd hh:mm:ss");
+        String sDate = sdf.format(ts_start);
+
+        if (bConsole) {
+            long threadID = Thread.currentThread().getId();
+            System.out.println(ANSI_RED + sDate + " [ERROR] [LocalFuncs-" + threadID + "] " + s + ANSI_RESET);
+        }
+    }
+
+    /* print to stdout */
+    protected static void p(String s) {
+        Date ts_start = Calendar.getInstance().getTime();
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy/MM/dd hh:mm:ss");
+        String sDate = sdf.format(ts_start);
+
+        long threadID = Thread.currentThread().getId();
+        System.out.println(sDate + " [DEBUG] [CS.localfuncs_" + threadID + "] " + s);
+    }
 
 
     public LocalFuncs() {
