@@ -6,7 +6,6 @@
  * CONFIDENTIAL AND PROPRIETARY - Property of Alterante LLC
  */
 
-
 package utils;
 
 import java.io.InputStream;
@@ -57,6 +56,9 @@ import org.apache.hc.client5.http.impl.classic.HttpClients;
 
 import org.apache.hc.core5.http.HttpEntity;
 import org.apache.hc.core5.http.ContentType;
+import org.apache.hc.core5.http.HttpStatus;
+import org.apache.hc.core5.http.io.entity.InputStreamEntity;
+//import org.apache.hc.core5.http.io.entity.StringRequestEntity;
 
 //import org.apache.hc.core5.http.ClassicHttpRequest;
 
@@ -296,7 +298,11 @@ public static boolean postData(InputStream data, URL endpoint, Writer output) th
         }
         p("[2]");
         bAllOK = true;
-
+        if (bAllOK) {
+            return true;
+        } else {
+            return false;
+        }   
     } catch (IOException e) {
         pw("Connection error (is server running at " + endpoint);
         e.printStackTrace();
@@ -307,15 +313,64 @@ public static boolean postData(InputStream data, URL endpoint, Writer output) th
             urlc.disconnect();
         } else {
             p("[3b]");
-        }
-        if (bAllOK) {
-            return true;
-        } else {
-            return false;
-        }
-            
+        }            
     }
 }
+
+public boolean postDataHttps_new2(InputStream data, String _relayHost, String _relayPort, boolean secure, Writer output, String _clusterId, String _clusterToken) {
+    
+        //PostMethod postFile = null;
+        //HttpClient httpclient = null;
+        
+        p("postDataHttps_new --------");
+        p("_relayhost: '" + _relayHost);
+        p("_relayport: '" + _relayPort);
+        p("_clusterID: '" + _clusterId);
+        p("_cluterToken: '" + _clusterToken);
+        
+        try {
+            String _protocol;
+            if(secure){
+                _protocol = "https";
+            }else{
+                _protocol = "http";
+            }
+
+            //String _relayHost = "abc.alterante.com";
+            //String _relayPort = "443";
+        
+            String responseUrl = String.format("%s://%s:%s/clusters/%s/share?access-token=%s", 
+                                               _protocol, _relayHost, _relayPort, _clusterId, _clusterToken); 
+            
+            p("ResponseURL = " + responseUrl);
+            
+            //PostMethod postFile = new PostMethod(responseUrl);   
+            final HttpPost postFile = new HttpPost(responseUrl);
+            final MultipartEntityBuilder builder = MultipartEntityBuilder.create();
+
+
+            builder.addBinaryBody(
+                    "data", data, ContentType.APPLICATION_OCTET_STREAM, "file.dat");
+            final HttpEntity multipart = builder.build();
+
+            postFile.setEntity(multipart);
+
+            try (CloseableHttpClient client = HttpClients.createDefault();
+                CloseableHttpResponse response = (CloseableHttpResponse) client
+                    .execute(postFile)) {
+
+                final int statusCode = response.getCode();
+                if (statusCode == HttpStatus.SC_OK) return true;
+                //assertThat(statusCode, equalTo(HttpStatus.SC_OK));
+            } catch (IOException e) {
+                e.printStackTrace();
+                return false;
+            }
+            return false;
+        } finally {
+            p("finally");
+        }
+    }
 
 public boolean postDataHttps_new(InputStream data, String _relayHost, String _relayPort, boolean secure, Writer output, String _clusterId, String _clusterToken) {
     
@@ -367,13 +422,12 @@ public boolean postDataHttps_new(InputStream data, String _relayHost, String _re
                 output.write(res);                
             }
             postFile.releaseConnection();                
-            
+            return true;
             } catch (Exception e) {
                 e.printStackTrace();
                 return false;
             } finally {
                 p("FINALLY...");
-                return true;                
             }            
         }
 
@@ -484,6 +538,11 @@ public static boolean postDataHttps(InputStream data, URL endpoint, Writer outpu
         }
         p("[2]");
         bAllOK = true;
+        if (bAllOK) {
+            return true;
+        } else {
+            return false;
+        }
 
     } catch (IOException e) {
         pw("Connection error (is server running at " + endpoint);
@@ -495,11 +554,6 @@ public static boolean postDataHttps(InputStream data, URL endpoint, Writer outpu
             urlc.disconnect();
         } else {
             p("[3b]");
-        }
-        if (bAllOK) {
-            return true;
-        } else {
-            return false;
         }
             
     }
