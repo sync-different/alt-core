@@ -56,9 +56,9 @@
       </dependency>
 
       <dependency>
-        <groupId>com.alterante.cass</groupId>
+        <groupId>org.apache.thrift</groupId>
         <artifactId>libthrift</artifactId>
-        <version>0.7.0</version>
+        <version>0.13.0</version>
       </dependency>
 
       <dependency>
@@ -86,9 +86,9 @@
       </dependency>
 
       <dependency>
-        <groupId>com.alterante.cass</groupId>
+        <groupId>commons-codec</groupId>
         <artifactId>commons-codec</artifactId>
-        <version>1.8</version>
+        <version>1.15</version>
       </dependency>
 
       <dependency>
