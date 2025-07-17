@@ -38,9 +38,9 @@
             <version>3.3.6</version>
         </dependency>
         <dependency>
-            <groupId>org.apache.httpcomponents</groupId>
-            <artifactId>httpclient</artifactId>
-            <version>4.5.14</version>
+            <groupId>com.github.docker-java</groupId>
+            <artifactId>docker-java-transport-httpclient5</artifactId>
+            <version>3.4.0</version>
         </dependency>
         <!-- https://mvnrepository.com/artifact/com.sun.pdfview/PDFRenderer -->
         <dependency>

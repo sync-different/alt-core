@@ -7,14 +7,18 @@ import com.github.dockerjava.api.model.HostConfig;
 import com.github.dockerjava.api.model.Ports;
 import com.github.dockerjava.core.DockerClientBuilder;
 import com.github.dockerjava.core.command.ExecStartResultCallback;
+import com.github.dockerjava.httpclient5.ApacheDockerHttpClient;
 
 import java.io.*;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.time.Duration;
 import java.util.Properties;
 
 public class DockerService implements Runnable {
 
     public static void main(String[] args) {
-            new DockerService();
+        new DockerService();
     }
 
     public DockerService() {
@@ -50,7 +54,16 @@ public class DockerService implements Runnable {
 
     public static boolean isDockerRunning() {
         try {
-            DockerClient dockerClient = DockerClientBuilder.getInstance().build();
+            ApacheDockerHttpClient httpClient = new ApacheDockerHttpClient.Builder()
+                    .dockerHost(new URI("unix:///var/run/docker.sock"))
+                    .sslConfig(null)
+                    .maxConnections(100)
+                    .connectionTimeout(Duration.ofSeconds(30))
+                    .responseTimeout(Duration.ofSeconds(45))
+                    .build();
+
+            DockerClient dockerClient = DockerClientBuilder.getInstance().withDockerHttpClient(httpClient).build();
+
             dockerClient.pingCmd().exec();
             dockerClient.close();
             return true;
@@ -59,13 +72,22 @@ public class DockerService implements Runnable {
         }
     }
 
-    private void checkISStartedContainerOrStart(String containerId) {
+    private void checkISStartedContainerOrStart(String containerId) throws URISyntaxException {
 
-        DockerClient dockerClient = DockerClientBuilder.getInstance().build();
+        ApacheDockerHttpClient httpClient = new ApacheDockerHttpClient.Builder()
+                .dockerHost(new URI("unix:///var/run/docker.sock"))
+                .sslConfig(null)
+                .maxConnections(100)
+                .connectionTimeout(Duration.ofSeconds(30))
+                .responseTimeout(Duration.ofSeconds(45))
+                .build();
+
+        DockerClient dockerClient = DockerClientBuilder.getInstance().withDockerHttpClient(httpClient).build();
+
         Boolean isRunning=dockerClient.inspectContainerCmd(containerId)
-                    .exec()
-                    .getState()
-                    .getRunning();
+                .exec()
+                .getState()
+                .getRunning();
         if (!isRunning) {
             // Start container if it is not running
             System.out.println("Container is not running, starting it now...");
@@ -74,8 +96,17 @@ public class DockerService implements Runnable {
 
     }
 
-    public boolean doesContainerExist(String containerId) throws IOException {
-        DockerClient dockerClient = DockerClientBuilder.getInstance().build();
+    public boolean doesContainerExist(String containerId) throws IOException, URISyntaxException {
+        ApacheDockerHttpClient httpClient = new ApacheDockerHttpClient.Builder()
+                .dockerHost(new URI("unix:///var/run/docker.sock"))
+                .sslConfig(null)
+                .maxConnections(100)
+                .connectionTimeout(Duration.ofSeconds(30))
+                .responseTimeout(Duration.ofSeconds(45))
+                .build();
+
+        DockerClient dockerClient = DockerClientBuilder.getInstance().withDockerHttpClient(httpClient).build();
+
         try {
             dockerClient.inspectContainerCmd(containerId).exec();
             return true; // Container exists
@@ -123,8 +154,16 @@ public class DockerService implements Runnable {
         }
     }
 
-    private String createAndStartContainer() throws InterruptedException, IOException {
-        DockerClient dockerClient = DockerClientBuilder.getInstance().build();
+    private String createAndStartContainer() throws InterruptedException, IOException, URISyntaxException {
+        ApacheDockerHttpClient httpClient = new ApacheDockerHttpClient.Builder()
+                .dockerHost(new URI("unix:///var/run/docker.sock"))
+                .sslConfig(null)
+                .maxConnections(100)
+                .connectionTimeout(Duration.ofSeconds(30))
+                .responseTimeout(Duration.ofSeconds(45))
+                .build();
+
+        DockerClient dockerClient = DockerClientBuilder.getInstance().withDockerHttpClient(httpClient).build();
 
         // Pull image if not present
         dockerClient.pullImageCmd("localai/localai:latest").start().awaitCompletion();

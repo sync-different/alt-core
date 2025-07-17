@@ -169,6 +169,11 @@
         <version>0.4.5</version>
       </dependency>
 
+      <dependency>
+          <groupId>com.github.docker-java</groupId>
+          <artifactId>docker-java-transport-httpclient5</artifactId>
+          <version>3.4.0</version>
+      </dependency>
     <!-- Optionally: parameterized tests support -->
   </dependencies>
 
