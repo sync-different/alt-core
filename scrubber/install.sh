@@ -52,13 +52,13 @@ if [ ! -f "$UBER_JAR_NAME" ]; then
    -Dpackaging=jar \
    -DgeneratePom=true
 
-  mvn install:install-file \
-   -Dfile=./repo/apache-cassandra-thrift-1.2.0.jar \
-   -DgroupId=com.alterante.cass \
-   -DartifactId=thrift \
-   -Dversion=1.2.0 \
-   -Dpackaging=jar \
-   -DgeneratePom=true
+#  mvn install:install-file \
+#   -Dfile=./repo/apache-cassandra-thrift-1.2.0.jar \
+#   -DgroupId=com.alterante.cass \
+#   -DartifactId=thrift \
+#   -Dversion=1.2.0 \
+#   -Dpackaging=jar \
+#   -DgeneratePom=true
 
 #  mvn install:install-file \
 #   -Dfile=./repo/libthrift-0.7.0.jar \
