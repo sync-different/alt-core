@@ -335,7 +335,7 @@ public class ShareController {
             //boolean bres = htrp.postDataHttps(fis,urlBridge,writer);
             HTTPRequestPoster htrp = new HTTPRequestPoster();
             boolean secure = (bridgeSecure.equals("true"));
-            boolean bres = htrp.postDataHttps_new2(fis, bridgeHost, bridgePort, secure, writer, clusterId, clusterToken);
+            boolean bres = htrp.postDataHttps_new(fis, bridgeHost, bridgePort, secure, writer, clusterId, clusterToken);
             if(bres){
                 String outputString = writer.toString();
                 p("outputstring=" + outputString);
