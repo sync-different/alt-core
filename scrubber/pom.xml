@@ -171,8 +171,13 @@
 
       <dependency>
           <groupId>com.github.docker-java</groupId>
+          <artifactId>docker-java</artifactId>
+          <version>3.5.3</version>
+      </dependency>
+      <dependency>
+          <groupId>com.github.docker-java</groupId>
           <artifactId>docker-java-transport-httpclient5</artifactId>
-          <version>3.4.0</version>
+          <version>3.5.3</version>
       </dependency>
     <!-- Optionally: parameterized tests support -->
   </dependencies>
@@ -189,6 +194,18 @@
               <goals>
                 <goal>shade</goal>
               </goals>
+                <configuration>
+                    <filters>
+                        <filter>
+                            <artifact>*:*</artifact>
+                            <excludes>
+                                <exclude>META-INF/*.SF</exclude>
+                                <exclude>META-INF/*.DSA</exclude>
+                                <exclude>META-INF/*.RSA</exclude>
+                            </excludes>
+                        </filter>
+                    </filters>
+                </configuration>
             </execution>
           </executions>
         </plugin>
