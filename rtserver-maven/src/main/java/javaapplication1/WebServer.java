@@ -103,8 +103,18 @@ import utils.SortableValueMap;
 import javaapplication1.StatHat;
 import net.minidev.json.JSONObject;
 import net.minidev.json.JSONValue;
-import org.apache.commons.httpclient.HttpClient;
-import org.apache.commons.httpclient.methods.GetMethod;
+//import org.apache.commons.httpclient.HttpClient;
+//import org.apache.commons.httpclient.methods.GetMethod;
+
+import org.apache.hc.client5.http.classic.methods.HttpGet;
+import org.apache.hc.client5.http.config.RequestConfig;
+import org.apache.hc.core5.util.Timeout;
+import org.apache.hc.client5.http.impl.classic.HttpClients;
+import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
+import org.apache.hc.client5.http.impl.classic.CloseableHttpResponse;
+import org.apache.hc.core5.http.HttpEntity;
+import org.apache.hc.core5.http.io.entity.EntityUtils;
+
 import utils.DateUtil;
 import utils.FacebookUtil;
 import utils.LocalFuncs;
@@ -6206,18 +6216,36 @@ class Worker extends WebServer implements HttpConstants, Runnable {
                             String urlgetfile = "https://abc.alterante.com/cass/getts.fn?md5=" + sMD5 + "&ts=" + sTS + "&uuid=" + auxSAuthUUID;
 
                             p("   url getts: " + urlgetfile);
+                            int connectionTimeout = 30000;
+                            int socketTimeout = 180000;
 
-                            GetMethod getFile = new GetMethod(urlgetfile);
-                            HttpClient httpclient = new HttpClient();
+                            // Configure timeouts
+                            RequestConfig requestConfig = RequestConfig.custom()
+                                .setConnectionRequestTimeout(Timeout.ofMilliseconds(connectionTimeout))
+                                .setResponseTimeout(Timeout.ofMilliseconds(socketTimeout))
+                                .build();
+                            //GetMethod getFile = new GetMethod(urlgetfile);
+                            //HttpClient httpclient = new HttpClient();
+                            HttpGet httpGet = new HttpGet(urlgetfile);
+                            httpGet.setConfig(requestConfig);
 
                             if(uuid != null){
-                                getFile.setRequestHeader("Cookie", "uuid=" + uuid);
+                                //getFile.setRequestHeader("Cookie", "uuid=" + uuid);
+                                httpGet.setHeader("Cookie", "uuid=" + uuid);
                             }
-                            int re = httpclient.executeMethod(getFile);
+                            try (CloseableHttpClient httpclient = HttpClients.createDefault();
+                                    CloseableHttpResponse response = httpclient.execute(httpGet)) {
+                                int statusCode = response.getCode();
+                                if (statusCode == 200) {
+                                        Object resp = null;
+                                        HttpEntity entity = response.getEntity();    
+                                        outFile.write(EntityUtils.toByteArray(entity));
+                                }
+                            }
 
-                            p("res remote getts = " + re);
-
-                            if (re == 200) outFile.write(getFile.getResponseBody());
+                            //int re = httpclient.executeMethod(getFile);
+                            //p("res remote getts = " + re);
+                            //if (re == 200) outFile.write(getFile.getResponseBody());
 
 
                         } else {
@@ -6270,17 +6298,45 @@ class Worker extends WebServer implements HttpConstants, Runnable {
 
                             p("   url getvideo: " + urlgetfile);
 
-                            GetMethod getFile = new GetMethod(urlgetfile);
-                            HttpClient httpclient = new HttpClient();
+
+                                                        int connectionTimeout = 30000;
+                            int socketTimeout = 180000;
+
+                            // Configure timeouts
+                            RequestConfig requestConfig = RequestConfig.custom()
+                                .setConnectionRequestTimeout(Timeout.ofMilliseconds(connectionTimeout))
+                                .setResponseTimeout(Timeout.ofMilliseconds(socketTimeout))
+                                .build();
+                            //GetMethod getFile = new GetMethod(urlgetfile);
+                            //HttpClient httpclient = new HttpClient();
+                            HttpGet httpGet = new HttpGet(urlgetfile);
+                            httpGet.setConfig(requestConfig);
 
                             if(uuid != null){
-                                getFile.setRequestHeader("Cookie", "uuid=" + uuid);
+                                //getFile.setRequestHeader("Cookie", "uuid=" + uuid);
+                                httpGet.setHeader("Cookie", "uuid=" + uuid);
                             }
-                            int re = httpclient.executeMethod(getFile);
+                            try (CloseableHttpClient httpclient = HttpClients.createDefault();
+                                    CloseableHttpResponse response = httpclient.execute(httpGet)) {
+                                int statusCode = response.getCode();
+                                if (statusCode == 200) {
+                                        Object resp = null;
+                                        HttpEntity entity = response.getEntity();    
+                                        outFile.write(EntityUtils.toByteArray(entity));
+                                }
+                            }
 
-                            p("res remote getvideo = " + re);
+                            //TODO - Remove Old Commons code.
+                            //GetMethod getFile = new GetMethod(urlgetfile);
+                            //HttpClient httpclient = new HttpClient();
 
-                            if (re == 200) outFile.write(getFile.getResponseBody());
+                            //if(uuid != null){
+                            //    getFile.setRequestHeader("Cookie", "uuid=" + uuid);
+                            //}
+                            //int re = httpclient.executeMethod(getFile);
+
+                            //p("res remote getvideo = " + re);
+                            //if (re == 200) outFile.write(getFile.getResponseBody());
 
                         } else {
                             //local getvideo

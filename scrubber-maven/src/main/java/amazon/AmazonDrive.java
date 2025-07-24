@@ -26,13 +26,16 @@ import java.io.PrintStream;
 import java.text.SimpleDateFormat;
 import java.util.HashMap;
 
-import org.apache.commons.httpclient.*;
-import org.apache.commons.httpclient.HttpException;
-import org.apache.commons.httpclient.methods.*;
-import org.apache.commons.httpclient.methods.multipart.MultipartRequestEntity;
-import org.apache.commons.httpclient.methods.multipart.Part;
-import org.apache.commons.httpclient.methods.multipart.StringPart;
-import org.apache.commons.httpclient.methods.multipart.FilePart;
+import org.apache.hc.client5.http.classic.methods.HttpGet;
+import org.apache.hc.client5.http.classic.methods.HttpPost;
+import org.apache.hc.client5.http.entity.mime.MultipartEntityBuilder;
+import org.apache.hc.core5.http.ContentType;
+import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
+import org.apache.hc.client5.http.impl.classic.CloseableHttpResponse;
+import org.apache.hc.client5.http.impl.classic.HttpClients;
+import org.apache.hc.core5.http.HttpEntity;
+import org.apache.hc.core5.http.io.entity.StringEntity;
+import org.apache.hc.core5.http.io.entity.EntityUtils;
 
 
 
@@ -46,8 +49,6 @@ import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.Random;
-import org.apache.commons.httpclient.params.HttpConnectionParams;
-import org.apache.commons.httpclient.params.HttpParams;
 
 import utils.NetUtils;
 import utils.LocalFuncs;
@@ -332,10 +333,8 @@ public class AmazonDrive implements Runnable {
         try {
             String sUrl = _sContentUrl + "nodes?suppress=deduplication";
             
-            PostMethod filePost = new PostMethod(sUrl);
-            //postFile.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
-            filePost.setRequestHeader("Authorization", "Bearer " + _sAccessToken);
-            //postFile.setRequestEntity(new StringRequestEntity(data,null,null));
+            HttpPost httpPost = new HttpPost(sUrl);
+            httpPost.setHeader("Authorization", "Bearer " + _sAccessToken);
             
             log("Uploading file: " + _filename, 2);
             File f = new File(_filename);
@@ -344,19 +343,20 @@ public class AmazonDrive implements Runnable {
                 
                 String sMetaData = "{\"name\":\"" + f.getName() + "\",\"kind\":\"FILE\",\"parents\":[\"" + _parentid + "\"]}";
                 log("METADATA: '" + sMetaData + "'", 2);
-                Part[] parts = {
-                    new StringPart("metadata", sMetaData),
-                    new FilePart(f.getName(), f)
-                };
-
-                filePost.setRequestEntity(
-                    new MultipartRequestEntity(parts, filePost.getParams())
-                    );
-                HttpClient client = new HttpClient();
-                int status = client.executeMethod(filePost); 
                 
-                log("Upload status = " + status, 2);
-                return status;
+                MultipartEntityBuilder builder = MultipartEntityBuilder.create();
+                builder.addTextBody("metadata", sMetaData, ContentType.APPLICATION_JSON);
+                builder.addBinaryBody(f.getName(), f, ContentType.APPLICATION_OCTET_STREAM, f.getName());
+                
+                HttpEntity multipart = builder.build();
+                httpPost.setEntity(multipart);
+                
+                try (CloseableHttpClient client = HttpClients.createDefault();
+                     CloseableHttpResponse response = client.execute(httpPost)) {
+                    int status = response.getCode();
+                    log("Upload status = " + status, 2);
+                    return status;
+                }
                 
             } else {
                 log("FILE DOES NOT EXIST!!!!", 2);
@@ -685,40 +685,44 @@ public class AmazonDrive implements Runnable {
 
             log("data: " + sMetaData, 2);
             
-            PostMethod postFile = new PostMethod(fileUrl);
-            postFile.setRequestHeader("Authorization", "Bearer " + _token);
-            postFile.setRequestEntity(new StringRequestEntity(sMetaData,null,null));
-            HttpClient httpclient = new HttpClient();                        
-            int r = httpclient.executeMethod(postFile);
-            String resp = postFile.getResponseBodyAsString();
-            log(r + " resp (POST) = " + resp, 2);  
+            HttpPost httpPost = new HttpPost(fileUrl);
+            httpPost.setHeader("Authorization", "Bearer " + _token);
+            httpPost.setEntity(new StringEntity(sMetaData));
+            
+            int r = -1;
+            try (CloseableHttpClient httpclient = HttpClients.createDefault();
+                 CloseableHttpResponse response = httpclient.execute(httpPost)) {
+                r = response.getCode();
+                String resp = EntityUtils.toString(response.getEntity());
+                log(r + " resp (POST) = " + resp, 2);  
 
-            if (r == 201) {
-                JSONObject jtoken = (JSONObject)JSONValue.parse(resp);
-                String idnew = jtoken.get("id").toString();
-                
-                mapFolderNames.put(idnew, _foldername);
-                
-                List<String> sChildren = mapFolders.get(_parentid);
-                if (sChildren == null) {
-                    sChildren = new ArrayList<String>();
-                    sChildren.add(idnew);
-                    mapFolders.put(_parentid, sChildren);
-                } else {
-                    sChildren.add(idnew);
-                    mapFolders.put(_parentid, sChildren);
+                if (r == 201) {
+                    JSONObject jtoken = (JSONObject)JSONValue.parse(resp);
+                    String idnew = jtoken.get("id").toString();
+                    
+                    mapFolderNames.put(idnew, _foldername);
+                    
+                    List<String> sChildren = mapFolders.get(_parentid);
+                    if (sChildren == null) {
+                        sChildren = new ArrayList<String>();
+                        sChildren.add(idnew);
+                        mapFolders.put(_parentid, sChildren);
+                    } else {
+                        sChildren.add(idnew);
+                        mapFolders.put(_parentid, sChildren);
+                    }
+                    return idnew;
+                } 
+                if (r == 401) { //token expired
+                    bTokenValid = false;
                 }
-                return idnew;
-            } 
-            if (r == 401) { //token expired
-                bTokenValid = false;
-            }
-            if (r == 409) {
-                JSONObject jtoken = (JSONObject)JSONValue.parse(resp);
-                String msg = jtoken.get("message").toString();
-                String idnew = msg.substring(msg.lastIndexOf(" ")+1, msg.length());
-                log("Node already exists!!!: '" + idnew + "'", 2);
-                return idnew;
+                if (r == 409) {
+                    JSONObject jtoken = (JSONObject)JSONValue.parse(resp);
+                    String msg = jtoken.get("message").toString();
+                    String idnew = msg.substring(msg.lastIndexOf(" ")+1, msg.length());
+                    log("Node already exists!!!: '" + idnew + "'", 2);
+                    return idnew;
+                }
             }
 
             if (r >= 500) {
@@ -759,12 +763,8 @@ public class AmazonDrive implements Runnable {
     public static myResp getWithTimeout(String _url, String _token) {
             myResp myr = new myResp();        
 
-            GetMethod getFile = new GetMethod(_url);
-            getFile.setRequestHeader("Authorization", "Bearer " + _token);
-
-            HttpClient httpclient = new HttpClient();
-            httpclient.getHttpConnectionManager().getParams().setConnectionTimeout(15000); 
-            httpclient.getHttpConnectionManager().getParams().setSoTimeout(15000);
+            HttpGet httpGet = new HttpGet(_url);
+            httpGet.setHeader("Authorization", "Bearer " + _token);
                         
             long t1 = System.currentTimeMillis();
             System.out.println("before execute: " );
@@ -776,13 +776,14 @@ public class AmazonDrive implements Runnable {
             while (nRetries < 5 & bContinue) {
                 nRetries++;
                 log("try: #" + nRetries, 2);
-                try {
-                    r = httpclient.executeMethod(getFile);
+                try (CloseableHttpClient httpclient = HttpClients.createDefault();
+                     CloseableHttpResponse response = httpclient.execute(httpGet)) {
+                    r = response.getCode();
                     long t2 = System.currentTimeMillis();
                     long delta = t2 - t1;
                     log("return r: " + r + " in " + delta + "ms", 2);
                     if (r > 0) {
-                        resp = getFile.getResponseBodyAsString();
+                        resp = EntityUtils.toString(response.getEntity());
                         bContinue = false;
                     }
                 } catch (Exception e) { //SocketTimeoutException
@@ -844,32 +845,30 @@ public class AmazonDrive implements Runnable {
             String fileUrl = "https://drive.amazonaws.com/drive/v1/account/endpoint";
             log("fireUrl = " + fileUrl, 2);
 
-            GetMethod getFile = new GetMethod(fileUrl);
-            getFile.setRequestHeader("Authorization", "Bearer " + _token);
+            HttpGet httpGet = new HttpGet(fileUrl);
+            httpGet.setHeader("Authorization", "Bearer " + _token);
 
+            try (CloseableHttpClient httpclient = HttpClients.createDefault();
+                 CloseableHttpResponse response = httpclient.execute(httpGet)) {
+                int r = response.getCode();
+                String resp = EntityUtils.toString(response.getEntity());
 
-            HttpClient httpclient = new HttpClient();
-
-            int r = httpclient.executeMethod(getFile);
-
-
-            String resp = getFile.getResponseBodyAsString();
-
-            log(r + " resp (POST) = " + resp, 2);
-            if (r == 200) {
-                JSONObject jtoken = (JSONObject)JSONValue.parse(resp);
-                String _metadataUrl = jtoken.get("metadataUrl").toString();
-                String _contentUrl = jtoken.get("contentUrl").toString();
-                return _contentUrl + "," + _metadataUrl;                
-            } else {
-                if (r == 401) {
-                    return "ERROR_TOKEN_INVALID";
+                log(r + " resp (POST) = " + resp, 2);
+                if (r == 200) {
+                    JSONObject jtoken = (JSONObject)JSONValue.parse(resp);
+                    String _metadataUrl = jtoken.get("metadataUrl").toString();
+                    String _contentUrl = jtoken.get("contentUrl").toString();
+                    return _contentUrl + "," + _metadataUrl;                
                 } else {
-                    if (r >= 500) {
-                        //some kind of service error, do backoff
-                        int waited = service_backoff();
+                    if (r == 401) {
+                        return "ERROR_TOKEN_INVALID";
+                    } else {
+                        if (r >= 500) {
+                            //some kind of service error, do backoff
+                            int waited = service_backoff();
+                        }
+                        return "ERROR_OTHER: '" + resp + "'";
                     }
-                    return "ERROR_OTHER: '" + resp + "'";
                 }
             }
             
@@ -892,17 +891,17 @@ public class AmazonDrive implements Runnable {
            
             log("fileUrl = " + fileUrl, 2);
             
-            GetMethod getFile = new GetMethod(fileUrl);
+            HttpGet httpGet = new HttpGet(fileUrl);
 
-            HttpClient httpclient = new HttpClient();
-
-            int r = httpclient.executeMethod(getFile);
-
-            String resp = getFile.getResponseBodyAsString();
+            try (CloseableHttpClient httpclient = HttpClients.createDefault();
+                 CloseableHttpResponse response = httpclient.execute(httpGet)) {
+                int r = response.getCode();
+                String resp = EntityUtils.toString(response.getEntity());
             
-            log("resp = " + resp, 2);
-                          
-            return "";
+                log("resp = " + resp, 2);
+                              
+                return "";
+            }
         } catch (Exception e) {
         return "";
         }
@@ -930,25 +929,23 @@ public class AmazonDrive implements Runnable {
                         
                         log("data = " + data, 2);
                                 
-                        PostMethod postFile = new PostMethod(fileUrl);
-                        postFile.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
-                        postFile.setRequestEntity(new StringRequestEntity(data,null,null));
+                        HttpPost httpPost = new HttpPost(fileUrl);
+                        httpPost.setHeader("Content-type", "application/x-www-form-urlencoded");
+                        httpPost.setEntity(new StringEntity(data));
                        
-                        HttpClient httpclient = new HttpClient();
+                        try (CloseableHttpClient httpclient = HttpClients.createDefault();
+                             CloseableHttpResponse response = httpclient.execute(httpPost)) {
+                            int r = response.getCode();
+                            String resp = EntityUtils.toString(response.getEntity());
                         
-                        int r = httpclient.executeMethod(postFile);
-                        
-                        
-                        String resp = postFile.getResponseBodyAsString();
-                        
-                        log(r + " resp (POST) = " + resp, 2);
-                                                
-                        JSONObject jtoken = (JSONObject)JSONValue.parse(resp);
-                        String _accessToken = jtoken.get("access_token").toString();
-                        String _refreshToken = jtoken.get("refresh_token").toString();
-                        
-                        log(r + " access_token: '" + _accessToken + "'", 2);
-                        log(r + " refresh_token: '" + _refreshToken + "'", 2);
+                            log(r + " resp (POST) = " + resp, 2);
+                                                    
+                            JSONObject jtoken = (JSONObject)JSONValue.parse(resp);
+                            String _accessToken = jtoken.get("access_token").toString();
+                            String _refreshToken = jtoken.get("refresh_token").toString();
+                            
+                            log(r + " access_token: '" + _accessToken + "'", 2);
+                            log(r + " refresh_token: '" + _refreshToken + "'", 2);
                          
 //                        String appActionToken = "04AAWiWhXbfg3yj2tTEqoSHmsecj3D";
 //                        //String savedParameters = "eyJwIjoiNGoxYVphK0lBWFF4dmJOMWd6SUpBRExuY21pWlNOZFB5a2VzWHY0UUhDeUlmUGdaUGxaRHlpNkRQNUNKb055azladWd4R1lDNmoza0VoR3RUVU1JRTdJWmZYTnpUUCsxd1l2WVhFRVFMTjVmQ1B5RVk0WmdjTUZLWUZvOGsvTmVtVzBjNkhzQW9ZallLUU8rU29HQzZLV0JVeUg3cm5Cc29HKzdzbmpvSWNGd2tkQUtiUjd2dENzMzNqNmx0VUsvWTBmZTgyVG1JaGQ2VEJPNG9QbW9FWGlzOEJGa2R1VzdBOFZWUFRpdTVWcnRVZ0tjNnJUTHR6TzhmcHYyTHFlT2xES1h0bmVIazZnWDk3R1U3VkJjeklLU1ppVlRGenNQYWtMNzNBTndhRWhZREpPdGRLaEMzcFR4cGFlVzhDQnhaVElKWENUZTA3Q0puVHg4dkZJR0hHVFZRcHRsYnl3NTNYRXZSNTBOV0NIZWkwQy9jOGowV2R2SzFESkg4RTJxZzdUeTlHUUVIemVrNGVZRnowaFoxQVZWUFFDRTRjSnIrdkY4YVlwVEo0cm5BQXJTcU1ueElMbEp1dmVCbGlsVEdPWGZleHpUeVZxVE0xWSszRkhKV04rUk42SUVHKzRZSW0xcFB5WHljTUpRZk1JVGZMdjh1REgwVTJrRFBoK3VqWFp0eHZUc0FvMU44amdGeXllM21EaGJ3NVkrWEoxMWk0Sy9hcVBUV0UvMGo0VnhVL0Y1R3o0RldCNTR3ejFiVEJtNUFPNTR1eHFRMFQ5SC9PbHI2TFRlNURrbFQxaENneTRLZHBFSWV5QmNhdS84b2QwbGY2MlFSVDh4M1FOa3QweGpDVXlwT2NQVWx5bGJYdFVHYm5lTlVHenRJYWFTRWxJZHBKZ2l5YTNTMGdWbGgrcWpuRlVOYmNIMnRXK0o4RmszekpESFgrM3IvbWQ5NUd3T29PWHhjVjh5Y09vbGNxa2c1cEo0WjhZMEFpU0JiUks0NXlLZ0p4Q2dTOC95VVZiT3pKODBtaGpYQzBlSzE3V3J1TkE4SU9HeDExbHZpY3lycE1zMG9ITUtsQzZrSWRBbzY5ZHYxZXZESlF0OUhZZWowL0U5RkxNYkxXanJoWmladUlzaWM3SDRvTE4xZjNkQjlOdERNODdJZ0NnUGVlZnQzOWdPa3FQdDJRUlRCU2RTQTgwSHgyWEVrVVNLNEphWjRlelBkc1U1M1Mxd1VTakdpWWdXdEpaMzRPWjM2c1FmVW9vS0lGNm9aRnNBVTJ5S25ZWmFaQnBMeVA1MCs0UWExbzdlMFFOSE1Ndi9qMFZoU0NmLzI2aHBtdW1sbStQbDRFQ24zVjE2MDhMcGpIVTdQSjJVb294VFNsSjlPWTBoV2tlTUI4eWdXbTBJNWpseEJsZFlvdXZyYXVjQjZSbzZsMHpRQytkVllsSXlaNXFjbWZ3VFUwa0RhWGovY3NsdWR3PT0iLCJpIjoiYUZVb2pHVXhSak53bFpGZWtvaFNVUT09IiwicyI6IkVwK0dUdlprUjh6U0FrUlcwVWFYY2o4c2pIM05qUzJoR2IxK2QwS1pYbTQ9IiwiZXYiOjEsImh2IjoxfQ";
@@ -978,8 +975,8 @@ public class AmazonDrive implements Runnable {
 //                        
 //                        System.out.println(r + " resp(FORM) = " + resp);
 
-                        return _accessToken + "," + _refreshToken; 
-                        
+                            return _accessToken + "," + _refreshToken; 
+                        }
                         
                 } catch (Exception e) {
                         System.err.println("ezPostCount exception:  " + e);
@@ -1006,35 +1003,34 @@ public class AmazonDrive implements Runnable {
                         
                         log("data = " + data, 2);
                                 
-                        PostMethod postFile = new PostMethod(fileUrl);
-                        postFile.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
-                        postFile.setRequestEntity(new StringRequestEntity(data,null,null));
+                        HttpPost httpPost = new HttpPost(fileUrl);
+                        httpPost.setHeader("Content-type", "application/x-www-form-urlencoded");
+                        httpPost.setEntity(new StringEntity(data));
                        
-                        HttpClient httpclient = new HttpClient();
+                        try (CloseableHttpClient httpclient = HttpClients.createDefault();
+                             CloseableHttpResponse response = httpclient.execute(httpPost)) {
+                            int r = response.getCode();
+                            String resp = EntityUtils.toString(response.getEntity());
                         
-                        int r = httpclient.executeMethod(postFile);
-                        
-                        
-                        String resp = postFile.getResponseBodyAsString();
-                        
-                        log(r + " resp (POST) = " + resp, 2);
-                        
-                        if (r == 200) {
-                            JSONObject jtoken = (JSONObject)JSONValue.parse(resp);
-                            String _accessToken = jtoken.get("access_token").toString();
-                            String _refreshToken = jtoken.get("refresh_token").toString();                            
-                            log(r + " access_token: '" + _accessToken + "'", 2);
-                            log(r + " refresh_token: '" + _refreshToken + "'", 2);
-                            return _accessToken + "," + _refreshToken; 
-                        } else {
-                            if (r == 400) {
-                                return "ERROR_INVALID_CODE";
+                            log(r + " resp (POST) = " + resp, 2);
+                            
+                            if (r == 200) {
+                                JSONObject jtoken = (JSONObject)JSONValue.parse(resp);
+                                String _accessToken = jtoken.get("access_token").toString();
+                                String _refreshToken = jtoken.get("refresh_token").toString();                            
+                                log(r + " access_token: '" + _accessToken + "'", 2);
+                                log(r + " refresh_token: '" + _refreshToken + "'", 2);
+                                return _accessToken + "," + _refreshToken; 
                             } else {
-                                if (r >= 500) {
-                                    //some kind of service error, do backoff
-                                    int waited = service_backoff();
+                                if (r == 400) {
+                                    return "ERROR_INVALID_CODE";
+                                } else {
+                                    if (r >= 500) {
+                                        //some kind of service error, do backoff
+                                        int waited = service_backoff();
+                                    }
+                                    return "ERROR_OTHER: " + r + "'" + resp + "'";
                                 }
-                                return "ERROR_OTHER: " + r + "'" + resp + "'";
                             }
                         }
                                                 

@@ -56,8 +56,13 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import org.apache.commons.httpclient.HttpClient;
-import org.apache.commons.httpclient.methods.GetMethod;
+import org.apache.hc.client5.http.classic.methods.HttpGet;
+import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
+import org.apache.hc.client5.http.impl.classic.CloseableHttpResponse;
+import org.apache.hc.client5.http.impl.classic.HttpClients;
+import org.apache.hc.core5.http.HttpEntity;
+import org.apache.hc.core5.http.io.entity.EntityUtils;
+import org.apache.hc.core5.http.ParseException;
 import utils.WebFuncs;
 
 /**
@@ -360,14 +365,29 @@ public class HttpStaticFileServerHandler extends SimpleChannelInboundHandler<Ful
                 //checkuseruuid.fn
                 String url = String.format("http://%s:%s/cass/checkuseruuid.fn?uuid=%s",
                         serverip, serverport, uuid);
-                GetMethod file = httpRequest(url);
-                String user = file.getResponseBodyAsString();
-                if (user !=null && !user.isEmpty()) {
-                    return true;
+                CloseableHttpResponse response = httpRequest(url);
+                if (response != null) {
+                    try {
+                        HttpEntity entity = response.getEntity();
+                        if (entity != null) {
+                            String user = EntityUtils.toString(entity);
+                            if (user != null && !user.isEmpty()) {
+                                return true;
+                            }
+                        }
+                    } catch (ParseException | IOException e) {
+                        // Handle parsing error
+                    } finally {
+                        try {
+                            response.close();
+                        } catch (IOException e) {
+                            // Ignore close error
+                        }
+                    }
                 }
 
             }
-        } catch (IOException ex) {
+        } catch (Exception ex) {
             Logger.getLogger(HttpStaticFileServerHandler.class.getName()).log(Level.SEVERE, null, ex);
         }
         return false;
@@ -575,18 +595,20 @@ public class HttpStaticFileServerHandler extends SimpleChannelInboundHandler<Ful
         }              
     }
     
-    private GetMethod httpRequest(String url) {
-        GetMethod request = new GetMethod(url);
+    private CloseableHttpResponse httpRequest(String url) {
+        HttpGet request = new HttpGet(url);
 
         try {
-            HttpClient httpclient = new HttpClient();
-            int status = httpclient.executeMethod(request);
-            return request;
+            CloseableHttpClient httpclient = HttpClients.createDefault();
+            CloseableHttpResponse response = httpclient.execute(request);
+            int status = response.getCode();
+            if (status == 200) {
+                return response;
+            }
         } catch (IOException e) {
             //log("Local http request failed with IOException");
             //e.printStackTrace(log);
         }
-        request.releaseConnection();
         return null;
     }
 
