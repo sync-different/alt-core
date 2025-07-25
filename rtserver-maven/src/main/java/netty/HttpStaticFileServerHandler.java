@@ -120,6 +120,23 @@ public class HttpStaticFileServerHandler extends SimpleChannelInboundHandler<Ful
     public static final String HTTP_DATE_GMT_TIMEZONE = "GMT";
     public static final int HTTP_CACHE_SECONDS = 60;
 
+    public static final String ANSI_RED = "\u001B[31m";
+    public static final String ANSI_GREEN = "\u001B[32m";
+    public static final String ANSI_YELLOW = "\u001B[33m";
+    public static final String ANSI_RESET = "\u001B[0m";
+
+    protected void pw(String s) {
+        Date ts_start = Calendar.getInstance().getTime();
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy/MM/dd hh:mm:ss");
+        String sDate = sdf.format(ts_start);
+        boolean bConsole = true;
+
+        if (bConsole) {
+            long threadID = Thread.currentThread().getId();
+            System.out.println(ANSI_YELLOW + sDate + " [WARNING] [SC.RelayVaultService-" + threadID + "] " + s + ANSI_RESET);
+        }
+    }
+
     @Override
     public void channelRead0(ChannelHandlerContext ctx, FullHttpRequest request) throws Exception {
         if (!request.decoderResult().isSuccess()) {
@@ -169,18 +186,26 @@ public class HttpStaticFileServerHandler extends SimpleChannelInboundHandler<Ful
         
         if(uri.contains("getvideo.m3u8")){
             String md5requested = map.get("md5");
-            uri = "/streaming/" + md5requested + "/OUTPUT.m3u8";
+            uri = "../rtserver/streaming/" + md5requested + "/OUTPUT.m3u8";
             m3u8 = true;
         }
 
+        boolean is_ts = false;
         if(uri.contains("getts.fn")){         
             String md5requested = map.get("md5");
             String tsrequested = map.get("ts");
             
-            uri = "/streaming/" + md5requested + "/" + tsrequested;
+            uri = "../rtserver/streaming/" + md5requested + "/" + tsrequested;
+            is_ts = true;
         }
         
-        String path = sanitizeUri(uri);
+        pw("uri = " + uri);
+        String path = "";
+        if (m3u8 || is_ts) {
+            path = SystemPropertyUtil.get("user.dir") + File.separator + uri;
+        } else {
+            path = sanitizeUri(uri);
+        }
 
         
         if(uri.contains("getaudio.fn")){         
@@ -208,12 +233,7 @@ public class HttpStaticFileServerHandler extends SimpleChannelInboundHandler<Ful
 
         }
 
-        
-        
-        
-        
-
-
+        pw("path = " + path);
         
         System.out.println(path);
         if (path == null) {
