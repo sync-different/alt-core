@@ -26,7 +26,7 @@ public class VaultLauncher implements Runnable {
     boolean bTerminated = false;
     boolean mHostFound = false;
     
-    RelayVaultService vs = null;
+    RelayVaultServiceV52 vs = null;
   
     public VaultLauncher(String bridgeHost, 
             String bridgePort, 
@@ -88,7 +88,7 @@ public class VaultLauncher implements Runnable {
     public void run() {
         while (!bTerminated) {
             System.out.println("VaultService launched.");
-            vs = new RelayVaultService(_bridgeHost, _bridgePort, _secure, _clusterHost, 
+            vs = new RelayVaultServiceV52(_bridgeHost, _bridgePort, _secure, _clusterHost, 
                                        _clusterPort, _clusterId, _clusterName, _clusterToken, _logLevel);
             vs.run();
             bTerminated = true;
