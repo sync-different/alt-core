@@ -17,8 +17,8 @@ import java.io.IOException;
 import java.io.StringWriter;
 import java.text.SimpleDateFormat;
 
-import org.apache.commons.httpclient.*;
-import org.apache.commons.httpclient.methods.*;
+//import org.apache.commons.httpclient.*;
+//import org.apache.commons.httpclient.methods.*;
 
 // HTTP v5.x imports for postFileResponse, postErrorResponse, postStringResponse, registerCluster, unregisterCluster
 import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
@@ -142,32 +142,6 @@ public class RelayVaultServiceV52 implements Runnable {
             _clusterPort = port;
         }
 
-        private GetMethod httpLocalRequest_old(String url, String stickyName, String stickyValue) {
-            GetMethod request = new GetMethod(url);
-            
-            if (stickyName != null) {
-                request.setRequestHeader("Cookie", stickyName + "=" + stickyValue + ";");                
-            }
-                        
-            try {
-                HttpClient httpclient = new HttpClient();
-                int status = httpclient.executeMethod(request);
-                switch (status) {
-                    case 200:
-                        return request;
-                    case 401:
-                    case 500:
-                    default:
-                        log("Local http request failed with status:" + status, 1);
-                        break;
-                }
-            } catch (IOException e) {
-                log("Local http request failed with IOException", 1);
-                e.printStackTrace(log);
-            }
-            request.releaseConnection();
-            return null;
-        }
         
         private HttpConnectionWrapper httpLocalRequest_new(String url, String stickyName, String stickyValue) {
                 pw("   url getlocalrequest new: " + url);
@@ -417,7 +391,7 @@ public class RelayVaultServiceV52 implements Runnable {
         }
         
  
-        public void fileRequestNetty(String requestId, 
+        public void fileRequestNetty_new(String requestId, 
                 String function, 
                 String authCookie, 
                 String queryString, 
@@ -425,6 +399,8 @@ public class RelayVaultServiceV52 implements Runnable {
                 String stickyName,
                 String stickyValue) {
             
+            pw("[file netty] querystring = " + queryString);
+
             String[] tokens = queryString.split("&");  
             Map<String, String> map = new HashMap<String, String>();  
             for (String param : tokens)  
@@ -436,9 +412,11 @@ public class RelayVaultServiceV52 implements Runnable {
             
             String md5 = map.get("md5");
             String uuid = map.get("uuid");
+
+            pw("[file netty] md5 = " + md5);
+            pw("[file netty] uuid = " + uuid);
             
-            GetMethod file = null;
-            //HttpGet file = null;
+            HttpConnectionWrapper connection = null;
             try {
                 LocalFuncs lf = new LocalFuncs();
 
@@ -451,38 +429,56 @@ public class RelayVaultServiceV52 implements Runnable {
                 if(!m3u8NettyURL.isEmpty()){
                     String url;
                     if(function.equals("getvideo.m3u8") || function.equals("getaudio.fn")){
-                        //url = String.format("http://%s:%s/%s?md5=%s&uuid=%s", "127.0.0.1", "8084", function, md5, uuid);
                         url = m3u8NettyURL + "&uuid=" + uuid;
                     }else{//getts
                         String nettyHost = m3u8NettyURL.split("/getvideo.m3u8")[0];
                         String ts = map.get("ts");
-                        //url = String.format("http://%s:%s/%s?md5=%s&ts=%s&uuid=%s", "127.0.0.1", "8084", function, md5, ts, uuid);
                         url = String.format("%s/%s?md5=%s&ts=%s&uuid=%s", nettyHost, function, md5, ts, uuid);
                     }
-                    log("File request with url:" + url, 1);
+                    log("Netty file request with url:" + url, 1);
 
-                    file = httpLocalRequest_old(url, stickyName, stickyValue);
-                    //file = httpLocalRequest(url, stickyName, stickyValue);
+                    // MIGRATED: Use httpLocalRequest_new instead of httpLocalRequest_old
+                    connection = httpLocalRequest_new(url, stickyName, stickyValue);
 
-                    if (file != null) {
-                        InputStream fileStream = file.getResponseBodyAsStream();
-                        //HttpEntity responseEntity = file.getEntity();
-                        //InputStream fileStream = responseEntity.getContent();
-                        bridge.postFileResponse(requestId, fileStream, stickyName, stickyValue);
+                    if (connection != null && connection.response != null) {
+                        HttpEntity responseEntity = connection.response.getEntity();
+                        if (responseEntity != null) {
+                            // Use the same buffering approach as fileRequest_new for consistency
+                            InputStream fileStream = responseEntity.getContent();
+                            java.io.ByteArrayOutputStream buffer = new java.io.ByteArrayOutputStream();
+                            byte[] data = new byte[8192];
+                            int bytesRead;
+                            long totalBytes = 0;
+                            
+                            while ((bytesRead = fileStream.read(data)) != -1) {
+                                buffer.write(data, 0, bytesRead);
+                                totalBytes += bytesRead;
+                            }
+                            
+                            log("Netty file - Read " + totalBytes + " bytes from HTTP response", 1);
+                            
+                            // Close connection immediately after reading all data
+                            connection.close();
+                            
+                            // Create new InputStream from buffered data
+                            java.io.ByteArrayInputStream bufferedStream = new java.io.ByteArrayInputStream(buffer.toByteArray());
+                            bridge.postFileResponse(requestId, bufferedStream, stickyName, stickyValue);
+                        } else {
+                            bridge.postErrorResponse(requestId, "Unable to get response entity");
+                            connection.close();
+                        }
                     } else {
                         bridge.postErrorResponse(requestId, "Unable to request local file");
+                        if (connection != null) connection.close();
                     }
 
                 }else{
                     bridge.postErrorResponse(requestId, "Unable to locate file");
                 }
             } catch (IOException e) {
+                log("WARNING: Exception in fileRequestNetty_new", 1);
                 e.printStackTrace(log);
-            } finally {
-                if (file != null) {
-                    file.releaseConnection();
-                    //file.clear();
-                }
+                if (connection != null) connection.close();
             }
         }    
 
@@ -936,20 +932,20 @@ public class RelayVaultServiceV52 implements Runnable {
                                                  request.get("query-string").toString(), this, stickyName, stickyValue);
                         break;
                     case getvideo:
-                         _cluster.fileRequestNetty(request.get("request-id").toString(),
+                         _cluster.fileRequestNetty_new(request.get("request-id").toString(),
                                                  "getvideo.m3u8",
                                                  null,
                                                  request.get("query-string").toString(), this, stickyName, stickyValue);
                         break;
 
                     case getts:
-                         _cluster.fileRequestNetty(request.get("request-id").toString(),
+                         _cluster.fileRequestNetty_new(request.get("request-id").toString(),
                                                  "getts.fn",
                                                  null,
                                                  request.get("query-string").toString(), this, stickyName, stickyValue);
                         break;
                     case getaudio:
-                         _cluster.fileRequestNetty(request.get("request-id").toString(),
+                         _cluster.fileRequestNetty_new(request.get("request-id").toString(),
                                                  "getaudio.fn",
                                                  null,
                                                  request.get("query-string").toString(), this, stickyName, stickyValue);
