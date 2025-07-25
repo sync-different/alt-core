@@ -222,6 +222,45 @@ public class RelayVaultServiceV52 implements Runnable {
         }
 
         
+/*
+            Locally executes a file request against running cluster RT server.
+        */
+        private void fileRequest_new(String requestId, String authCookie, String queryString, RelayBridge bridge, String StickyName, String StickyValue) {
+            String url = String.format("http://%s:%s/cass/getfile.fn?%s", 
+                                       _clusterHost, _clusterPort, queryString); 
+            log("File request with url:" + url, 1);
+            //GetMethod file = httpLocalRequest_old(url, StickyName, StickyValue);
+            CloseableHttpResponse file = httpLocalRequest_new(url, StickyName, StickyValue);
+            pw("Getfile url = " + url);
+            try {
+                if (file != null) {
+                    pw("File get file OK.");
+                    HttpEntity responseEntity = file.getEntity();
+                    if (responseEntity != null) {
+                        pw("Entity get file OK.");
+                        InputStream fileStream = responseEntity.getContent();
+                        //InputStream fileStream = file.getResponseBodyAsStream();
+                        bridge.postFileResponse(requestId, fileStream, StickyName, StickyValue);
+                    } else{
+                        pw("WARNING: unable to request file-2");
+                        bridge.postErrorResponse(requestId, "Unable to request local file-2");
+                    }
+                } else {
+                    pw("WARNING: unable to request file");
+                    bridge.postErrorResponse(requestId, "Unable to request local file");
+                }
+                file.close();
+            } catch (IOException e) {
+                pw("WARNING: There was an exception in Vault getfile");
+                e.printStackTrace();
+            } finally {
+                if (file != null) {
+                    //file.close();
+                    //file.releaseConnection();
+                }
+            }
+        }
+
         /*
             Locally executes a file request against running cluster RT server.
         */
@@ -848,14 +887,14 @@ public class RelayVaultServiceV52 implements Runnable {
                                               this);
                         break;
                     case logout:
-                        _cluster.standardRequest(request.get("request-id").toString(), 
+                        _cluster.standardRequest_new(request.get("request-id").toString(), 
                                                 "logout.fn", 
                                                 request.get("auth").toString(),
                                                 "", this, stickyName, stickyValue);
                         break;
                     case getfolders_json:
                         p("case getfolder_json");
-                        _cluster.standardRequest(request.get("request-id").toString(),
+                        _cluster.standardRequest_new(request.get("request-id").toString(),
                                                  "getfolders_json.fn",
                                                  request.get("auth").toString(),
                                                  request.get("query-string").toString(), this, stickyName, stickyValue);
@@ -867,19 +906,19 @@ public class RelayVaultServiceV52 implements Runnable {
                                                  request.get("query-string").toString(), this, stickyName, stickyValue);
                         break;
                     case suggest:
-                        _cluster.standardRequest(request.get("request-id").toString(),
+                        _cluster.standardRequest_new(request.get("request-id").toString(),
                                                  "suggest.fn",
                                                  request.get("auth").toString(),
                                                  request.get("query-string").toString(), this, stickyName, stickyValue);
                         break;
                     case sidebar:
-                        _cluster.standardRequest(request.get("request-id").toString(),
+                        _cluster.standardRequest_new(request.get("request-id").toString(),
                                                  "sidebar.fn",
                                                  request.get("auth").toString(),
                                                  request.get("query-string").toString(), this, stickyName, stickyValue);
                         break;
                     case gettags:
-                        _cluster.standardRequest(request.get("request-id").toString(),
+                        _cluster.standardRequest_new(request.get("request-id").toString(),
                                                  "gettags_m.fn",
                                                  request.get("auth").toString(),
                                                  "", this, stickyName, stickyValue);
@@ -896,19 +935,19 @@ public class RelayVaultServiceV52 implements Runnable {
                                                  request.get("query-string").toString(), this, stickyName, stickyValue);
                         break;
                     case doshare:
-                         _cluster.standardRequest(request.get("request-id").toString(),
+                         _cluster.standardRequest_new(request.get("request-id").toString(),
                                                  "doshare.fn",
                                                  request.get("auth").toString(),
                                                  request.get("query-string").toString(), this, stickyName, stickyValue);
                         break;
                     case getusersandemail:
-                         _cluster.standardRequest(request.get("request-id").toString(),
+                         _cluster.standardRequest_new(request.get("request-id").toString(),
                                                  "getusersandemail.fn",
                                                  request.get("auth").toString(),
                                                  request.get("query-string").toString(), this, stickyName, stickyValue);
                         break;
                     case adduser:
-                         _cluster.standardRequest(request.get("request-id").toString(),
+                         _cluster.standardRequest_new(request.get("request-id").toString(),
                                                  "adduser.fn",
                                                  request.get("auth").toString(),
                                                  request.get("query-string").toString(), this, stickyName, stickyValue);
@@ -933,49 +972,49 @@ public class RelayVaultServiceV52 implements Runnable {
                                                  request.get("query-string").toString(), this, stickyName, stickyValue);
                         break;
                     case getsession:
-                         _cluster.standardRequest(request.get("request-id").toString(),
+                         _cluster.standardRequest_new(request.get("request-id").toString(),
                                                  "getsession.fn",
                                                  null,
                                                  null, this, stickyName, stickyValue);
                         break;
                     case getauthtoken:
-                         _cluster.standardRequest(request.get("request-id").toString(),
+                         _cluster.standardRequest_new(request.get("request-id").toString(),
                                                  "getauthtoken.fn",
                                                  null,
                                                  null, this, stickyName, stickyValue);
                         break;    
                     case chat_pull:
-                        _cluster.standardRequest(request.get("request-id").toString(),
+                        _cluster.standardRequest_new(request.get("request-id").toString(),
                                                  "chat_pull.fn",
                                                  request.get("auth").toString(),
                                                  request.get("query-string").toString(), this, stickyName, stickyValue);
                         break;
                     case chat_push:
-                        _cluster.standardRequest(request.get("request-id").toString(),
+                        _cluster.standardRequest_new(request.get("request-id").toString(),
                                                  "chat_push.fn",
                                                  request.get("auth").toString(),
                                                  request.get("query-string").toString(), this, stickyName, stickyValue);
                         break;
                     case savepropertymulticluster:
-                        _cluster.standardRequest(request.get("request-id").toString(),
+                        _cluster.standardRequest_new(request.get("request-id").toString(),
                                                  "savepropertymulticluster.fn",
                                                  request.get("auth").toString(),
                                                  request.get("query-string").toString(), this, stickyName, stickyValue);    
                         break;
                     case getpropertymulticluster:
-                        _cluster.standardRequest(request.get("request-id").toString(),
+                        _cluster.standardRequest_new(request.get("request-id").toString(),
                                                  "getpropertymulticluster.fn",
                                                  request.get("auth").toString(),
                                                  request.get("query-string").toString(), this, stickyName, stickyValue);    
                         break;    
                     case gettags_webapp:
-                        _cluster.standardRequest(request.get("request-id").toString(),
+                        _cluster.standardRequest_new(request.get("request-id").toString(),
                                                  "gettags_webapp.fn",
                                                  request.get("auth").toString(),
                                                  "", this, stickyName, stickyValue);
                         break;
                     default:
-                        _cluster.standardRequest(request.get("request-id").toString(),
+                        _cluster.standardRequest_new(request.get("request-id").toString(),
                                                  request.get("type").toString(),
                                                  request.get("auth").toString(),
                                                  request.get("query-string").toString(), this, stickyName, stickyValue);
