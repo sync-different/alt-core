@@ -200,7 +200,7 @@ public class DockerService implements Runnable {
 
         System.out.println("LocalAI Docker Install Dependencies: " + outputStream.toString());
 
-        String[] command2 = {"bash", "-c", "local-ai models install whisper-base"};
+        String[] command2 = {"bash", "-c", "/local-ai models install whisper-base"};
         String execId2 = dockerClient.execCreateCmd(containerId)
                 .withAttachStdout(true)
                 .withAttachStderr(true)
