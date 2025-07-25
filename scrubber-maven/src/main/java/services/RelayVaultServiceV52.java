@@ -17,17 +17,25 @@ import java.io.IOException;
 import java.io.StringWriter;
 import java.text.SimpleDateFormat;
 
-import org.apache.hc.client5.http.classic.methods.HttpGet;
-import org.apache.hc.client5.http.classic.methods.HttpPost;
+import org.apache.commons.httpclient.*;
+import org.apache.commons.httpclient.methods.*;
+
+// HTTP v5.x imports for postFileResponse, postErrorResponse, postStringResponse, registerCluster, unregisterCluster
 import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
-import org.apache.hc.client5.http.impl.classic.CloseableHttpResponse;
 import org.apache.hc.client5.http.impl.classic.HttpClients;
-import org.apache.hc.core5.http.Header;
-import org.apache.hc.core5.http.HttpEntity;
-import org.apache.hc.core5.http.io.entity.EntityUtils;
+import org.apache.hc.client5.http.impl.classic.CloseableHttpResponse;
+import org.apache.hc.client5.http.classic.methods.HttpPost;
+import org.apache.hc.client5.http.config.RequestConfig;
+import org.apache.commons.httpclient.methods.GetMethod;
+import org.apache.hc.client5.http.classic.methods.HttpGet;
 import org.apache.hc.core5.http.io.entity.InputStreamEntity;
 import org.apache.hc.core5.http.io.entity.StringEntity;
+import org.apache.hc.core5.util.Timeout;
+import org.apache.hc.core5.http.ContentType;
+import org.apache.hc.core5.http.HttpEntity;
 import org.apache.hc.core5.http.ParseException;
+import org.apache.hc.core5.http.io.entity.EntityUtils;
+import org.apache.hc.core5.http.Header;
 
 import java.util.*;
 
@@ -36,11 +44,25 @@ import net.minidev.json.*;
 import java.net.URLEncoder;
 import utils.LocalFuncs;
 
+ import java.util.logging.Logger;
+ import java.util.logging.Level;
+
 /**
  *
  * @author guilespi
+ * 
+ * PARTIAL HTTP v5.x MIGRATION - REVERTED BACK TO WORKING STATE:
+ * - postFileResponse (HTTP v5.x) ✅
+ * - postErrorResponse (HTTP v5.x) ✅  
+ * - postStringResponse (HTTP v5.x) ✅
+ * - registerCluster (HTTP v5.x) ✅
+ * - unregisterCluster (HTTP v5.x) ✅
+ * - processRequests (HTTP v5.x) ✅
+ * - httpLocalRequest (HTTP v3) ⭕ REVERTED - complex wrapper failed
+ * 
+ * WORKING STATE: Most functions migrated, core GET method still v3
  */
-public class RelayVaultServiceV5 implements Runnable {
+public class RelayVaultServiceV52 implements Runnable {
     
     boolean _terminated = true;
     
@@ -69,23 +91,20 @@ public class RelayVaultServiceV5 implements Runnable {
         getfolders_json
     }
     
-    private class HttpResourcePair implements AutoCloseable {
-        CloseableHttpClient client;
-        CloseableHttpResponse response;
-        
-        HttpResourcePair(CloseableHttpClient client, CloseableHttpResponse response) {
-            this.client = client;
-            this.response = response;
-        }
-        
-        @Override
-        public void close() throws IOException {
-            if (response != null) {
-                response.close();
-            }
-            if (client != null) {
-                client.close();
-            }
+    public static final String ANSI_RED = "\u001B[31m";
+    public static final String ANSI_GREEN = "\u001B[32m";
+    public static final String ANSI_YELLOW = "\u001B[33m";
+    public static final String ANSI_RESET = "\u001B[0m";
+
+    protected void pw(String s) {
+        Date ts_start = Calendar.getInstance().getTime();
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy/MM/dd hh:mm:ss");
+        String sDate = sdf.format(ts_start);
+        boolean bConsole = true;
+
+        if (bConsole) {
+            long threadID = Thread.currentThread().getId();
+            System.out.println(ANSI_YELLOW + sDate + " [WARNING] [SC.RelayVaultService-" + threadID + "] " + s + ANSI_RESET);
         }
     }
 
@@ -102,69 +121,103 @@ public class RelayVaultServiceV5 implements Runnable {
             _clusterHost = host;
             _clusterPort = port;
         }
+        
+        private CloseableHttpResponse httpLocalRequest_new(String url, String stickyName, String stickyValue) {
+                pw("   url getlocalrequest new: " + url);
+                int connectionTimeout = 30000;
+                int socketTimeout = 180000;
 
-        private HttpResourcePair httpLocalRequestForFiles(String url, String stickyName, String stickyValue) {
-            HttpGet request = new HttpGet(url);
-            
-            if (stickyName != null) {
-                request.setHeader("Cookie", stickyName + "=" + stickyValue + ";");                
-            }
-                        
-            try {
-                CloseableHttpClient httpclient = HttpClients.createDefault();
-                CloseableHttpResponse response = httpclient.execute(request);
-                int status = response.getCode();
-                switch (status) {
-                    case 200:
-                        return new HttpResourcePair(httpclient, response);
-                    case 401:
-                    case 500:
-                    default:
-                        log("Local http request failed with status:" + status, 1);
-                        try {
-                            response.close();
-                            httpclient.close();
-                        } catch (IOException closeEx) {
-                            // Ignore close error
-                        }
-                        break;
+                // Configure timeouts
+                RequestConfig requestConfig = RequestConfig.custom()
+                    .setConnectionRequestTimeout(Timeout.ofMilliseconds(connectionTimeout))
+                    .setResponseTimeout(Timeout.ofMilliseconds(socketTimeout))
+                    .build();
+                //GetMethod getFile = new GetMethod(urlgetfile);
+                //HttpClient httpclient = new HttpClient();
+                HttpGet httpGet = new HttpGet(url);
+                httpGet.setConfig(requestConfig);
+
+                if(stickyName != null){
+                    //getFile.setRequestHeader("Cookie", "uuid=" + uuid);
+                    httpGet.setHeader("Cookie", stickyName + "=" + stickyValue);
                 }
-            } catch (IOException e) {
-                log("Local http request failed with IOException", 1);
-                e.printStackTrace(log);
-            }
-            return null;
+                try (CloseableHttpClient httpclient = HttpClients.createDefault();
+                        CloseableHttpResponse response = httpclient.execute(httpGet)) {
+                    int statusCode = response.getCode();
+                    pw("status code local request == " + statusCode);
+                    if (statusCode == 200) {
+                        return response;
+                    }
+                } catch (IOException e) {
+                    log("Local http request failed with IOException", 1);
+                    e.printStackTrace(log);
+                }
+                return null;
+
         }
 
-        private CloseableHttpResponse httpLocalRequest(String url, String stickyName, String stickyValue) {
-            HttpGet request = new HttpGet(url);
+        private String httpLocalRequest_new_string(String url, String stickyName, String stickyValue) {
+                pw("   url getlocalrequest new: " + url);
+                int connectionTimeout = 30000;
+                int socketTimeout = 180000;
+
+                // Configure timeouts
+                RequestConfig requestConfig = RequestConfig.custom()
+                    .setConnectionRequestTimeout(Timeout.ofMilliseconds(connectionTimeout))
+                    .setResponseTimeout(Timeout.ofMilliseconds(socketTimeout))
+                    .build();
+                //GetMethod getFile = new GetMethod(urlgetfile);
+                //HttpClient httpclient = new HttpClient();
+                HttpGet httpGet = new HttpGet(url);
+                httpGet.setConfig(requestConfig);
+
+                if(stickyName != null){
+                    //getFile.setRequestHeader("Cookie", "uuid=" + uuid);
+                    httpGet.setHeader("Cookie", stickyName + "=" + stickyValue);
+                }
+                try (CloseableHttpClient httpclient = HttpClients.createDefault();
+                        CloseableHttpResponse response = httpclient.execute(httpGet)) {
+                    int statusCode = response.getCode();
+                    pw("status code local request == " + statusCode);
+                    if (statusCode == 200) {
+                        HttpEntity responseEntity = response.getEntity();
+                        String responseBody = EntityUtils.toString(responseEntity, "UTF-8");
+                        return responseBody;
+                    }
+                } catch (IOException e) {
+                    log("Local http request failed with IOException", 1);
+                    e.printStackTrace();
+                } catch (ParseException e) {
+                    pw("Parse Exception");
+                }
+                return null;
+
+        }
+
+        private GetMethod httpLocalRequest_old(String url, String stickyName, String stickyValue) {
+            GetMethod request = new GetMethod(url);
             
             if (stickyName != null) {
-                request.setHeader("Cookie", stickyName + "=" + stickyValue + ";");                
+                request.setRequestHeader("Cookie", stickyName + "=" + stickyValue + ";");                
             }
                         
             try {
-                CloseableHttpClient httpclient = HttpClients.createDefault();
-                CloseableHttpResponse response = httpclient.execute(request);
-                int status = response.getCode();
+                HttpClient httpclient = new HttpClient();
+                int status = httpclient.executeMethod(request);
                 switch (status) {
                     case 200:
-                        return response;
+                        return request;
                     case 401:
                     case 500:
                     default:
                         log("Local http request failed with status:" + status, 1);
-                        try {
-                            response.close();
-                        } catch (IOException closeEx) {
-                            // Ignore close error
-                        }
                         break;
                 }
             } catch (IOException e) {
                 log("Local http request failed with IOException", 1);
                 e.printStackTrace(log);
             }
+            request.releaseConnection();
             return null;
         }
 
@@ -176,51 +229,87 @@ public class RelayVaultServiceV5 implements Runnable {
             String url = String.format("http://%s:%s/cass/getfile.fn?%s", 
                                        _clusterHost, _clusterPort, queryString); 
             log("File request with url:" + url, 1);
-            
-            HttpGet request = new HttpGet(url);
-            if (StickyName != null) {
-                request.setHeader("Cookie", StickyName + "=" + StickyValue + ";");                
-            }
-                        
-            CloseableHttpClient httpclient = null;
-            CloseableHttpResponse file = null;
+            GetMethod file = httpLocalRequest_old(url, StickyName, StickyValue);
+            //HttpGet file = httpLocalRequest(url, StickyName, StickyValue);
             try {
-                httpclient = HttpClients.createDefault();
-                file = httpclient.execute(request);
-                int status = file.getCode();
-                if (status == 200) {
-                    HttpEntity entity = file.getEntity();
-                    if (entity != null) {
-                        InputStream fileStream = entity.getContent();
-                        bridge.postFileResponse(requestId, fileStream, StickyName, StickyValue);
-                    } else {
-                        bridge.postErrorResponse(requestId, "Unable to request local file - no content");
-                    }
+                if (file != null) {
+                    //HttpEntity responseEntity = file.getEntity();
+                    //InputStream fileStream = responseEntity.getContent();
+                    InputStream fileStream = file.getResponseBodyAsStream();
+                    bridge.postFileResponse(requestId, fileStream, StickyName, StickyValue);
                 } else {
-                    log("Local http request failed with status:" + status, 1);
-                    bridge.postErrorResponse(requestId, "Unable to request local file - status: " + status);
+                    bridge.postErrorResponse(requestId, "Unable to request local file");
                 }
             } catch (IOException e) {
                 e.printStackTrace(log);
-                bridge.postErrorResponse(requestId, "Unable to request local file - IOException: " + e.getMessage());
             } finally {
                 if (file != null) {
-                    try {
-                        file.close();
-                    } catch (IOException e) {
-                        // Ignore close error
-                    }
-                }
-                if (httpclient != null) {
-                    try {
-                        httpclient.close();
-                    } catch (IOException e) {
-                        // Ignore close error
-                    }
+                    //file.clear();
+                    file.releaseConnection();
                 }
             }
         }
         
+/*
+            Locally executes a standard relay request against running cluster RT server.
+        */
+        public void standardRequest_new(String requestId, 
+                String function, 
+                String authCookie, 
+                String queryString, 
+                RelayBridge bridge,
+                String stickyName,
+                String stickyValue) {
+            String url = String.format("http://%s:%s/cass/%s?%s", 
+                                       _clusterHost, _clusterPort, function, queryString); 
+            if(url.contains("multicluster")){
+                String g="";
+            }
+            log("Standard relayed request url:" + url, 1);
+            //GetMethod response = httpLocalRequest_old(url, stickyName, stickyValue);
+            pw("standard request = " + url);
+            String responseBody = httpLocalRequest_new_string(url, stickyName, stickyValue);
+            pw("after standard request = " + url);
+
+            try {
+                
+                if (responseBody != null) {
+                    pw("------- response is OK");
+                    //HttpEntity responseEntity = response.getEntity();
+                    //InputStream fileStream = responseEntity.getContent();
+                    //String responseBody = fileStream.readAllBytes().toString();
+                    //String responseBody = "";
+                    //if (responseEntity != null) {
+                    //    responseBody = EntityUtils.toString(responseEntity, "UTF-8");
+                    //} else {
+                    //    pw("WARNING: response entity is null");
+                    //}
+
+                    pw("standard request response body = " + responseBody);
+                    
+                    if(url.contains("query")){
+                        String g="";
+                    }
+                    bridge.postStringResponse(requestId, responseBody, stickyName, stickyValue);
+                } else {
+                    pw("WARNING: response is null");
+                    bridge.postErrorResponse(requestId, "Unable to relay local operation");
+                }
+            //} catch (ParseException e) {
+            //    pw("ParseException");
+            //    e.printStackTrace();
+            //} catch (IOException e) {
+            //    pw("IOException");
+            //    e.printStackTrace();
+            } catch (Exception e) {
+                pw("Exception");
+                e.printStackTrace();
+            } finally {
+                if (responseBody != null) {
+                    //response.close();
+                }
+            }
+        }
         /*
             Locally executes a standard relay request against running cluster RT server.
         */
@@ -237,33 +326,37 @@ public class RelayVaultServiceV5 implements Runnable {
                 String g="";
             }
             log("Standard relayed request url:" + url, 1);
-            CloseableHttpResponse response = httpLocalRequest(url, stickyName, stickyValue);
+            GetMethod response = httpLocalRequest_old(url, stickyName, stickyValue);
+            //HttpGet file = httpLocalRequest(url, stickyName, stickyValue);
+
             try {
                 
                 if (response != null) {
-                    HttpEntity entity = response.getEntity();
-                    if (entity != null) {
-                        String responseBody = EntityUtils.toString(entity);
-                        if(url.contains("query")){
-                            String g="";
-                        }
-                        bridge.postStringResponse(requestId, responseBody, stickyName, stickyValue);
-                    } else {
-                        bridge.postErrorResponse(requestId, "Unable to relay local operation - no content");
+                    //HttpEntity responseEntity = file.getEntity();
+                    //InputStream fileStream = responseEntity.getContent();
+                    //String responseBody = fileStream.toString();
+
+                    String responseBody = response.getResponseBodyAsString(); 
+
+                    response.releaseConnection();
+                    //file.cancel();
+                    
+                    if(url.contains("query")){
+                        String g="";
                     }
+                    bridge.postStringResponse(requestId, responseBody, stickyName, stickyValue);
                 } else {
                     bridge.postErrorResponse(requestId, "Unable to relay local operation");
                 }
-            } catch (IOException | ParseException e) {
+            } catch (IOException e) {
                 e.printStackTrace(log);
             } finally {
                 if (response != null) {
-                    try {
-                        response.close();
-                    } catch (IOException e) {
-                        // Ignore close error
-                    }
+                    response.releaseConnection();
                 }
+                //if (file !=null) {
+                //    file.clear();
+                //}
             }
         }
  
@@ -287,6 +380,8 @@ public class RelayVaultServiceV5 implements Runnable {
             String md5 = map.get("md5");
             String uuid = map.get("uuid");
             
+            GetMethod file = null;
+            //HttpGet file = null;
             try {
                 LocalFuncs lf = new LocalFuncs();
 
@@ -309,49 +404,32 @@ public class RelayVaultServiceV5 implements Runnable {
                     }
                     log("File request with url:" + url, 1);
 
-                    HttpGet fileRequest = new HttpGet(url);
-                    if (stickyName != null) {
-                        fileRequest.setHeader("Cookie", stickyName + "=" + stickyValue + ";");                
-                    }
-                    
-                    CloseableHttpClient fileClient = null;
-                    CloseableHttpResponse fileResponse = null;
-                    try {
-                        fileClient = HttpClients.createDefault();
-                        fileResponse = fileClient.execute(fileRequest);
-                        int status = fileResponse.getCode();
-                        if (status == 200) {
-                            HttpEntity entity = fileResponse.getEntity();
-                            if (entity != null) {
-                                InputStream fileStream = entity.getContent();
-                                bridge.postFileResponse(requestId, fileStream, stickyName, stickyValue);
-                            } else {
-                                bridge.postErrorResponse(requestId, "Unable to request local file - no content");
-                            }
-                        } else {
-                            bridge.postErrorResponse(requestId, "Unable to request local file - status: " + status);
-                        }
-                    } catch (IOException e) {
-                        e.printStackTrace(log);
-                        bridge.postErrorResponse(requestId, "Unable to request local file - IOException: " + e.getMessage());
-                    } finally {
-                        if (fileResponse != null) {
-                            try { fileResponse.close(); } catch (IOException e) { /* ignore */ }
-                        }
-                        if (fileClient != null) {
-                            try { fileClient.close(); } catch (IOException e) { /* ignore */ }
-                        }
+                    file = httpLocalRequest_old(url, stickyName, stickyValue);
+                    //file = httpLocalRequest(url, stickyName, stickyValue);
+
+                    if (file != null) {
+                        InputStream fileStream = file.getResponseBodyAsStream();
+                        //HttpEntity responseEntity = file.getEntity();
+                        //InputStream fileStream = responseEntity.getContent();
+                        bridge.postFileResponse(requestId, fileStream, stickyName, stickyValue);
+                    } else {
+                        bridge.postErrorResponse(requestId, "Unable to request local file");
                     }
 
                 }else{
                     bridge.postErrorResponse(requestId, "Unable to locate file");
                 }
-            } catch (Exception e) {
+            } catch (IOException e) {
                 e.printStackTrace(log);
-                bridge.postErrorResponse(requestId, "Unable to locate file - Exception: " + e.getMessage());
+            } finally {
+                if (file != null) {
+                    file.releaseConnection();
+                    //file.clear();
+                }
             }
         }    
-        /*
+
+                /*
             Locally executes a login request against running cluster RT server.
         */
         public void loginRequest(String requestId, String user, String password, String encdata, RelayBridge bridge) {
@@ -374,46 +452,119 @@ public class RelayVaultServiceV5 implements Runnable {
                                            _clusterHost, _clusterPort, user, password_enc, encdata_enc); 
             log("Logging in with url:" + url, 1);
           
-            CloseableHttpResponse login = httpLocalRequest(url, null, null);
+            GetMethod login = httpLocalRequest_old(url, null, null);
+            //HttpGet file = httpLocalRequest(url, null, null);
+
             try {
                 if (login != null) {
-                    HttpEntity entity = login.getEntity();
-                    if (entity != null) {
-                        String responseBody = EntityUtils.toString(entity);
-                        String loginResponse = responseBody;
-                        Header cookieHeader = login.getFirstHeader("Set-Cookie");
-                        if (cookieHeader != null) {
-                            String cookieHeaderValue = cookieHeader.getValue();
-                            if (cookieHeaderValue != null && cookieHeaderValue.contains("=")) {
-                                String[] cookieParts = cookieHeaderValue.split("=", 2);
-                                if (cookieParts.length >= 2) {
-                                    String cookieName = cookieParts[0].trim();
-                                    String cookieValue = cookieParts[1];
-                                    // Remove any additional attributes (like path, domain, etc.)
-                                    if (cookieValue.contains(";")) {
-                                        cookieValue = cookieValue.split(";")[0];
-                                    }
-                                    cookieValue = cookieValue.trim();
-                                    loginResponse = "Set-Cookie: " + cookieName + "=" + cookieValue + ";\r\n\r\n" + responseBody;
-                                }
-                            }
-                        }
-                        bridge.postStringResponse(requestId, loginResponse, null, null);
-                    } else {
-                        bridge.postErrorResponse(requestId, "Unable to relay local login - no content");
-                    }
+                    //HttpEntity responseEntity = file.getEntity();
+                    //InputStream fileStream = responseEntity.getContent();
+
+                    //String responseBody = response.getResponseBodyAsString(); 
+                    //String responseBody = fileStream.toString();
+                    String responseBody = login.getResponseBodyAsString();
+                    String loginResponse = responseBody;
+                    //Header[] cookieHeaders = file.getHeaders();
+                    //Header cookieHeader = login.getResponseHeader("Set-Cookie");
+                    // if (cookieHeader != null) {
+                    //    HeaderElement[] cookies = cookieHeader.getElements();
+                    //    if (cookies.length > 0) {
+                    //        String cookieName = cookies[0].getName();
+                    //        String cookieValue = cookies[0].getValue();
+                    //        loginResponse = "Set-Cookie: " + cookieName + "=" + cookieValue + ";\r\n\r\n" + responseBody;
+                    //    }
+                    //} 
+                    login.releaseConnection();
+                    //file.clear();
+                    bridge.postStringResponse(requestId, loginResponse, null, null);
                 } else {
                     bridge.postErrorResponse(requestId, "Unable to relay local login");
                 }
-            } catch (IOException | ParseException e) {
+            } catch (IOException e) {
                 e.printStackTrace(log);
             } finally {
                 if (login != null) {
-                    try {
-                        login.close();
-                    } catch (IOException e) {
-                        // Ignore close error
+                    login.releaseConnection();
+                }
+                //if (file != null) {
+                //    file.clear();
+                //}
+            }
+        }
+
+
+        /*
+            Locally executes a login request against running cluster RT server.
+        */
+        public void loginRequest_new(String requestId, String user, String password, String encdata, RelayBridge bridge) {
+            pw("LoginRequest----New");
+            String password_enc = password;
+            
+            try {
+                password_enc = URLEncoder.encode(password,"UTF-8");
+            } catch (Exception e) {
+                log("Exception encoding password", 1);
+            }
+
+            String encdata_enc = encdata;
+            
+            try {
+                encdata_enc = URLEncoder.encode(encdata,"UTF-8");
+            } catch (Exception e) {
+                log("Exception encoding password", 1);
+            }
+            String url = String.format("http://%s:%s/cass/login.fn?boxuser=%s&boxpass=%s&encdata=%s", 
+                                           _clusterHost, _clusterPort, user, password_enc, encdata_enc); 
+            log("Logging in with url:" + url, 1);
+          
+            //GetMethod login = httpLocalRequest_old(url, null, null);
+            pw("local request = " + url);
+            CloseableHttpResponse file = httpLocalRequest_new(url, null, null);
+
+            try {
+                String loginResponse = "";
+                String responseBody = "";
+                if (file != null) {
+                    HttpEntity responseEntity = file.getEntity();
+                    if (responseEntity != null) {
+                         InputStream fileStream = responseEntity.getContent();
+                         responseBody = fileStream.toString();
+                        pw("respomseBody = " + responseBody);
+                         loginResponse = responseBody;
+                    } else {
+                        pw("WARNING: Response Entity is null");
+                    }             
+                    
+                    Header[] cookieHeaders = file.getHeaders();
+                    Header cookieHeader = file.getFirstHeader("Set-Cookie");
+
+                    String cookieName = "";
+                    String cookieValue = "";
+                    if (cookieHeader != null) {
+                            String cookieHeaderValue = cookieHeader.getValue();
+                            if (cookieHeaderValue != null && cookieHeaderValue.contains("=")) {
+                                String[] cookieParts = cookieHeaderValue.split("=", 2);
+                               if (cookieParts.length >= 2) {
+                                     cookieName = cookieParts[0].trim();
+                                     cookieValue = cookieParts[1];
+                                }
+                           }
+                       loginResponse = "Set-Cookie: " + cookieName + "=" + cookieValue + ";\r\n\r\n" + responseBody;                        
+                       pw("hello");
+                       pw(loginResponse);
+                    } else {
+                        pw("Cookie header null");
                     }
+                    file.close();
+                    bridge.postStringResponse(requestId, loginResponse, null, null);
+                } else {
+                    bridge.postErrorResponse(requestId, "Unable to relay local login");
+                }
+            } catch (IOException e) {
+                e.printStackTrace(log);
+            } finally {
+                if (file != null) {
+                    //file.close();
                 }
             }
         }
@@ -465,6 +616,7 @@ public class RelayVaultServiceV5 implements Runnable {
         /*
             Sends an async file response to the bridge when a file request was completed
             locally.
+            MIGRATED TO HTTP v5.x
         */
         private int postFileResponse(String requestId, InputStream response, String stickyName, String stickyValue) {
             String fileUrl = String.format("%s://%s:%s/clusters/%s/send-file/%s", 
@@ -477,12 +629,9 @@ public class RelayVaultServiceV5 implements Runnable {
             }
 
             try (CloseableHttpClient httpclient = HttpClients.createDefault()) {
-                // Use InputStreamEntity - simplest approach to match V3 behavior
-                org.apache.hc.core5.http.io.entity.InputStreamEntity entity = 
-                    new org.apache.hc.core5.http.io.entity.InputStreamEntity(response, 
-                        org.apache.hc.core5.http.ContentType.APPLICATION_OCTET_STREAM);
+                InputStreamEntity entity = new InputStreamEntity(response, ContentType.APPLICATION_OCTET_STREAM);
                 postFile.setEntity(entity);
-                postFile.setHeader("Content-Type", "application/octet-stream");
+                postFile.setHeader("Content-type", "application/octet-stream");
                 
                 try (CloseableHttpResponse httpResponse = httpclient.execute(postFile)) {
                     return httpResponse.getCode();
@@ -496,13 +645,15 @@ public class RelayVaultServiceV5 implements Runnable {
         /*
             Sends an async error response to the bridge when a request has
             failed to complete locally.
+            MIGRATED TO HTTP v5.x
         */
         private int postErrorResponse(String requestId, String response) {
            String responseUrl = String.format("%s://%s:%s/clusters/%s/request-failed/%s", 
                                               _protocol, _relayHost, _relayPort, _clusterId, requestId); 
             HttpPost postMethod = new HttpPost(responseUrl);
+            
             try (CloseableHttpClient httpclient = HttpClients.createDefault()) {
-                StringEntity requestEntity = new StringEntity(response, org.apache.hc.core5.http.ContentType.create("text/plain", "UTF-8"));
+                StringEntity requestEntity = new StringEntity(response, ContentType.create("text/plain", "UTF-8"));
                 postMethod.setEntity(requestEntity);
                 
                 try (CloseableHttpResponse httpResponse = httpclient.execute(postMethod)) {
@@ -517,6 +668,7 @@ public class RelayVaultServiceV5 implements Runnable {
         /*
             Sends an async string response to the server when a specific request
             is completed.
+            MIGRATED TO HTTP v5.x
         */
         private int postStringResponse(String requestId, String response, String stickyName, String stickyValue) {
             String responseUrl = String.format("%s://%s:%s/clusters/%s/send-response/%s", 
@@ -529,7 +681,7 @@ public class RelayVaultServiceV5 implements Runnable {
             }
                                 
             try (CloseableHttpClient httpclient = HttpClients.createDefault()) {
-                StringEntity requestEntity = new StringEntity(response, org.apache.hc.core5.http.ContentType.create("text/plain", "UTF-8"));
+                StringEntity requestEntity = new StringEntity(response, ContentType.create("text/plain", "UTF-8"));
                 postMethod.setEntity(requestEntity);
                                 
                 try (CloseableHttpResponse httpResponse = httpclient.execute(postMethod)) {
@@ -544,6 +696,7 @@ public class RelayVaultServiceV5 implements Runnable {
         /*
             Unregisters a properly registered cluster, returns true if unregistration 
             is successful.
+            MIGRATED TO HTTP v5.x
         */
         private boolean unregisterCluster(String clusterId, String clusterToken) {
             log(String.format("Unregistering cluster:%s token:%s", clusterId, clusterToken), 1);
@@ -551,14 +704,15 @@ public class RelayVaultServiceV5 implements Runnable {
                                        _protocol, _relayHost, _relayPort, clusterId, clusterToken); 
             
             HttpGet unregister = new HttpGet(url);
-            try (CloseableHttpClient httpclient = HttpClients.createDefault();
-                 CloseableHttpResponse response = httpclient.execute(unregister)) {
-                int status = response.getCode();
-                if (status == 200) {
-                    log("Cluster unregistration succeed", 1);
-                    return true;
-                }else{
-                    log("Unregistrer failed - Status " + status, 1);
+            try (CloseableHttpClient httpclient = HttpClients.createDefault()) {
+                try (CloseableHttpResponse response = httpclient.execute(unregister)) {
+                    int status = response.getCode();
+                    if (status == 200) {
+                        log("Cluster unregistration succeed", 1);
+                        return true;
+                    }else{
+                        log("Unregistrer failed - Status " + status, 1);
+                    }
                 }
             } catch (IOException e) {
                 log("Unregistrer IOException", 1);
@@ -580,17 +734,19 @@ public class RelayVaultServiceV5 implements Runnable {
             needs to be used in each cluster operation.
         
             The operation updates the _clusterToken member of the class if succeeded.
+            MIGRATED TO HTTP v5.x
         */
         private String registerCluster(String clusterId, String clusterName) {
             log(String.format("Registering cluster:%s", clusterId), 1);
             String registerUrl = String.format("%s://%s:%s/clusters/register", 
                                                _protocol, _relayHost, _relayPort); 
             HttpPost postMethod = new HttpPost(registerUrl);
+            
             try (CloseableHttpClient httpclient = HttpClients.createDefault()) {
                 JSONObject data = new JSONObject();
                 data.put("cluster-id", clusterId);
                 data.put("cluster-name", clusterName);
-                StringEntity requestEntity = new StringEntity(data.toJSONString(), org.apache.hc.core5.http.ContentType.create("text/plain", "UTF-8"));
+                StringEntity requestEntity = new StringEntity(data.toJSONString(), ContentType.create("application/json", "UTF-8"));
                 postMethod.setEntity(requestEntity);
                 
                 try (CloseableHttpResponse response = httpclient.execute(postMethod)) {
@@ -602,30 +758,32 @@ public class RelayVaultServiceV5 implements Runnable {
                             break;
                         case 200:
                             log("Register sucess - Status 200", 1);
-                            HttpEntity entity = response.getEntity();
-                            if (entity != null) {
-                                String token = EntityUtils.toString(entity);
-                                log("ResponseBodyAsString " + token, 1);
-                                if (token.length() > 0) {
-                                    JSONObject jtoken = (JSONObject)JSONValue.parse(token);
-                                    if (jtoken != null) {
-                                        log("access-token " + jtoken.get("access-token").toString(), 1);
-                                        _clusterToken = jtoken.get("access-token").toString();
-                                        return _clusterToken;
-                                    }else{
-                                        log("jtoken null", 1);
-                                    }
+                            String token = EntityUtils.toString(response.getEntity());
+                            log("ResponseBodyAsString " + token, 1);
+                            if (token.length() > 0) {
+                                JSONObject jtoken = (JSONObject)JSONValue.parse(token);
+                                if (jtoken != null) {
+                                    log("access-token " + jtoken.get("access-token").toString(), 1);
+                                    _clusterToken = jtoken.get("access-token").toString();
+                                    return _clusterToken;
                                 }else{
-                                    log("empty response", 1);
+                                    log("jtoken null", 1);
                                 }
+                            }else{
+                                log("emtpy reponse", 1);
                             }
                             break;
                         default:
                             log("Register failed - Status " + status, 1);
                             break;
                     }
+                } catch (ParseException e) {
+                    log("Cluster registration failed: ParseException", 1);
+                    StringWriter sWriter = new StringWriter();
+                    e.printStackTrace(new PrintWriter(sWriter));
+                    log(sWriter.getBuffer().toString(), 1);
                 }
-            } catch(IOException | ParseException e) {
+            } catch(IOException e) {
                 log("Cluster registration failed: IOException", 1);
                 StringWriter sWriter = new StringWriter();
                 e.printStackTrace(new PrintWriter(sWriter));
@@ -651,6 +809,8 @@ public class RelayVaultServiceV5 implements Runnable {
                 
             JSONObject request = (JSONObject)JSONValue.parse(strRequest);
             
+            Logger.getLogger("org.apache.hc.client5").setLevel(Level.INFO);
+
             p("strRequest = " + strRequest);                    
             
             lastRequest = System.currentTimeMillis();
@@ -681,7 +841,7 @@ public class RelayVaultServiceV5 implements Runnable {
                 p("requestType: " + requestType);
                 switch (Operations.valueOf(requestType)) {
                     case login:
-                        _cluster.loginRequest(request.get("request-id").toString(), 
+                        _cluster.loginRequest_new(request.get("request-id").toString(), 
                                               request.get("user").toString(), 
                                               request.get("password").toString(),
                                               request.get("encdata")==null?"":request.get("encdata").toString(),
@@ -701,7 +861,7 @@ public class RelayVaultServiceV5 implements Runnable {
                                                  request.get("query-string").toString(), this, stickyName, stickyValue);
                         break;
                     case query:
-                        _cluster.standardRequest(request.get("request-id").toString(),
+                        _cluster.standardRequest_new(request.get("request-id").toString(),
                                                  "query.fn",
                                                  request.get("auth").toString(),
                                                  request.get("query-string").toString(), this, stickyName, stickyValue);
@@ -824,7 +984,8 @@ public class RelayVaultServiceV5 implements Runnable {
             }
             
             } catch (Exception e) {
-                p("*** Exception in processRequest()");
+                pw("*** Exception in processRequest()");
+                e.printStackTrace();
             }
 
         }
@@ -832,6 +993,7 @@ public class RelayVaultServiceV5 implements Runnable {
         /*
             Neverending request process loop, its a long polling request so it blocks
             on the server until something arrives or a specified timeout.
+            MIGRATED TO HTTP v5.x
         */
         public void processRequests() throws InterruptedException {
             String url = String.format("%s://%s:%s/clusters/%s/pending-requests?access-token=%s", 
@@ -839,45 +1001,43 @@ public class RelayVaultServiceV5 implements Runnable {
             log("Process request url: " + url, 1);
             while(!_stopped) {
                 HttpGet pendingRequests = new HttpGet(url);
-                try (CloseableHttpClient httpclient = HttpClients.createDefault();
-                     CloseableHttpResponse httpResponse = httpclient.execute(pendingRequests)) {
+                try (CloseableHttpClient httpclient = HttpClients.createDefault()) {
                     log("Executing process request url: " + url, 2);
-                    int status = httpResponse.getCode();
-                    
-                    String responseBody = "";
-                    HttpEntity entity = httpResponse.getEntity();
-                    if (entity != null) {
-                        responseBody = EntityUtils.toString(entity);
-                    }
-                    final String response = responseBody;
-                    
-                    switch (status) {
-                        case 200:
-                            //requests are processed in a separate thread to avoid excessive queuing on the
-                            //server if response takes too long to be fulfilled
-                            Runnable processor = new Runnable(){
-                                public void run(){
-                                    try {
-                                        processRequest(response);                                    
-                                    } catch (Exception e) {
-                                        e.printStackTrace();
+                    try (CloseableHttpResponse httpResponse = httpclient.execute(pendingRequests)) {
+                        int status = httpResponse.getCode();
+                        final String response = EntityUtils.toString(httpResponse.getEntity());
+                        switch (status) {
+                            case 200:
+                                //requests are processed in a separate thread to avoid excessive queuing on the
+                                //server if response takes too long to be fulfilled
+                                Runnable processor = new Runnable(){
+                                    public void run(){
+                                        try {
+                                            processRequest(response);                                    
+                                        } catch (Exception e) {
+                                            e.printStackTrace();
+                                        }
                                     }
-                                }
-                            };
-                            Thread thread = new Thread(processor);
-                            thread.start();
-                            break;
-                        case 401:
-                            log("Unauthenticated cluster for Vault, cleaning up token Invalid clustertoken " + _clusterToken, 1);
-                            _clusterToken = "";
-                            cleanTokenFile();
-                            return;
-                        default:
-                            log(String.format("Invalid status:%s returned on pending requests, retrying on 10 seconds", status), 1);
-                            Thread.sleep(10000);
-                            break;
+                                };
+                                Thread thread = new Thread(processor);
+                                thread.start();
+                                break;
+                            case 401:
+                                log("Unauthenticated cluster for Vault, cleaning up token Invalid clustertoken " + _clusterToken, 1);
+                                _clusterToken = "";
+                                cleanTokenFile();
+                                return;
+                            default:
+                                log(String.format("Invalid status:%s returned on pending requests, retrying on 10 seconds", status), 1);
+                                Thread.sleep(10000);
+                                break;
+                        }
+                    } catch (ParseException e) {
+                        log("Process requests failed with ParseException, backing off 15 second before retrying...", 1);
+                        e.printStackTrace(log);
+                        Thread.sleep(15000);
                     }
-                } catch (IOException | ParseException e) {
+                } catch (IOException e) {
                     e.printStackTrace(log);
                     log("Process requests failed with IOException, backing off 15 second before retrying...", 1);
                     Thread.sleep(15000);
@@ -900,7 +1060,7 @@ public class RelayVaultServiceV5 implements Runnable {
         This class mainly wraps all the REST functionality into something easily 
         eaten by Java.
     */
-    public RelayVaultServiceV5(String bridgeHost, String bridgePort, boolean secure, String clusterHost,
+    public RelayVaultServiceV52(String bridgeHost, String bridgePort, boolean secure, String clusterHost,
                              String clusterPort, String clusterId, String clusterName, String clusterToken, int logLevel) {
         _terminated = false;
         _bridgeHost = bridgeHost;
