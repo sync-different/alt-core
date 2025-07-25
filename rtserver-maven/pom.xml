@@ -55,17 +55,8 @@
         <dependency>
             <groupId>commons-codec</groupId>
             <artifactId>commons-codec</artifactId>
-            <version>1.8</version>
+            <version>1.15</version>
         </dependency>
-        
-        <!-- Commons HttpClient (legacy) -->
-        <dependency>
-            <groupId>commons-httpclient</groupId>
-            <artifactId>commons-httpclient</artifactId>
-            <version>3.1</version>
-        </dependency>
-                
-        
         
         <!-- Jakarta Activation -->
         <dependency>
@@ -93,6 +84,13 @@
             <artifactId>httpcore5</artifactId>
             <version>5.3.1</version>
         </dependency>        
+
+        <!-- HttpClient 5.x -->
+        <dependency>
+            <groupId>org.apache.httpcomponents.client5</groupId>
+            <artifactId>httpclient5</artifactId>
+            <version>5.4.1</version>
+        </dependency>
 
     </dependencies>
     
@@ -166,7 +164,7 @@
                 </executions>
             </plugin>
             
-            <!-- Resources Plugin to include system dependencies -->
+            <!-- Resources Plugin to include system dependencies
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-dependency-plugin</artifactId>
@@ -187,6 +185,8 @@
                     </execution>
                 </executions>
             </plugin>
+            -->
+
         </plugins>
     </build>
 </project>

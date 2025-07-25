@@ -6,9 +6,11 @@ import java.io.BufferedReader;
 import java.net.URL;
 import java.net.URLConnection;
 import java.net.URLEncoder;
-import org.apache.commons.httpclient.HttpClient;
-import org.apache.commons.httpclient.methods.PostMethod;
-import org.apache.commons.httpclient.methods.StringRequestEntity;
+import org.apache.hc.client5.http.classic.methods.HttpPost;
+import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
+import org.apache.hc.client5.http.impl.classic.CloseableHttpResponse;
+import org.apache.hc.client5.http.impl.classic.HttpClients;
+import org.apache.hc.core5.http.io.entity.StringEntity;
 
 class StatHat {
 
@@ -96,15 +98,15 @@ class StatHat {
                         data += "&" + URLEncoder.encode("an", "UTF-8") + "=" + URLEncoder.encode(an, "UTF-8");
                         System.out.println("***EzPost: '" + data + "'");
                         
-                        PostMethod postFile = new PostMethod("https://www.google-analytics.com/collect");
-                                
-                        postFile.setRequestEntity(new StringRequestEntity(data,null,null));
- 
-                        HttpClient httpclient = new HttpClient();
-                        return httpclient.executeMethod(postFile);
+                        HttpPost httpPost = new HttpPost("https://www.google-analytics.com/collect");
+                        httpPost.setEntity(new StringEntity(data));
+                        
+                        try (CloseableHttpClient httpclient = HttpClients.createDefault();
+                             CloseableHttpResponse response = httpclient.execute(httpPost)) {
+                            return response.getCode();
+                        }
                        
                 }
-                
                 catch (Exception e) {
                         System.err.println("ezPostCount exception:  " + e);
                         return -1;

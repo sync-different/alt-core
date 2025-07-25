@@ -6,7 +6,6 @@
  * CONFIDENTIAL AND PROPRIETARY - Property of Alterante LLC
  */
 
-
 package utils;
 
 import java.io.InputStream;
@@ -39,11 +38,6 @@ import javax.net.ssl.TrustManager;
 import javax.net.ssl.X509TrustManager;
 import utils.Stopwatch;
 
-import org.apache.commons.httpclient.*;
-//import org.apache.commons.httpclient.methods.*;
-import org.apache.commons.httpclient.methods.PostMethod;
-import org.apache.commons.httpclient.methods.InputStreamRequestEntity;
-
 import org.apache.hc.client5.http.classic.methods.HttpPost;
 //import org.apache.hc.client5.http.classic.methods.HttpGet;
 
@@ -57,6 +51,10 @@ import org.apache.hc.client5.http.impl.classic.HttpClients;
 
 import org.apache.hc.core5.http.HttpEntity;
 import org.apache.hc.core5.http.ContentType;
+import org.apache.hc.core5.http.HttpStatus;
+import org.apache.hc.core5.http.io.entity.InputStreamEntity;
+import org.apache.hc.core5.http.io.entity.EntityUtils;
+//import org.apache.hc.core5.http.io.entity.StringRequestEntity;
 
 //import org.apache.hc.core5.http.ClassicHttpRequest;
 
@@ -197,24 +195,6 @@ public static int postData_new2(File fh, String endpoint, Writer output) {
 }
 
 
-public static int postData_new(InputStream data, String endpoint, Writer output) throws Exception {
-       PostMethod postFile = new PostMethod(endpoint);
-       
-       try {
-                postFile.setRequestEntity(new InputStreamRequestEntity(data));
-                //postFile.setRequestHeader("Content-type", "application/octet-stream; charset=UTF-8");
-                postFile.setRequestHeader("Content-type", "application/octet-stream");
-
-                HttpClient httpclient = new HttpClient();
-                return httpclient.executeMethod(postFile);
-            } catch (IOException e) {
-                e.printStackTrace();
-            } finally {
-                postFile.releaseConnection();
-       }       
-       return 0;
-}
-
 public static boolean postData(InputStream data, URL endpoint, Writer output) throws Exception {
     HttpURLConnection urlc = null;
     boolean bAllOK = false;
@@ -296,7 +276,11 @@ public static boolean postData(InputStream data, URL endpoint, Writer output) th
         }
         p("[2]");
         bAllOK = true;
-
+        if (bAllOK) {
+            return true;
+        } else {
+            return false;
+        }   
     } catch (IOException e) {
         pw("Connection error (is server running at " + endpoint);
         e.printStackTrace();
@@ -307,22 +291,13 @@ public static boolean postData(InputStream data, URL endpoint, Writer output) th
             urlc.disconnect();
         } else {
             p("[3b]");
-        }
-        if (bAllOK) {
-            return true;
-        } else {
-            return false;
-        }
-            
+        }            
     }
 }
 
-public boolean postDataHttps_new(InputStream data, String _relayHost, String _relayPort, boolean secure, Writer output, String _clusterId, String _clusterToken) {
+public boolean postDataHttps_new2(InputStream data, String _relayHost, String _relayPort, boolean secure, Writer output, String _clusterId, String _clusterToken) {
     
-        //PostMethod postFile = null;
-        //HttpClient httpclient = null;
-        
-        p("postDataHttps_new --------");
+        p("postDataHttps_new2 --------");
         p("_relayhost: '" + _relayHost);
         p("_relayport: '" + _relayPort);
         p("_clusterID: '" + _clusterId);
@@ -335,47 +310,59 @@ public boolean postDataHttps_new(InputStream data, String _relayHost, String _re
             }else{
                 _protocol = "http";
             }
-
-            //String _relayHost = "abc.alterante.com";
-            //String _relayPort = "443";
         
             String responseUrl = String.format("%s://%s:%s/clusters/%s/share?access-token=%s", 
                                                _protocol, _relayHost, _relayPort, _clusterId, _clusterToken); 
             
             p("ResponseURL = " + responseUrl);
             
-            PostMethod postFile = new PostMethod(responseUrl);                
-
-            postFile.setRequestEntity(new InputStreamRequestEntity(data));
-            postFile.setRequestHeader("Content-type", "application/octet-stream");
-
-            //StringRequestEntity requestEntity = new StringRequestEntity("*", "text", "UTF-8");
-            //postFile.setRequestEntity(requestEntity);
+            final HttpPost httpPost = new HttpPost(responseUrl);
             
-            HttpClient httpclient = new HttpClient();
-            
-            int statusCode = httpclient.executeMethod(postFile);
+            // Use InputStreamEntity for raw binary data, not multipart
+            InputStreamEntity entity = new InputStreamEntity(data, ContentType.APPLICATION_OCTET_STREAM);
+            httpPost.setEntity(entity);
+            httpPost.setHeader("Content-type", "application/octet-stream");
 
-            // Get the contents of the response
-            String res = postFile.getResponseBodyAsString();
-                       
-            p("code = " + statusCode);
-            p("res = " + res);
-                                                
-            if (statusCode == 200) {
-                //all ok , write output 
-                output.write(res);                
-            }
-            postFile.releaseConnection();                
-            
-            } catch (Exception e) {
+            // Use default client (SSL trust issues will need to be handled at system level)
+            CloseableHttpClient client = HttpClients.createDefault();
+
+            try (CloseableHttpResponse response = client.execute(httpPost)) {
+                final int statusCode = response.getCode();
+                
+                p("code = " + statusCode);
+                
+                // Read response body
+                HttpEntity responseEntity = response.getEntity();
+                if (responseEntity != null) {
+                    String responseBody = EntityUtils.toString(responseEntity);
+                    p("res = " + responseBody);
+                    
+                    // Write response to output
+                    if (statusCode == HttpStatus.SC_OK) {
+                        output.write(responseBody);
+                        return true;
+                    }
+                }
+                return false;
+                
+            } catch (IOException e) {
                 e.printStackTrace();
                 return false;
             } finally {
-                p("FINALLY...");
-                return true;                
-            }            
+                try {
+                    client.close();
+                } catch (IOException e) {
+                    // Ignore close errors
+                }
+            }
+            
+        } catch (Exception e) {
+            e.printStackTrace();
+            return false;
+        } finally {
+            p("FINALLY...");
         }
+    }
 
 public static boolean postDataHttps(InputStream data, URL endpoint, Writer output) throws Exception {
     HttpsURLConnection urlc = null;
@@ -484,6 +471,11 @@ public static boolean postDataHttps(InputStream data, URL endpoint, Writer outpu
         }
         p("[2]");
         bAllOK = true;
+        if (bAllOK) {
+            return true;
+        } else {
+            return false;
+        }
 
     } catch (IOException e) {
         pw("Connection error (is server running at " + endpoint);
@@ -495,11 +487,6 @@ public static boolean postDataHttps(InputStream data, URL endpoint, Writer outpu
             urlc.disconnect();
         } else {
             p("[3b]");
-        }
-        if (bAllOK) {
-            return true;
-        } else {
-            return false;
         }
             
     }

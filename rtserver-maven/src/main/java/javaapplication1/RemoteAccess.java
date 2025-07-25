@@ -9,10 +9,16 @@ import java.util.Calendar;
 import java.util.Date;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import org.apache.commons.httpclient.Header;
-import org.apache.commons.httpclient.HttpClient;
-import org.apache.commons.httpclient.MultiThreadedHttpConnectionManager;
-import org.apache.commons.httpclient.methods.GetMethod;
+import org.apache.hc.client5.http.classic.methods.HttpGet;
+import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
+import org.apache.hc.client5.http.impl.classic.CloseableHttpResponse;
+import org.apache.hc.client5.http.impl.classic.HttpClients;
+import org.apache.hc.client5.http.config.RequestConfig;
+import org.apache.hc.core5.http.Header;
+import org.apache.hc.core5.http.HttpEntity;
+import org.apache.hc.core5.http.io.entity.EntityUtils;
+import org.apache.hc.core5.util.Timeout;
+import org.apache.hc.core5.http.ParseException;
 
 
 public class RemoteAccess {
@@ -94,64 +100,80 @@ public class RemoteAccess {
         try {
 
             p("------------------------doGet------------");
-            MultiThreadedHttpConnectionManager cm = null;
-            cm = new MultiThreadedHttpConnectionManager();
-
+            
             int connectionTimeout = 30000;
             p("---- set connectionTimeout: " + connectionTimeout);
-            cm.getParams().setConnectionTimeout(connectionTimeout);
 
             int socketTimeout = 180000;
             p("---- set socketTimeout: " + socketTimeout);
-            cm.getParams().setSoTimeout(socketTimeout);
+
+            // Configure timeouts
+            RequestConfig requestConfig = RequestConfig.custom()
+                .setConnectionRequestTimeout(Timeout.ofMilliseconds(connectionTimeout))
+                .setResponseTimeout(Timeout.ofMilliseconds(socketTimeout))
+                .build();
 
             String fileUrl = bridgeAddress + _function + "?cluster-id=" + clusterid ;
             if(!_param.isEmpty())
                 fileUrl = fileUrl + "&"+ _param;
-            GetMethod getFile = new GetMethod(fileUrl);
             
-            HttpClient httpclient = new HttpClient(cm);
+            HttpGet httpGet = new HttpGet(fileUrl);
+            httpGet.setConfig(requestConfig);
             
             if(uuid != null){
-                getFile.setRequestHeader("Cookie", "uuid=" + uuid);
+                httpGet.setHeader("Cookie", "uuid=" + uuid);
             }
-            int r = httpclient.executeMethod(getFile);                      
             
-            Object resp;
-            if(string)
-                resp = getFile.getResponseBodyAsString();
-            else
-                resp = getFile.getResponseBody();
-            
-            if(getFile.getResponseHeader("Set-Cookie") != null){
+            try (CloseableHttpClient httpclient = HttpClients.createDefault();
+                 CloseableHttpResponse response = httpclient.execute(httpGet)) {
                 
-                Header[] headers = getFile.getResponseHeaders("Set-Cookie");
-                for (Header header : headers) {
-                    if(header.getValue().startsWith("uuid")){
-                        String cookie = header.getValue();
-                        setUuid(cookie.substring(5, 41));
+                int statusCode = response.getCode();
+                
+                Object resp = null;
+                HttpEntity entity = response.getEntity();
+                
+                if (entity != null) {
+                    try {
+                        if(string) {
+                            resp = EntityUtils.toString(entity);
+                        } else {
+                            resp = EntityUtils.toByteArray(entity);
+                        }
+                    } catch (ParseException e) {
+                        p("ParseException while reading response: " + e.getMessage());
+                        return null;
                     }
                 }
                 
-            }
-            
-            if (r == 200) {
-                return resp;
-            } else {
-                if(string){
-                    
-                    String error = UNKNOWN;
-                    if (r == 401) {
-                        error = UNAUTHORIZED;
+                // Handle Set-Cookie headers
+                Header[] setCookieHeaders = response.getHeaders("Set-Cookie");
+                if (setCookieHeaders != null && setCookieHeaders.length > 0) {
+                    for (Header header : setCookieHeaders) {
+                        if(header.getValue().startsWith("uuid")){
+                            String cookie = header.getValue();
+                            setUuid(cookie.substring(5, 41));
+                        }
                     }
-                    if (r > 500) {
-                        error = DISCONNECTED;
+                }
+                
+                if (statusCode == 200) {
+                    return resp;
+                } else {
+                    if(string){
+                        String error = UNKNOWN;
+                        if (statusCode == 401) {
+                            error = UNAUTHORIZED;
+                        }
+                        if (statusCode > 500) {
+                            error = DISCONNECTED;
+                        }
+                        return error;
+                    } else {
+                        return null;
                     }
-                    return error;
-                }else{
-                    return null;
                 }
             }
+            
         } catch (IOException e) {
             return null;
         }

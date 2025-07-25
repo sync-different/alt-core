@@ -52,21 +52,21 @@ if [ ! -f "$UBER_JAR_NAME" ]; then
    -Dpackaging=jar \
    -DgeneratePom=true
 
-  mvn install:install-file \
-   -Dfile=./repo/apache-cassandra-thrift-1.2.0.jar \
-   -DgroupId=com.alterante.cass \
-   -DartifactId=thrift \
-   -Dversion=1.2.0 \
-   -Dpackaging=jar \
-   -DgeneratePom=true
+#  mvn install:install-file \
+#   -Dfile=./repo/apache-cassandra-thrift-1.2.0.jar \
+#   -DgroupId=com.alterante.cass \
+#   -DartifactId=thrift \
+#   -Dversion=1.2.0 \
+#   -Dpackaging=jar \
+#   -DgeneratePom=true
 
-  mvn install:install-file \
-   -Dfile=./repo/libthrift-0.7.0.jar \
-   -DgroupId=com.alterante.cass \
-   -DartifactId=libthrift \
-   -Dversion=0.7.0 \
-   -Dpackaging=jar \
-   -DgeneratePom=true
+#  mvn install:install-file \
+#   -Dfile=./repo/libthrift-0.7.0.jar \
+#   -DgroupId=com.alterante.cass \
+#   -DartifactId=libthrift \
+#   -Dversion=0.7.0 \
+#   -Dpackaging=jar \
+#   -DgeneratePom=true
 
   mvn install:install-file \
    -Dfile=./repo/mapdb-1.0.9.jar \
@@ -100,13 +100,13 @@ if [ ! -f "$UBER_JAR_NAME" ]; then
    -Dpackaging=jar \
    -DgeneratePom=true
 
-  mvn install:install-file \
-   -Dfile=./repo/commons-codec-1.8.jar \
-   -DgroupId=com.alterante.cass \
-   -DartifactId=commons-codec \
-   -Dversion=1.8 \
-   -Dpackaging=jar \
-   -DgeneratePom=true
+  #mvn install:install-file \
+  # -Dfile=./repo/commons-codec-1.8.jar \
+  # -DgroupId=com.alterante.cass \
+  # -DartifactId=commons-codec \
+  # -Dversion=1.8 \
+  # -Dpackaging=jar \
+  # -DgeneratePom=true
 
  mvn install:install-file \
    -Dfile=./repo/slf4j-log4j12-1.5.8.jar \
