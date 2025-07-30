@@ -72,7 +72,7 @@ alt-core
 - A modern web browser (to run the web app)
 
 ## Steps to build alt-core (maven)
-run the script ``build_all.sh`` in the root project folder
+run the script ``build-all.sh`` in the root project folder
 ```
 $ cd alt-core
 $ ./build-all.sh
