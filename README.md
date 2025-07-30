@@ -75,7 +75,7 @@ alt-core
 run the script ``build_all.sh`` in the root project folder
 ```
 $ cd alt-core
-$ ./build_all.sh
+$ ./build-all.sh
 ```
 
 ## Steps to run alt-core
