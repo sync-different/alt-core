@@ -172,7 +172,7 @@ public class DockerService implements Runnable {
         Ports ports= new Ports();
         ports.bind(port, Ports.Binding.bindPort(8080));
         // Create container
-        CreateContainerResponse container = dockerClient.createContainerCmd("localai/localai:latest")
+        CreateContainerResponse container = dockerClient.createContainerCmd("localai/localai:v3.1.1")
                 .withCmd("sleep","500000")
                 .withExposedPorts(port)
                 .withHostConfig(HostConfig.newHostConfig().withPortBindings(ports).withAutoRemove(true))
@@ -185,7 +185,9 @@ public class DockerService implements Runnable {
 
         // Exec shell command inside the container
         //String[] command = {"bash", "-c", "apt update &&  apt install -y ffmpeg &&  apt -y install llvm &&  apt -y install curl && cd / && curl https://localai.io/install.sh | sh && local-ai models install whisper-base &&  local-ai run whisper-base"};
-        String[] command = {"bash", "-c", "apt update && apt -y install curl && cd / && curl https://localai.io/install.sh | sh"};
+        //String[] command = {"bash", "-c", "apt update && apt -y install curl && cd / && curl https://localai.io/install.sh | sh"};
+        //String[] command = {"bash", "-c", "apt update && apt -y install curl && apt -y install llvm && curl https://localai.io/install.sh | sh"};
+        String[] command = {"bash", "-c", "apt update | sh"};
         String execId = dockerClient.execCreateCmd(containerId)
                 .withAttachStdout(true)
                 .withAttachStderr(true)
