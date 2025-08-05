@@ -80,7 +80,7 @@ $ ./build-all.sh
 
 ## Steps to run alt-core
 
-### Step 1 - Root Path
+### Step 1 - Set Root Path
 
 1. set the root path
 
@@ -89,6 +89,7 @@ full path required - e.g.
 ```
 root=/Users/ale/Development/GitHub/alt-core/web
 ```
+### Step 2 - Run the first time setup script
 
 2. run the first time setup script
 
@@ -96,10 +97,14 @@ root=/Users/ale/Development/GitHub/alt-core/web
 $ ./setup.sh
 ```
 
+### Step 3 - Launch Server
+
 3. launch the server on a terminal
 ```
 $ ./run.sh
 ```
+
+### Step 4 - Run the Setup Wizard
 
 4. open browser and run the setup wizard to set admin password, scan folders, etc...
 ```
@@ -118,6 +123,8 @@ $ open http://localhost:8081/cass/index.htm
 4.6 page 5 - Email configuration - Email indexing settings. Keep defaults. Click next.
 
 
+### Step 5 - Login to App
+
 5. open browser and login with your admin credentials
 ```
 $ open http://localhost:8081/cass/uiv3/indexv2.htm
@@ -125,6 +132,8 @@ $ open http://localhost:8081/cass/uiv3/indexv2.htm
 note: default login credentials ``user:admin`` ``password:valid``
 
 setup wizard (step 4) will allow you to set your own admin password.
+
+### Step 6 - Wait and enjoy
 
 6. After few seconds, files detected in your scan folders (step 4.3) will start to appear.
 
