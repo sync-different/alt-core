@@ -110,7 +110,8 @@ $ open http://localhost:8081/cass/uiv3/indexv2.htm
 ```
 
 note: default login credentials ``user:admin`` ``password:valid``
-setup wizard will allow you to set your own admin password.
+
+setup wizard (step 4) will allow you to set your own admin password.
 
 ## License
 Distributed under the AGPL v3 License. See ``LICENSE`` file for more information.
