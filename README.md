@@ -108,13 +108,17 @@ $ cd scrubber
 $ java -cp target/my-app-1.0-SNAPSHOT.jar com.mycompany.app.App
 ```
 
-5. open the web app on browser
+5. open browser and run the setup wizard
+```
+$ open http://localhost:8081/cass/index.htm
+```
+
+6. open browser and launch the web app
 ```
 $ open http://localhost:8081/cass/uiv3/indexv2.htm
 ```
 
-6. login credentials ``user:admin`` ``password:valid``
-
+default login credentials ``user:admin`` ``password:valid``
 after login, change your password in Settings!
 
 ## License
