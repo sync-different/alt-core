@@ -104,11 +104,17 @@ $ ./run.sh
 $ open http://localhost:8081/cass/index.htm
 ```
 4.1 choose Advanced Setup, click next
+
 4.2 page 1 - Network - set computer name, admin password, remote access, etc. Click next.
+
 4.3 page 2 - Scan Files Folders - set the folders to scan for files for Drive #1.  Click next.
+
 4.4 page 3 - Backup & Sync - Specify how many copies of files for backups. Keep default. Click next.
+
 4.5 page 4 - File Types - Specify the file types you wish to scan/index or keep defaults.  Click next.
+
 4.6 page 5 - Email configuration - Email indexing settings. Keep defaults. Click next.
+
 
 5. open browser and login with your admin credentials
 ```
