@@ -103,15 +103,22 @@ $ ./run.sh
 ```
 $ open http://localhost:8081/cass/index.htm
 ```
+4.1 choose Advanced Setup, click next
+4.2 page 1 - Network - set computer name, admin password, remote access, etc. Click next.
+4.3 page 2 - Scan Files Folders - set the folders to scan for files for Drive #1.  Click next.
+4.4 page 3 - Backup & Sync - Specify how many copies of files for backups. Keep default. Click next.
+4.5 page 4 - File Types - Specify the file types you wish to scan/index or keep defaults.  Click next.
+4.6 page 5 - Email configuration - Email indexing settings. Keep defaults. Click next.
 
-5. open browser and launch the web app
+5. open browser and login with your admin credentials
 ```
 $ open http://localhost:8081/cass/uiv3/indexv2.htm
 ```
-
 note: default login credentials ``user:admin`` ``password:valid``
 
 setup wizard (step 4) will allow you to set your own admin password.
+
+6. After few seconds, files detected in your scan folders (step 4.3) will start to appear.
 
 ## License
 Distributed under the AGPL v3 License. See ``LICENSE`` file for more information.
