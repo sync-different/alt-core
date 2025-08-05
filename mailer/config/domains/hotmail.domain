@@ -1,0 +1,5 @@
+domains=hotmail.com,hotmail.co.uk,hotmail.co.jp,hotmail.com.br,hotmail.de,hotmail.fr,hotmail.it,hotmail.es,live.com,live.co.uk,live.co.jp,live.de,live.fr,live.it,live.jp,msn.com,outlook.com
+pop3host=pop3.live.com
+pop3port=995
+smtphost=smtp.live.com
+smtpport=587

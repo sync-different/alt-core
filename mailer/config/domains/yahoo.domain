@@ -1,0 +1,5 @@
+domains=yahoo.com,yahoo.de,yahoo.it,yahoo.fr,yahoo.es,yahoo.co.uk,yahoo.co.nz,yahoo.com.au,yahoo.com.ar,yahoo.com.br,yahoo.com.mx,ymail.com,rocketmail.com
+pop3host=pop.mail.yahoo.com
+pop3port=993
+smtphost=smtp.mail.yahoo.com
+smtpport=465

@@ -1,0 +1,5 @@
+domains=gmail.com,googlemail.com
+pop3host=pop.gmail.com
+pop3port=995
+smtphost=smtp.gmail.com
+smtpport=587
