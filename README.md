@@ -80,6 +80,8 @@ $ ./build-all.sh
 
 ## Steps to run alt-core
 
+#Step 1 - Root Path
+
 1. set the root path
 
 set web ``root`` path in ``scrubber/config/www-server.properties``
