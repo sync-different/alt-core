@@ -88,38 +88,29 @@ full path required - e.g.
 root=/Users/ale/Development/GitHub/alt-core/web
 ```
 
-2. set file scan directory paths 
-
-edit the file ``scrubber/config/scan1.txt``
-full paths required, URL encoded format 
-e.g. to specify path ``/Volumes/Macintosh/Users/alejandro/alterante/``
-```
-scandir=%2FVolumes%2FMacintosh%20HD%2FUsers%2Falejandro%2Falterante%2F;
-```
-3. run the first time setup script
+2. run the first time setup script
 
 ```
 $ ./setup.sh
 ```
 
-4. launch the server
+3. launch the server on a terminal
 ```
-$ cd scrubber
-$ java -cp target/my-app-1.0-SNAPSHOT.jar com.mycompany.app.App
+$ ./run.sh
 ```
 
-5. open browser and run the setup wizard
+4. open browser and run the setup wizard to set admin password, scan folders, etc...
 ```
 $ open http://localhost:8081/cass/index.htm
 ```
 
-6. open browser and launch the web app
+5. open browser and launch the web app
 ```
 $ open http://localhost:8081/cass/uiv3/indexv2.htm
 ```
 
-default login credentials ``user:admin`` ``password:valid``
-after login, change your password in Settings!
+note: default login credentials ``user:admin`` ``password:valid``
+setup wizard will allow you to set your own admin password.
 
 ## License
 Distributed under the AGPL v3 License. See ``LICENSE`` file for more information.
