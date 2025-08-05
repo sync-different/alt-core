@@ -82,8 +82,6 @@ $ ./build-all.sh
 
 ### Step 1 - Set Root Path
 
-1. set the root path
-
 set web ``root`` path in ``scrubber/config/www-server.properties``
 full path required - e.g.
 ```
@@ -91,22 +89,19 @@ root=/Users/ale/Development/GitHub/alt-core/web
 ```
 ### Step 2 - Run the first time setup script
 
-2. run the first time setup script
-
 ```
 $ ./setup.sh
 ```
 
-### Step 3 - Launch Server
+### Step 3 - Launch Server on Terminal
 
-3. launch the server on a terminal
 ```
 $ ./run.sh
 ```
 
 ### Step 4 - Run the Setup Wizard
+open browser and run the setup wizard to set admin password, scan folders, etc...
 
-4. open browser and run the setup wizard to set admin password, scan folders, etc...
 ```
 $ open http://localhost:8081/cass/index.htm
 ```
@@ -124,8 +119,7 @@ $ open http://localhost:8081/cass/index.htm
 
 
 ### Step 5 - Login to App
-
-5. open browser and login with your admin credentials
+open browser and login with your admin credentials
 ```
 $ open http://localhost:8081/cass/uiv3/indexv2.htm
 ```
@@ -134,8 +128,7 @@ note: default login credentials ``user:admin`` ``password:valid``
 setup wizard (step 4) will allow you to set your own admin password.
 
 ### Step 6 - Wait and enjoy
-
-6. After few seconds, files detected in your scan folders (step 4.3) will start to appear.
+After few seconds, files detected in your scan folders (step 4.3) will start to appear.
 
 ## License
 Distributed under the AGPL v3 License. See ``LICENSE`` file for more information.
