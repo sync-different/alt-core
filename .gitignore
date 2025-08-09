@@ -62,3 +62,4 @@ web/.DS_Store
 web/temp_post.txt
 /alt-common/target
 web/cass/query.fn_*.tmp
+/binary-extractor/target
