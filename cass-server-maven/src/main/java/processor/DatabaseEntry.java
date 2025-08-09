@@ -259,7 +259,8 @@ public class DatabaseEntry implements Serializable {
                        dbe_img_thumbnail = null;
                        dbe_action = "EXC";
                    } catch (javax.imageio.IIOException ex) {                    
-                        pw ("ssss");
+                        pw ("WARNING javaX imageIO exception");
+                        ex.printStackTrace();
                    } catch (IOException ex) {
                        pw("exception --> IOException");
                        ex.printStackTrace();
