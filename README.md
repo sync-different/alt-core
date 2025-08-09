@@ -131,7 +131,7 @@ setup wizard (step 4) will allow you to set your own admin password.
 After few seconds, files detected in your scan folders (step 4.3) will start to appear.
 
 ### Steps 7 (Optional) - Set up a reverse proxy.
-If you want to enable remote access to your server via DNS, you can set up a reverse proxy.
+If you want to enable remote access to your server via DNS-resolvable hostname, you can set up a reverse proxy or tunnel.
 To set up a Tunnel using Cloudflared, use the following guide <a href="https://github.com/sync-different/alt-core-docs/blob/main/HOWTO_Clouflared.md">here</a> to set up a tunnel.
 
 ## License
