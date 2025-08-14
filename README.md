@@ -82,16 +82,23 @@ $ ./build-all.sh
 
 ### Step 1 - Set Root Path
 
-set web ``root`` path in ``scrubber/config/www-server.properties``
+run script
+```
+$ ./setweb.sh
+```
+ths will set ``root`` property path in ``scrubber/config/www-server.properties``
+
 full path required - e.g.
 ```
 root=/Users/ale/Development/GitHub/alt-core/web
 ```
+
 ### Step 2 - Run the first time setup script
 
 ```
 $ ./setup.sh
 ```
+this will create required working directories for data, etc..
 
 ### Step 3 - Launch Server on Terminal
 
@@ -103,7 +110,7 @@ $ ./run.sh
 open browser and run the setup wizard to set admin password, scan folders, etc...
 
 ```
-$ open http://localhost:8081/cass/index.htm
+$ open http://localhost:8081/cass/setup.htm?spage=1
 ```
 4.1 choose Advanced Setup, click next
 
@@ -122,6 +129,7 @@ $ open http://localhost:8081/cass/index.htm
 open browser and login with your admin credentials
 ```
 $ open http://localhost:8081/cass/uiv3/indexv2.htm
+
 ```
 note: default login credentials ``user:admin`` ``password:valid``
 
