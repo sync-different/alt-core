@@ -2649,7 +2649,7 @@ class Worker extends WebServer implements HttpConstants, Runnable {
                             File f = new File (root + File.separator + "cass/index_static.htm");
                             String sBuffer = loadFileStr(f);
                             String res;
-                            String sState = GetConfig("state", "config/www-setup.properties");
+                            String sState = GetConfig("state", "../rtserver/config/www-setup.properties");
                             if (sState.equals("NEW")) {
                                 res = "<FRAME SRC=\"setup.htm?spage=7\" id='MAIN' NAME=MAIN1 FRAMESPACING=\"0\" BORDER=\"0\" FRAMEBORDER=\"0\">";
                             }else{
@@ -2668,7 +2668,7 @@ class Worker extends WebServer implements HttpConstants, Runnable {
                             outFile.write(kk);
                             outFile.close();
                         } else {
-                            String sState = GetConfig("state", "config/www-setup.properties");
+                            String sState = GetConfig("state", "../rtserver/config/www-setup.properties");
                             String sIndex = "cass/redir.htm";
                             String res;
 
@@ -4454,7 +4454,7 @@ class Worker extends WebServer implements HttpConstants, Runnable {
 
                     if (fname.contains("setup.htm")) {
 
-                        String sState = GetConfig("state", "config/www-setup.properties");
+                        String sState = GetConfig("state", "../rtserver/config/www-setup.properties");
                         boolean bServeStatic = true;
                         boolean isAdmin = false;
                         if (bUserAuthenticated){
@@ -5408,7 +5408,7 @@ class Worker extends WebServer implements HttpConstants, Runnable {
                                     case 6: {
                                         //page 6
 
-                                        UpdateConfig("state", "SCAN", "config/www-setup.properties");
+                                        UpdateConfig("state", "SCAN", "../rtserver/config/www-setup.properties");
 
 
                                     } break;
@@ -9384,7 +9384,7 @@ class Worker extends WebServer implements HttpConstants, Runnable {
             Properties props = new Properties();
 
             File f = new File
-                    ("config/" + "www-setup.properties");
+                    ("../rtserver/config/" + "www-setup.properties");
             if (f.exists()) {
                 InputStream is =new BufferedInputStream(new
                         FileInputStream(f));
@@ -10143,7 +10143,7 @@ class Worker extends WebServer implements HttpConstants, Runnable {
         String sState = "";
         int nres = load_setup_props();
         if (nres > 0) {
-            String rs = GetConfig("state", "config/www-setup.properties"); //props.getProperty("state");
+            String rs = GetConfig("state", "../rtserver/config/www-setup.properties"); //props.getProperty("state");
             if (rs != null) {
                 sState = rs;
             }
@@ -10499,7 +10499,7 @@ class Worker extends WebServer implements HttpConstants, Runnable {
         String formlogin = "";
         String adminmenu = "";
 
-        String sState = GetConfig("state", "config/www-setup.properties");
+        String sState = GetConfig("state", "../rtserver/config/www-setup.properties");
         if (!sState.equals("NEW")) {
             menustaticpre = menustaticpre +
                     "<li class=\"\"><a href=\"./main_bs.htm\" target=\"MAIN1\">Home</a></li>\n" +
