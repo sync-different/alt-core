@@ -15,3 +15,5 @@ mkdir scrubber/logs
 mkdir web/cass/pic
 mkdir rtserver/incoming
 
+cp update.last ../
+
