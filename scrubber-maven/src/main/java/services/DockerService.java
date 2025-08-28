@@ -120,7 +120,7 @@ public class DockerService implements Runnable {
     private void saveContainerId(String containerId) throws IOException {
         // ... inside your method
         Properties props = new Properties();
-        File f = new File(".."+File.separator+"rtserver"+File.separator+"config"+File.separator+"www-server.properties");
+        File f = new File(".."+File.separator+"scrubber"+File.separator+"config"+File.separator+"www-docker.properties");
         if (f.exists()) {
             try (InputStream is = new BufferedInputStream(new FileInputStream(f))) {
                 props.load(is);
@@ -132,9 +132,41 @@ public class DockerService implements Runnable {
         }
     }
 
+    private String getModelName() throws IOException {
+        Properties props = new Properties();
+        File f = new File (".." + File.separator + "scrubber" + File.separator + "config" + File.separator + "www-docker.properties");
+        String dockerLocalAIModelName = null;
+        if (f.exists()) {
+            InputStream is = new BufferedInputStream(new FileInputStream(f));
+            props.load(is);
+            is.close();
+            String prop = props.getProperty("docker.localai.modelname");
+            if (prop != null) {
+                dockerLocalAIModelName = prop;
+            }
+        }
+        return dockerLocalAIModelName;
+    }
+    
+    private String getImageName() throws IOException {
+        Properties props = new Properties();
+        File f = new File (".." + File.separator + "scrubber" + File.separator + "config" + File.separator + "www-docker.properties");
+        String dockerLocalAIImageName = null;
+        if (f.exists()) {
+            InputStream is = new BufferedInputStream(new FileInputStream(f));
+            props.load(is);
+            is.close();
+            String prop = props.getProperty("docker.localai.imagename");
+            if (prop != null) {
+                dockerLocalAIImageName = prop;
+            }
+        }
+        return dockerLocalAIImageName;
+    }
+    
     private String checkIfContainerExists() throws Exception {
         Properties props = new Properties();
-        File f = new File (".." + File.separator + "rtserver" + File.separator + "config" + File.separator + "www-server.properties");
+        File f = new File (".." + File.separator + "scrubber" + File.separator + "config" + File.separator + "www-docker.properties");
         String dockerLocalAIContainerId = null;
         if (f.exists()) {
             InputStream is = new BufferedInputStream(new FileInputStream(f));
@@ -171,8 +203,13 @@ public class DockerService implements Runnable {
         ExposedPort port= ExposedPort.tcp(8080);
         Ports ports= new Ports();
         ports.bind(port, Ports.Binding.bindPort(8080));
+        String sImageName = getImageName();
+        if (sImageName == null || sImageName.isEmpty()) {
+            sImageName = "localai/localai:v3.1.1"; // Default image name if not specified
+        }
+        System.out.println("****  LocalAI Image : " + sImageName);
         // Create container
-        CreateContainerResponse container = dockerClient.createContainerCmd("localai/localai:v3.1.1")
+        CreateContainerResponse container = dockerClient.createContainerCmd(sImageName)
                 .withCmd("sleep","500000")
                 .withExposedPorts(port)
                 .withHostConfig(HostConfig.newHostConfig().withPortBindings(ports).withAutoRemove(true))
@@ -202,7 +239,12 @@ public class DockerService implements Runnable {
 
         System.out.println("LocalAI Docker Install Dependencies: " + outputStream.toString());
 
-        String[] command2 = {"bash", "-c", "/local-ai models install whisper-base"};
+        String sModelName = getModelName();
+        if (sModelName == null || sModelName.isEmpty()) {
+            sModelName = "whisper-base"; // Default model name if not specified
+        }
+        System.out.println("****  LocalAI Model : " + sModelName);
+        String[] command2 = {"bash", "-c", "/local-ai models install " + sModelName};
         String execId2 = dockerClient.execCreateCmd(containerId)
                 .withAttachStdout(true)
                 .withAttachStderr(true)
