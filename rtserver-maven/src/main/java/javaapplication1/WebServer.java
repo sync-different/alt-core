@@ -2644,7 +2644,7 @@ class Worker extends WebServer implements HttpConstants, Runnable {
 
                     }
 
-                    if (fname.contains("index.htm")){
+                    if (fname.contains("index.htm") && !fname.contains("index.html")){
                         if (bLegacyUI) {
                             File f = new File (root + File.separator + "cass/index_static.htm");
                             String sBuffer = loadFileStr(f);
@@ -4412,6 +4412,22 @@ class Worker extends WebServer implements HttpConstants, Runnable {
 
                                 MultiClusterManager.getInstance().saveUserAndPassword(sBoxUser,sBoxPassword);
 
+                                // Generate UUID for session
+                                String sessionUuid = sUUID;
+                                if(sessionUuid == null || sessionUuid.isEmpty()){
+                                    UUID mUUID = UUID.randomUUID();
+                                    sessionUuid = mUUID.toString();
+                                }
+
+                                // Store session in uuidmap
+                                int aessize = 128; // Default AES key size
+                                boolean aesencryptBool = (aesencrypt != null && aesencrypt.equals("true"));
+                                UserSession us = new UserSession(sBoxUser, sessionUuid, sKeyPassword, sIV, aesencryptBool, aessize);
+                                if(!cluster.isEmpty())
+                                    us.setRemoteCluster(cluster);
+                                uuidmap.put(sessionUuid, us);
+                                p("Stored session for user: " + sBoxUser + " with UUID: " + sessionUuid);
+
                                 if(bMobile){
                                     res+= isUserAdmin;
                                     Date utcDate=DateUtil.getUTCDate();
@@ -4420,6 +4436,8 @@ class Worker extends WebServer implements HttpConstants, Runnable {
                                     res = getNavbarMenu(true, sBoxUser, sBoxPassword, false, !cluster.isEmpty());
                                     Date utcDate=DateUtil.getUTCDate();
                                     chats.addMessage(utcDate.getTime(), "EVENT", sBoxUser, "{'#'play'#':false,'#'msg'#':'#'Logged In'#'}");
+                                    // Add UUID as hidden field for React app to extract
+                                    res+= "<input type='hidden' id='session-uuid' value='" + sessionUuid + "'/>";
                                     res+= "<script type='name/javascript'>startAjaxCallTags();</script>";
                                 }
                             } else{
@@ -8355,7 +8373,7 @@ class Worker extends WebServer implements HttpConstants, Runnable {
         int rCode = 0;
 
         rCode = HTTP_OK;
-        ps.print("HTTP/1.0 " + HTTP_OK+" OK");
+        ps.print("HTTP/1.0 " + HTTP_OK + " OK");
         ps.write(EOL);
         ret = true;
 
@@ -8376,7 +8394,7 @@ class Worker extends WebServer implements HttpConstants, Runnable {
     boolean printHeadersRedirect(File targ, PrintStream ps, String _uri, boolean bWindows,boolean bLinux, String sRemote, boolean bWindowsServer) throws IOException {
         int rCode = 0;
         rCode = HTTP_NO_CONTENT;
-        ps.print("HTTP/1.1 " + rCode + "No Content");
+        ps.print("HTTP/1.1 " + rCode + " No Content");
         ps.write(EOL);
 
         log("From " +s.getInetAddress().getHostAddress()+": GET " +
@@ -8584,7 +8602,7 @@ class Worker extends WebServer implements HttpConstants, Runnable {
         if(failMobile){
             //PARTIAL MODE
             rCode = HTTP_UNAUTHORIZED;
-            ps.print("HTTP/1.1 " + HTTP_UNAUTHORIZED+" Partial Content");
+            ps.print("HTTP/1.1 " + HTTP_UNAUTHORIZED + " Partial Content");
             ps.write(EOL);
             ret = true;
         }else{
@@ -8596,13 +8614,13 @@ class Worker extends WebServer implements HttpConstants, Runnable {
             }  else {
                 if (bFull) {
                     rCode = HTTP_OK;
-                    ps.print("HTTP/1.1 " + HTTP_OK +" OK");
+                    ps.print("HTTP/1.1 " + HTTP_OK + " OK");
                     ps.write(EOL);
                     ret = true;
                 } else {
                     //PARTIAL MODE
                     rCode = HTTP_PARTIAL;
-                    ps.print("HTTP/1.1 " + HTTP_PARTIAL+" Partial Content");
+                    ps.print("HTTP/1.1 " + HTTP_PARTIAL + " Partial Content");
                     ps.write(EOL);
                     ret = true;
                 }
@@ -8683,9 +8701,9 @@ class Worker extends WebServer implements HttpConstants, Runnable {
         }
         if (ret) {
             if (!targ.isDirectory()) {
-                ps.print("Last Modified: " + (new
-                        Date(targ.lastModified())));
-                ps.write(EOL);
+                // Comment out Last-Modified header to avoid HTTP parser issues
+                // ps.print("Last-Modified: " + (new Date(targ.lastModified())));
+                // ps.write(EOL);
                 String name2 = targ.getName().toLowerCase();
                 String name = name2;
                 if (name2.endsWith(".tmp") && name2.contains("_")) {
@@ -8750,11 +8768,14 @@ class Worker extends WebServer implements HttpConstants, Runnable {
             p("******************************");
             p("FIXING the access-control");
             p("******************************");
-            ps.print("Access-Control-Allow-Origin: https://web.alterante.com");
+            // Allow localhost for React dev server
+            ps.print("Access-Control-Allow-Origin: http://localhost:5173");
             ps.write(EOL);
             ps.print("Access-Control-Allow-Methods: POST, GET, PUT, OPTIONS, DELETE");
             ps.write(EOL);
             ps.print("Access-Control-Allow-Headers: Cache-Control, X-Requested-With, Content-Type");
+            ps.write(EOL);
+            ps.print("Access-Control-Allow-Credentials: true");
             ps.write(EOL);
 
         } else {
@@ -8835,7 +8856,7 @@ class Worker extends WebServer implements HttpConstants, Runnable {
         i = end;
 
         foundBody = false;
-        while (!foundBody && !foundBridge) {
+        while (!foundBody && !foundBridge && i < buf.length - 1) {
             if ((buf[i] == (byte)'\r') || (buf[i+1] == (byte)'\n')) {
                 end = i+2;
                 //p("Start = '" + start + "' End:" + end);
