@@ -1,0 +1,4 @@
+$$ffmpegexePath$$ -y -i $$inputPath$$ -sn -map 0:0 -map 0:1? -codec:v libx264 -vf scale=-2:320 -codec:a aac -ac 2 -f ssegment -segment_list $$outputm3u8FilePath$$ -segment_time 10 -segment_list_entry_prefix $$prefix$$ -crf 24 $$outputtsFile$$
+$$ffmpegexePath$$ -ss 00:00:01.00 -i $$inputPath$$ -vf 'scale=320:320:force_original_aspect_ratio=decrease' -vframes 1 $$thumbFile$$
+$$ffmpegexePath$$ -i $$inputPath$$ -vn -acodec copy $$outputPathAudio$$
+curl http://localhost:8080/v1/audio/transcriptions -H "Content-Type: multipart/form-data" -F file=$$inputPathAudio$$ -F model="whisper-base" > $$outputTextJson$$
