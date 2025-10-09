@@ -2,7 +2,7 @@
  * Chat Panel - Global chat room with real-time messaging
  */
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useSelector } from 'react-redux';
 import {
   Box,
@@ -29,9 +29,14 @@ export function ChatPanel() {
   const [loading, setLoading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const intervalRef = useRef<number | null>(null);
+  const loadingRef = useRef(false);
+  const abortControllerRef = useRef<AbortController | null>(null);
 
   // Check if user is admin (currently not available in auth state, defaulting to false)
   const isAdmin = false;
+
+  // Get username from auth state
+  const username = useSelector((state: RootState) => state.auth.username);
 
   // Get current file MD5 for context-aware chat
   const currentFileMD5 = useSelector((state: RootState) => selectCurrentFileMD5(state));
@@ -48,25 +53,74 @@ export function ChatPanel() {
   };
 
   // Load messages
-  const loadMessages = async () => {
+  const loadMessages = useCallback(async () => {
+    // Prevent concurrent loads
+    if (loadingRef.current) {
+      console.log('[ChatPanel] Already loading, skipping...');
+      return;
+    }
+
+    // Abort any previous request
+    if (abortControllerRef.current) {
+      console.log('[ChatPanel] Aborting previous request');
+      abortControllerRef.current.abort();
+    }
+
+    // Create new abort controller for this request
+    abortControllerRef.current = new AbortController();
+    const currentMD5 = currentFileMD5; // Capture current value
+
     try {
-      const lastMsgId = messages.length > 0
-        ? messages[messages.length - 1].msg_date
-        : 0;
+      loadingRef.current = true;
+
+      // Use functional update to get the latest messages state
+      let lastMsgId = 0;
+      setMessages(prev => {
+        lastMsgId = prev.length > 0 ? prev[prev.length - 1].msg_date : 0;
+        return prev; // Don't change state, just read it
+      });
+
+      console.log('[ChatPanel] Loading messages with MD5:', currentMD5 || 'NONE (global chat)', 'lastMsgId:', lastMsgId);
 
       // If currentFileMD5 is set, fetch comments for that file (COMMENT type)
       // Otherwise fetch global chat (CHAT type)
-      const newMessages = await pullMessages(currentFileMD5, lastMsgId);
+      const newMessages = await pullMessages(currentMD5, lastMsgId, undefined, abortControllerRef.current.signal);
+
+      console.log('[ChatPanel] Received messages:', newMessages.length, 'messages');
 
       // Filter messages based on context
-      // If viewing a file, show COMMENT messages
-      // If in global chat, show CHAT messages
-      const relevantMessages = newMessages.filter(msg =>
-        currentFileMD5 ? msg.msg_type === 'COMMENT' : msg.msg_type === 'CHAT'
-      );
+      // If viewing a file, show ONLY COMMENT messages (not CHAT or other types)
+      // If in global chat, show ONLY CHAT messages (not COMMENT or other types)
+      const relevantMessages = newMessages.filter(msg => {
+        const expectedType = currentMD5 ? 'COMMENT' : 'CHAT';
+        const isRelevant = msg.msg_type === expectedType;
+        if (!isRelevant) {
+          console.log('[ChatPanel] Filtering out message:', msg.msg_type, 'Expected:', expectedType, 'MD5:', currentMD5 || 'NONE');
+        }
+        return isRelevant;
+      });
+
+      console.log('[ChatPanel] Relevant messages after filtering:', relevantMessages.length);
 
       if (relevantMessages.length > 0) {
-        setMessages(prev => [...prev, ...relevantMessages]);
+        setMessages(prev => {
+          // Create a set of existing message timestamps for quick lookup
+          const existingTimestamps = new Set(prev.map(msg => msg.msg_date));
+
+          // Filter out any messages that already exist (deduplicate by timestamp)
+          const uniqueNewMessages = relevantMessages.filter(
+            msg => !existingTimestamps.has(msg.msg_date)
+          );
+
+          console.log('[ChatPanel] Unique new messages to add:', uniqueNewMessages.length);
+
+          // Only add truly new messages
+          if (uniqueNewMessages.length > 0) {
+            return [...prev, ...uniqueNewMessages];
+          }
+          return prev;
+        });
+
         scrollToBottom();
 
         // Play notification sound if not focused (future enhancement)
@@ -75,13 +129,24 @@ export function ChatPanel() {
         }
       }
     } catch (error) {
-      console.error('Failed to load messages:', error);
+      // Ignore abort/cancel errors from axios
+      if (error instanceof Error && (error.name === 'AbortError' || error.name === 'CanceledError')) {
+        console.log('[ChatPanel] Request aborted');
+      } else {
+        console.error('Failed to load messages:', error);
+      }
+    } finally {
+      loadingRef.current = false;
     }
-  };
+  }, [currentFileMD5]);
 
   // Send message
   const handleSend = async () => {
     if (!messageText.trim()) return;
+    if (!username) {
+      console.error('Cannot send message: username not available');
+      return;
+    }
 
     setLoading(true);
     try {
@@ -98,7 +163,7 @@ export function ChatPanel() {
         finalMessage = timestamp + messageText;
       }
 
-      await pushMessage(currentFileMD5, msgType, finalMessage);
+      await pushMessage(currentFileMD5, msgType, finalMessage, username);
       setMessageText('');
       // Reload messages to show the new one
       await loadMessages();
@@ -242,12 +307,24 @@ export function ChatPanel() {
   // Reset messages when file context changes
   useEffect(() => {
     // Clear messages when switching between global chat and file comments
+    console.log('[ChatPanel] File context changed, clearing messages. New MD5:', currentFileMD5 || 'NONE (global chat)');
     setMessages([]);
   }, [currentFileMD5]);
 
   // Start polling on mount and when file context changes
   useEffect(() => {
+    // Clear any existing interval first
+    if (intervalRef.current) {
+      console.log('[ChatPanel] Clearing old polling interval');
+      clearInterval(intervalRef.current);
+      intervalRef.current = null;
+    }
+
+    // Reset loading flag to allow new loads
+    loadingRef.current = false;
+
     // Initial load
+    console.log('[ChatPanel] Starting polling with MD5:', currentFileMD5 || 'NONE');
     loadMessages();
 
     // Poll every 30 seconds
@@ -257,10 +334,12 @@ export function ChatPanel() {
 
     return () => {
       if (intervalRef.current) {
+        console.log('[ChatPanel] Cleanup: clearing polling interval');
         clearInterval(intervalRef.current);
+        intervalRef.current = null;
       }
     };
-  }, [currentFileMD5]);
+  }, [currentFileMD5, loadMessages]);
 
   // Scroll to bottom when messages change
   useEffect(() => {

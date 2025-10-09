@@ -165,9 +165,13 @@ export function ImageViewer({
     const handleKeyDown = (e: KeyboardEvent) => {
       if (!open) return;
 
+      // Don't intercept keyboard events if user is typing in an input or textarea
+      const target = e.target as HTMLElement;
+      const isInputField = target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable;
+
       if (e.key === 'Escape') {
         onClose();
-      } else if (e.key === ' ') {
+      } else if (e.key === ' ' && !isInputField) {
         e.preventDefault();
         if (isSlideshow) {
           stopSlideshow();

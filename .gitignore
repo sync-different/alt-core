@@ -70,3 +70,4 @@ web/cass/gettags_m.fn_*.tmp
 web/cass/shares*.tmp
 web/cass/setup.htm_*.tmp
 /scrubber/tmp
+*.tmp

@@ -16,22 +16,28 @@ export interface ChatResponse {
  * @param md5 File hash (empty for global chat)
  * @param msgFrom Last message ID (0 for all)
  * @param multiclusterid Optional cluster ID
+ * @param signal Optional AbortSignal for cancellation
  */
 export const pullMessages = async (
   md5: string = '',
   msgFrom: number = 0,
-  multiclusterid?: string
+  multiclusterid?: string,
+  signal?: AbortSignal
 ): Promise<Message[]> => {
   const params: any = {
-    md5,
     msg_from: msgFrom,
   };
+
+  // Only send md5 parameter if it's not empty
+  if (md5) {
+    params.md5 = md5;
+  }
 
   if (multiclusterid) {
     params.multiclusterid = multiclusterid;
   }
 
-  const response = await api.get('/cass/chat_pull.fn', { params });
+  const response = await api.get('/cass/chat_pull.fn', { params, signal });
 
   // Backend returns object with 'messages' array or just array
   const messages = Array.isArray(response.data)
@@ -51,12 +57,14 @@ export const pullMessages = async (
  * @param md5 File hash (empty for global chat)
  * @param msgType Message type
  * @param msgBody Message body (will be base64 encoded)
+ * @param username Username of the sender
  * @param multiclusterid Optional cluster ID
  */
 export const pushMessage = async (
   md5: string = '',
   msgType: 'CHAT' | 'COMMENT' | 'LIKE' | 'EVENT' = 'CHAT',
   msgBody: string,
+  username: string,
   multiclusterid?: string
 ): Promise<void> => {
   // Base64 encode the message body
@@ -66,6 +74,7 @@ export const pushMessage = async (
     md5,
     msg_type: msgType,
     msg_body: encodedBody,
+    msg_user: username, // Add username parameter
     msg_from: Date.now(), // Current timestamp as message ID
   };
 
