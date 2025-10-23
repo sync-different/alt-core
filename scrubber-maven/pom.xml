@@ -58,6 +58,13 @@
             <artifactId>httpcore5</artifactId>
             <version>5.2.2</version>
         </dependency>
+
+        <dependency>
+            <groupId>commons-httpclient</groupId>
+            <artifactId>commons-httpclient</artifactId>
+            <version>3.1</version>
+        </dependency>
+
         <!-- https://mvnrepository.com/artifact/com.sun.pdfview/PDFRenderer -->
         <dependency>
             <groupId>com.sun.pdfview</groupId>

@@ -16,13 +16,34 @@
     <maven.compiler.target>17</maven.compiler.target>
     <maven.compiler.release>17</maven.compiler.release>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <netty.version>4.1.68.Final</netty.version>
   </properties>
 
   <dependencies>
+        <!-- Netty -->
+        <dependency>
+            <groupId>io.netty</groupId>
+            <artifactId>netty-all</artifactId>
+            <version>${netty.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.mapdb</groupId>
+            <artifactId>mapdb</artifactId>
+            <version>1.0.9</version>
+        </dependency>
+
+        <!-- Apache Cassandra Thrift Client -->
+        <dependency>
+            <groupId>org.apache.cassandra</groupId>
+            <artifactId>cassandra-thrift</artifactId>
+            <version>1.2.19</version>
+        </dependency>
+
       <dependency>
-          <groupId>com.alterante.utils</groupId>
-          <artifactId>alterante</artifactId>
-          <version>1.0.0</version>
+        <groupId>com.alterante.scrubber</groupId>
+        <artifactId>scrubber</artifactId>
+        <version>1.0.0</version>
       </dependency>
 
       <dependency>
@@ -32,136 +53,9 @@
       </dependency>
 
       <dependency>
-        <groupId>org.boris.win4j</groupId>
-        <artifactId>win4j</artifactId>
-        <version>0.4.5</version>
-      </dependency>
-
-      <dependency>
-        <groupId>com.alterante.cass</groupId>
-        <artifactId>cass-server</artifactId>
-        <version>1.0.0</version>
-      </dependency>
-
-      <dependency>
-        <groupId>com.alterante.cass</groupId>
-        <artifactId>netty</artifactId>
-        <version>4.1.68</version>
-      </dependency>
-
-
-      <dependency>
         <groupId>org.apache.thrift</groupId>
         <artifactId>libthrift</artifactId>
         <version>0.13.0</version>
-      </dependency>
-
-      <dependency>
-        <groupId>com.alterante.cass</groupId>
-        <artifactId>mapdb</artifactId>
-        <version>1.0.9</version>
-      </dependency>
-
-      <dependency>
-        <groupId>com.alterante.cass</groupId>
-        <artifactId>mail</artifactId>
-        <version>1.0.0</version>
-      </dependency>
-
-      <dependency>
-        <groupId>com.alterante.cass</groupId>
-        <artifactId>httpclient</artifactId>
-        <version>3.1</version>
-      </dependency>
-
-      <dependency>
-        <groupId>com.alterante.cass</groupId>
-        <artifactId>commons-logging</artifactId>
-        <version>1.1.3</version>
-      </dependency>
-
-      <dependency>
-        <groupId>commons-codec</groupId>
-        <artifactId>commons-codec</artifactId>
-        <version>1.15</version>
-      </dependency>
-
-      <dependency>
-        <groupId>com.alterante.cass</groupId>
-        <artifactId>sl4jlog</artifactId>
-        <version>1.5.8</version>
-      </dependency>
-
-      <dependency>
-        <groupId>com.alterante.cass</groupId>
-        <artifactId>dom4j</artifactId>
-        <version>1.6.1</version>
-      </dependency>
-
-      <dependency>
-        <groupId>com.alterante.cass</groupId>
-        <artifactId>httpcore</artifactId>
-        <version>5.3.1</version>
-      </dependency>
-
-      <dependency>
-        <groupId>com.alterante.cass</groupId>
-        <artifactId>jakarta</artifactId>
-        <version>2.0.1</version>
-      </dependency>
-
-      <dependency>
-        <groupId>com.alterante.cass</groupId>
-        <artifactId>jsonsmart</artifactId>
-        <version>1.2</version>
-      </dependency>
-
-      <dependency>
-        <groupId>com.alterante.cass</groupId>
-        <artifactId>mailer</artifactId>
-        <version>1.0.0</version>
-      </dependency>
-
-      <dependency>
-        <groupId>com.alterante.scrubber</groupId>
-        <artifactId>scrubber</artifactId>
-        <version>1.0.0</version>
-      </dependency>
-
-      <dependency>
-        <groupId>com.alterante.scrubber</groupId>
-        <artifactId>cloudbackup</artifactId>
-        <version>1.0.0</version>
-      </dependency>
-
-      <dependency>
-        <groupId>com.alterante.scrubber</groupId>
-        <artifactId>httpclient</artifactId>
-        <version>5.4.1</version>
-      </dependency>
-
-      <dependency>
-        <groupId>com.alterante.scrubber</groupId>
-        <artifactId>httpcoreh2</artifactId>
-        <version>5.3.1</version>
-      </dependency>
-
-      <dependency>
-        <groupId>com.alterante.scrubber</groupId>
-        <artifactId>jaudiotagger</artifactId>
-        <version>2.2.0</version>
-      </dependency>
-
-      <dependency>
-        <groupId>com.alterante.scrubber</groupId>
-        <artifactId>pdfrenderer</artifactId>
-        <version>0.9.1</version>
-      </dependency>
-
-      <dependency>
-        <groupId>com.alterante.scrubber</groupId>
-        <artifactId>thumbnailator</artifactId>
-        <version>0.4.5</version>
       </dependency>
 
       <dependency>
