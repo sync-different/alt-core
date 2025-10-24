@@ -1,12 +1,14 @@
 /**
  * File Download Service
- * Handles chunked file downloads with progress tracking
+ * Handles chunked file downloads with progress tracking and retry logic
  */
 
 import type { File } from '../types/models';
 import { buildUrl } from '../utils/urlHelper';
 
 const CHUNK_SIZE = 10 * 1024 * 1024; // 10MB
+const MAX_RETRIES = 3; // Maximum retry attempts per chunk
+const RETRY_DELAY = 1000; // Initial retry delay in ms (will increase exponentially)
 
 export interface DownloadProgress {
   percentage: number;
@@ -14,6 +16,10 @@ export interface DownloadProgress {
   totalBytes: number;
   speedKBps: number;
   estimatedTimeRemaining: number;
+  errorCount: number;
+  retryCount: number;
+  lastError?: string;
+  currentStatus?: string;
 }
 
 export interface DownloadOptions {
@@ -24,27 +30,74 @@ export interface DownloadOptions {
 }
 
 /**
- * Download a single chunk
+ * Sleep for a specified number of milliseconds
+ */
+function sleep(ms: number): Promise<void> {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+/**
+ * Download a single chunk with retry logic for 502 errors
  */
 async function downloadChunk(
   url: string,
   offset: number,
   chunkSize: number,
-  signal?: AbortSignal
+  chunkIndex: number,
+  signal?: AbortSignal,
+  onRetry?: (attempt: number, error: string) => void
 ): Promise<Blob> {
   const chunkUrl = `${url}&filechunk_size=${chunkSize}&filechunk_offset=${offset}`;
+  let lastError: Error | null = null;
 
-  const response = await fetch(chunkUrl, {
-    method: 'GET',
-    credentials: 'include',
-    signal,
-  });
+  for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+    try {
+      const response = await fetch(chunkUrl, {
+        method: 'GET',
+        credentials: 'include',
+        signal,
+      });
 
-  if (!response.ok) {
-    throw new Error(`Error downloading chunk. Status code: ${response.status}`);
+      if (!response.ok) {
+        // Check if it's a 502 error (Bad Gateway)
+        if (response.status === 502) {
+          lastError = new Error(`HTTP 502 Bad Gateway for chunk ${chunkIndex + 1}`);
+
+          // If we haven't exhausted retries, wait and retry
+          if (attempt < MAX_RETRIES) {
+            const delay = RETRY_DELAY * Math.pow(2, attempt); // Exponential backoff
+            onRetry?.(attempt + 1, `HTTP 502 - Retrying chunk ${chunkIndex + 1} in ${delay}ms...`);
+            await sleep(delay);
+            continue; // Retry
+          }
+        } else {
+          // For other errors, fail immediately
+          throw new Error(`Error downloading chunk ${chunkIndex + 1}. Status code: ${response.status}`);
+        }
+      } else {
+        // Success
+        return response.blob();
+      }
+    } catch (error) {
+      // Check if it was aborted
+      if (signal?.aborted) {
+        throw new Error('Download cancelled');
+      }
+
+      // Network error or other fetch error
+      lastError = error as Error;
+
+      if (attempt < MAX_RETRIES) {
+        const delay = RETRY_DELAY * Math.pow(2, attempt);
+        onRetry?.(attempt + 1, `Network error on chunk ${chunkIndex + 1} - Retrying in ${delay}ms...`);
+        await sleep(delay);
+        continue; // Retry
+      }
+    }
   }
 
-  return response.blob();
+  // If we get here, all retries failed
+  throw lastError || new Error(`Failed to download chunk ${chunkIndex + 1} after ${MAX_RETRIES} retries`);
 }
 
 /**
@@ -100,6 +153,9 @@ async function downloadFileDirect(
           totalBytes: event.total,
           speedKBps,
           estimatedTimeRemaining: estimatedTimeSec,
+          errorCount: 0,
+          retryCount: 0,
+          currentStatus: 'Downloading...',
         });
       }
     };
@@ -148,7 +204,7 @@ async function downloadFileDirect(
 }
 
 /**
- * Download file in chunks (for files >= 10MB)
+ * Download file in chunks (for files >= 10MB) with retry logic
  */
 async function downloadFileByChunks(
   file: File,
@@ -161,6 +217,8 @@ async function downloadFileByChunks(
   const totalChunks = Math.ceil(totalSize / CHUNK_SIZE);
   const downloadedChunks: Blob[] = [];
   let downloadedBytes = 0;
+  let totalErrors = 0;
+  let totalRetries = 0;
 
   try {
     // Try to use File System Access API if available
@@ -199,31 +257,73 @@ async function downloadFileByChunks(
       }
 
       const offset = i * CHUNK_SIZE;
-      const chunk = await downloadChunk(baseUrl, offset, CHUNK_SIZE, options.signal);
-      downloadedChunks.push(chunk);
-      downloadedBytes += chunk.size;
 
-      // Calculate progress
-      const elapsedTimeSec = (Date.now() - startTime) / 1000;
-      const speedKBps = (downloadedBytes / 1024) / elapsedTimeSec;
-      const remainingBytes = totalSize - downloadedBytes;
-      const estimatedTimeSec = remainingBytes / (speedKBps * 1024);
+      // Download chunk with retry logic
+      try {
+        const chunk = await downloadChunk(
+          baseUrl,
+          offset,
+          CHUNK_SIZE,
+          i,
+          options.signal,
+          (retryAttempt, errorMsg) => {
+            // Report retry attempt
+            totalErrors++;
+            totalRetries++;
 
-      const percentage = Math.min(100, Math.round((downloadedBytes / totalSize) * 100));
+            const elapsedTimeSec = (Date.now() - startTime) / 1000;
+            const speedKBps = downloadedBytes > 0 ? (downloadedBytes / 1024) / elapsedTimeSec : 0;
+            const remainingBytes = totalSize - downloadedBytes;
+            const estimatedTimeSec = speedKBps > 0 ? remainingBytes / (speedKBps * 1024) : 0;
+            const percentage = Math.min(100, Math.round((downloadedBytes / totalSize) * 100));
 
-      // Report progress with smooth animation
-      if (options.onProgress) {
-        options.onProgress({
-          percentage,
-          downloadedBytes,
-          totalBytes: totalSize,
-          speedKBps,
-          estimatedTimeRemaining: estimatedTimeSec,
-        });
+            if (options.onProgress) {
+              options.onProgress({
+                percentage,
+                downloadedBytes,
+                totalBytes: totalSize,
+                speedKBps,
+                estimatedTimeRemaining: estimatedTimeSec,
+                errorCount: totalErrors,
+                retryCount: totalRetries,
+                lastError: errorMsg,
+                currentStatus: `Retrying (attempt ${retryAttempt}/${MAX_RETRIES})...`,
+              });
+            }
+          }
+        );
+
+        downloadedChunks.push(chunk);
+        downloadedBytes += chunk.size;
+
+        // Calculate progress
+        const elapsedTimeSec = (Date.now() - startTime) / 1000;
+        const speedKBps = (downloadedBytes / 1024) / elapsedTimeSec;
+        const remainingBytes = totalSize - downloadedBytes;
+        const estimatedTimeSec = remainingBytes / (speedKBps * 1024);
+        const percentage = Math.min(100, Math.round((downloadedBytes / totalSize) * 100));
+
+        // Report progress with smooth animation
+        if (options.onProgress) {
+          options.onProgress({
+            percentage,
+            downloadedBytes,
+            totalBytes: totalSize,
+            speedKBps,
+            estimatedTimeRemaining: estimatedTimeSec,
+            errorCount: totalErrors,
+            retryCount: totalRetries,
+            currentStatus: `Downloading chunk ${i + 1}/${totalChunks}...`,
+          });
+        }
+
+        // Small delay for smooth progress animation
+        await new Promise(resolve => setTimeout(resolve, 20));
+      } catch (chunkError) {
+        // Chunk download failed after all retries
+        totalErrors++;
+        throw chunkError;
       }
-
-      // Small delay for smooth progress animation
-      await new Promise(resolve => setTimeout(resolve, 20));
     }
 
     // Combine all chunks into final blob

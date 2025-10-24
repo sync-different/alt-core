@@ -28,10 +28,11 @@ import {
   CalendarToday as CalendarIcon,
   LocalOffer as TagIcon,
 } from '@mui/icons-material';
-import { fetchSidebarStats, fetchTags } from '../../services/fileApi';
+import { fetchSidebarStats, fetchTags, fetchUserSessionInfo } from '../../services/fileApi';
 import { setStats } from '../../store/slices/sidebarSlice';
 import { setTags } from '../../store/slices/tagsSlice';
 import { setFilters } from '../../store/slices/filesSlice';
+import { setIsAdmin } from '../../store/slices/authSlice';
 import type { RootState } from '../../store/store';
 import type { AppDispatch } from '../../store/store';
 
@@ -83,9 +84,13 @@ export function LeftSidebar() {
       });
       dispatch(setStats(statsData));
 
-      // Fetch tags
-      const tagsData = await fetchTags();
+      // Fetch tags and user session info (includes isAdmin)
+      const [tagsData, sessionInfo] = await Promise.all([
+        fetchTags(),
+        fetchUserSessionInfo(),
+      ]);
       dispatch(setTags(tagsData));
+      dispatch(setIsAdmin(sessionInfo.isAdmin));
     } catch (error) {
       console.error('Failed to load sidebar data:', error);
     }

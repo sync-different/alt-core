@@ -15,6 +15,9 @@ export function useFileDownload() {
     totalBytes: 0,
     speedKBps: 0,
     estimatedTimeRemaining: 0,
+    errorCount: 0,
+    retryCount: 0,
+    currentStatus: '',
   });
   const [isComplete, setIsComplete] = useState(false);
   const [currentFile, setCurrentFile] = useState<File | null>(null);
@@ -31,6 +34,9 @@ export function useFileDownload() {
       totalBytes: file.file_size,
       speedKBps: 0,
       estimatedTimeRemaining: 0,
+      errorCount: 0,
+      retryCount: 0,
+      currentStatus: 'Starting download...',
     });
 
     // Create abort controller

@@ -220,6 +220,19 @@ export const fetchTags = async (multiclusterid?: string): Promise<Tag[]> => {
 };
 
 /**
+ * Fetch user session info including admin status
+ * Returns username and isAdmin flag from the backend
+ */
+export const fetchUserSessionInfo = async (): Promise<{ username: string; isAdmin: boolean }> => {
+  const response = await api.get('/cass/gettags_webapp.fn');
+
+  return {
+    username: response.data?.username || '',
+    isAdmin: response.data?.isAdmin === 'true' || response.data?.isAdmin === true,
+  };
+};
+
+/**
  * Add tags to files
  */
 export const addTags = async (fileIds: string[], tags: string[]): Promise<void> => {

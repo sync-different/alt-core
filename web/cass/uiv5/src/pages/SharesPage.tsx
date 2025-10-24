@@ -4,6 +4,7 @@
  */
 
 import { useState, useEffect, useCallback } from 'react';
+import { useSelector } from 'react-redux';
 import {
   Box,
   Typography,
@@ -28,8 +29,11 @@ import { Add as AddIcon, ContentCopy as CopyIcon } from '@mui/icons-material';
 import { getActiveShares, createShare, removeShare, getUsersAndEmails, getShareSettings, updateShare, checkRemoteAccess, getClusterId, type User } from '../services/shareService';
 import { fetchTags } from '../services/fileApi';
 import { AddUserModal } from '../components/modals/AddUserModal';
+import { selectIsAdmin } from '../store/slices/authSlice';
 
 export function SharesPage() {
+  // Check if user is admin
+  const isAdmin = useSelector(selectIsAdmin);
   const [sharesHtml, setSharesHtml] = useState<string>('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -338,6 +342,14 @@ export function SharesPage() {
 
           const onclickAttr = button.getAttribute('onclick');
           if (onclickAttr) {
+            // Block all button clicks if not admin
+            if (!isAdmin) {
+              e.preventDefault();
+              e.stopPropagation();
+              e.stopImmediatePropagation();
+              return;
+            }
+
             // Check for remove button
             const removeMatch = onclickAttr.match(/confirmremoveshare\('([^']+)','([^']+)'\)/);
             if (removeMatch) {
@@ -372,7 +384,7 @@ export function SharesPage() {
         };
       }
     }
-  }, [sharesHtml, handleRemoveShare, handleEditShare]);
+  }, [sharesHtml, isAdmin, handleRemoveShare, handleEditShare]);
 
   return (
     <Box sx={{ p: 3 }}>
@@ -380,14 +392,22 @@ export function SharesPage() {
         <Typography variant="h4">
           Active Shares
         </Typography>
-        <Button
-          variant="contained"
-          startIcon={<AddIcon />}
-          onClick={handleAddShareClick}
-        >
-          Add Share
-        </Button>
+        {isAdmin && (
+          <Button
+            variant="contained"
+            startIcon={<AddIcon />}
+            onClick={handleAddShareClick}
+          >
+            Add Share
+          </Button>
+        )}
       </Box>
+
+      {!isAdmin && (
+        <Alert severity="warning" sx={{ mb: 2 }}>
+          Admin access required to manage shares. Only administrators can view, create, edit, or remove shares.
+        </Alert>
+      )}
 
       {error && (
         <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError(null)}>
@@ -480,26 +500,29 @@ export function SharesPage() {
               // Button styling
               '& button, & a.btn, & input[type="button"]': {
                 padding: '6px 16px',
-                backgroundColor: '#004080',
+                backgroundColor: isAdmin ? '#004080' : '#9CA3AF',
                 color: 'white !important',
                 border: 'none',
                 borderRadius: '4px',
-                cursor: 'pointer',
+                cursor: isAdmin ? 'pointer' : 'not-allowed',
                 textDecoration: 'none',
                 display: 'inline-block',
                 fontSize: '14px',
                 fontFamily: 'inherit',
+                opacity: isAdmin ? 1 : 0.6,
                 '&:hover': {
-                  backgroundColor: '#003060',
+                  backgroundColor: isAdmin ? '#003060' : '#9CA3AF',
                 },
               },
               // Remove button styling (red)
               '& button[onclick*="confirmremoveshare"], & a[onclick*="confirmremoveshare"], & input[onclick*="confirmremoveshare"]': {
-                backgroundColor: '#c75450',
+                backgroundColor: isAdmin ? '#c75450' : '#9CA3AF',
                 position: 'relative',
                 paddingLeft: '36px',
+                opacity: isAdmin ? 1 : 0.6,
+                cursor: isAdmin ? 'pointer' : 'not-allowed',
                 '&:hover': {
-                  backgroundColor: '#b23c38',
+                  backgroundColor: isAdmin ? '#b23c38' : '#9CA3AF',
                 },
                 '&::before': {
                   content: '""',
