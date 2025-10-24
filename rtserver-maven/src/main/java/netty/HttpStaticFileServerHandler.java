@@ -44,6 +44,7 @@ import static io.netty.handler.codec.http.HttpVersion.*;
 import java.io.BufferedInputStream;
 import java.io.BufferedWriter;
 import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.FileInputStream;
 import java.io.FileWriter;
 import java.io.IOException;
@@ -168,10 +169,32 @@ public class HttpStaticFileServerHandler extends SimpleChannelInboundHandler<Ful
         }
         
         String uuid = map.get("uuid");
-        
+
+        // Parse chunk parameters for chunked downloads
+        long chunkSize = 0;
+        long chunkOffset = 0;
+        boolean isChunkedDownload = false;
+
+        if (map.containsKey("filechunk_size")) {
+            try {
+                chunkSize = Long.parseLong(map.get("filechunk_size"));
+                isChunkedDownload = true;
+            } catch (NumberFormatException e) {
+                pw("Invalid filechunk_size parameter: " + map.get("filechunk_size"));
+            }
+        }
+
+        if (map.containsKey("filechunk_offset")) {
+            try {
+                chunkOffset = Long.parseLong(map.get("filechunk_offset"));
+            } catch (NumberFormatException e) {
+                pw("Invalid filechunk_offset parameter: " + map.get("filechunk_offset"));
+            }
+        }
+
         boolean loggedin = checkIfLoggedIn(uuid);
         if(!loggedin){
-            
+
             sendError(ctx, UNAUTHORIZED);
             return;
         }
@@ -307,8 +330,20 @@ public class HttpStaticFileServerHandler extends SimpleChannelInboundHandler<Ful
         }
         long fileLength = raf.length();
 
+        // Calculate the actual range to serve
+        long startOffset = 0;
+        long endOffset = fileLength;
+        long contentLength = fileLength;
+
+        if (isChunkedDownload && chunkSize > 0) {
+            startOffset = chunkOffset;
+            endOffset = Math.min(chunkOffset + chunkSize, fileLength);
+            contentLength = endOffset - startOffset;
+            pw(String.format("Chunked download: offset=%d, size=%d, actual_length=%d", startOffset, chunkSize, contentLength));
+        }
+
         HttpResponse response = new DefaultHttpResponse(HTTP_1_1, OK);
-        HttpHeaders.setContentLength(response, fileLength);
+        HttpHeaders.setContentLength(response, contentLength);
         setContentTypeHeader(response, file);
         setDateAndCacheHeaders(response, file);
         if (HttpHeaders.isKeepAlive(request)) {
@@ -317,57 +352,67 @@ public class HttpStaticFileServerHandler extends SimpleChannelInboundHandler<Ful
 
         response.headers().set(Names.TRANSFER_ENCODING, Values.CHUNKED);
         response.headers().set(Names.ACCESS_CONTROL_ALLOW_ORIGIN, "*");
-                
+
         // Write the initial line and the header.
         ctx.write(response);
-        
-        byte[] content = new byte[(int)raf.length()];
-        FileInputStream is = new FileInputStream(file);
-        int n = 0;
-        int nbytestotal = 0;
-        while ((n = is.read(content)) > 0) {
-                nbytestotal = nbytestotal + n;
-        }
 
-        System.out.println("nbytestotal:" + nbytestotal);
-        
-        final ReadableByteChannel aIn = java.nio.channels.Channels.newChannel(new ByteArrayInputStream(content));
-	ChannelFuture writeFuture = ctx.write(new ChunkedNioStream(aIn), ctx.newProgressivePromise());
-        
-        // Write the content.
-//        ChannelFuture sendFileFuture;
-//        if (ctx.pipeline().get(SslHandler.class) == null) {
-//            sendFileFuture =
-//                    ctx.write(new DefaultFileRegion(raf.getChannel(), 0, fileLength), ctx.newProgressivePromise());
-//        } else {
-//            sendFileFuture =
-//                    ctx.write(new HttpChunkedInput(new ChunkedFile(raf, 0, fileLength, 8192)),
-//                            ctx.newProgressivePromise());
-//        }
+        // Seek to the start offset
+        try {
+            if (startOffset > 0) {
+                raf.seek(startOffset);
+            }
 
-        writeFuture.addListener(new ChannelProgressiveFutureListener() {
-            @Override
-            public void operationProgressed(ChannelProgressiveFuture future, long progress, long total) {
-                if (total < 0) { // total unknown
-                    System.err.println(future.channel() + " Transfer progress: " + progress);
-                } else {
-                    System.err.println(future.channel() + " Transfer progress: " + progress + " / " + total);
+            // Read only the requested chunk (not the entire file!)
+            byte[] buffer = new byte[8192]; // 8KB buffer for reading
+            ByteArrayOutputStream baos = new ByteArrayOutputStream();
+            long bytesRemaining = contentLength;
+            int bytesRead;
+
+            while (bytesRemaining > 0 && (bytesRead = raf.read(buffer, 0, (int)Math.min(buffer.length, bytesRemaining))) != -1) {
+                baos.write(buffer, 0, bytesRead);
+                bytesRemaining -= bytesRead;
+            }
+
+            byte[] content = baos.toByteArray();
+            pw(String.format("Read %d bytes from file (requested: %d)", content.length, contentLength));
+
+            final ReadableByteChannel aIn = java.nio.channels.Channels.newChannel(new ByteArrayInputStream(content));
+            ChannelFuture writeFuture = ctx.write(new ChunkedNioStream(aIn), ctx.newProgressivePromise());
+
+            writeFuture.addListener(new ChannelProgressiveFutureListener() {
+                @Override
+                public void operationProgressed(ChannelProgressiveFuture future, long progress, long total) {
+                    if (total < 0) { // total unknown
+                        System.err.println(future.channel() + " Transfer progress: " + progress);
+                    } else {
+                        System.err.println(future.channel() + " Transfer progress: " + progress + " / " + total);
+                    }
                 }
+
+                @Override
+                public void operationComplete(ChannelProgressiveFuture future) {
+                    System.err.println(future.channel() + " Transfer complete.");
+                }
+            });
+
+            // Write the end marker
+            ChannelFuture lastContentFuture = ctx.writeAndFlush(LastHttpContent.EMPTY_LAST_CONTENT);
+
+            // Decide whether to close the connection or not.
+            if (!HttpHeaders.isKeepAlive(request)) {
+                // Close the connection when the whole content is written out.
+                writeFuture.addListener(ChannelFutureListener.CLOSE);
             }
-
-            @Override
-            public void operationComplete(ChannelProgressiveFuture future) {
-                System.err.println(future.channel() + " Transfer complete.");
+        } catch (IOException e) {
+            pw("Error reading file chunk: " + e.getMessage());
+            e.printStackTrace();
+            sendError(ctx, INTERNAL_SERVER_ERROR);
+        } finally {
+            try {
+                raf.close();
+            } catch (IOException e) {
+                // Ignore close errors
             }
-        });
-
-        // Write the end marker
-        ChannelFuture lastContentFuture = ctx.writeAndFlush(LastHttpContent.EMPTY_LAST_CONTENT);
-
-        // Decide whether to close the connection or not.
-        if (!HttpHeaders.isKeepAlive(request)) {
-            // Close the connection when the whole content is written out.
-            writeFuture.addListener(ChannelFutureListener.CLOSE);
         }
     }
 
