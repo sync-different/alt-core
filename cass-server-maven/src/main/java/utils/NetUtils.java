@@ -31,7 +31,6 @@ import java.util.Random;
 import java.util.StringTokenizer;
 import java.util.UUID;
 import static processor.FileUtils.close;
-import static utils.Cass7Funcs.p;
 import java.nio.ByteBuffer;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
@@ -48,6 +47,9 @@ public class NetUtils {
     //static protected Properties props = new Properties();
 
     static boolean bConsole = true;
+
+    static String appendage = "";
+    static String appendageRW = ""; //read/write    
 
     public static InetAddress getLocalAddressNonLoopback2() throws SocketException {
     
@@ -257,12 +259,18 @@ public class NetUtils {
     }
     
     static public String getMode() {
-        String mode = getConfig("mode", "config/www-rtbackup.properties");
+        Appendage app = new Appendage();
+        appendage = app.getAppendage();
+        appendageRW = app.getAppendageRW();
+        String mode = getConfig("mode", appendage + "config/www-rtbackup.properties");
         return mode;        
     }
     
     static public String getSignature() {
-        String signature = getConfig("signature", "config/www-rtbackup.properties");
+        Appendage app = new Appendage();
+        appendage = app.getAppendage();
+        appendageRW = app.getAppendageRW();
+        String signature = getConfig("signature", appendage + "config/www-rtbackup.properties");
         return signature;
         
     }
@@ -378,7 +386,8 @@ public class NetUtils {
                     return "";
                 }
             } else {
-                p("File not found. exiting...");
+                pw("WARNING: config File not found. exiting.... File: " + f.getAbsolutePath());
+                pw("tried to get property: " + _name + " from file: " + _config);
                 return "";
             }
         } catch (Exception e) {

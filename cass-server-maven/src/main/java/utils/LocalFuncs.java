@@ -286,7 +286,9 @@ public class LocalFuncs {
 
     public LocalFuncs() {
         //constructor 
-        setAppendage();
+        Appendage app = new Appendage();
+        appendage = app.getAppendage();
+        appendageRW = app.getAppendageRW();
         loadProps();
         printProps();
         time1 = System.currentTimeMillis();
@@ -1918,12 +1920,16 @@ public class LocalFuncs {
             
             String sDBCurrent = getCurrentMapDBVersion();
             p("DBCurrent: '" + sDBCurrent + "'");
+            if (sDBCurrent.length() == 0) {
+                pw("WARNING: Could not determine current MapDB version.");
+                sDBCurrent = sDBVersion;
+            }
                         
             String sAppend = "./";
             if (appendage.length() > 0) sAppend = "";
-            File fh = new File(sAppend + appendageRW + sFile + "_mm1");
+            File fh = new File(sAppend + appendageRW + "../rtserver/" + sFile + "_mm1");
             
-            p("[LocalFuncs] File '" + fh.getAbsolutePath() + "' exists: " + fh.exists());
+            p("[LocalFuncs.LoadIndexMapDB] MapDB File '" + fh.getAbsolutePath() + "' exists: " + fh.exists());
             
             if (fh.exists()) {
                 File parent = fh.getParentFile();
@@ -2783,40 +2789,6 @@ public class LocalFuncs {
         p("nulltx=" + bNullMapDBTx);
     }
     
-    static void setAppendage() {
-        boolean result = false;
-        File directory = new File("/Applications/Alterante.app/Contents/AlteranteJava.app/Contents/MacOS").getAbsoluteFile();
-        //File directory = new File("../app/projects/rtserver").getAbsoluteFile();
-        if (directory.exists())
-        {
-            p("[LocalFUncs] Found app directory. Setting working dir to it");
-            result = (System.setProperty("user.dir", directory.getAbsolutePath()) != null);
-            
-            appendage = "/Applications/Alterante.app/Contents/AlteranteJava.app/Contents/app/projects/rtserver/";
-            p("appendage  = " + appendage);
-            //appendage = "../app/projects/rtserver/";        
-        }
-        
-        String username = System.getProperty("user.name");
-        p("username: " + username);
-        File directoryRW = new File("/Users/" + username + "/Library/Containers/com.alterante.desktopapp1j");
-        if (directoryRW.exists()) {
-            p("[LocalFuncs] Found container directory. checking folders.");
-            appendageRW = "/Users/" + username + "/Library/Containers/com.alterante.desktopapp1j/Data/app/projects/rtserver/";
-            File dir = new File("/Users" + username + "/Library/Containers/com.alterante.desktopapp1j/Data/app/projects/rtserver");
-            if (dir.exists()) {
-                p("appendageRW rtserver exists.");
-            } else {
-                boolean res = new File(appendageRW).mkdirs();
-                p("appendageRW rtserver create = " + res);
-                res = new File(appendageRW + "/logs/").mkdirs();
-                p("appendageRW rtserver create logs = " + res);
-            }               
-        } else {
-            p("[LocalFuncs] Container directory not found.");
-        }
-    }
-    
     void loadProps() {
         try {
             String sConfig = 
@@ -2903,7 +2875,7 @@ public class LocalFuncs {
         BufferedReader br = null;
 
         try {
-            String sPath = DB_PATH;
+            String sPath = appendage + DB_PATH;
             String _cf = "BatchJobs";
             String sCurrentLine = "";
             String _key = Long.toString(_batchnum);
@@ -2991,7 +2963,7 @@ public class LocalFuncs {
 
         try {
             
-            String sPath = DB_PATH;
+            String sPath = appendage + DB_PATH;
             String sres = "";
         
             if (_key.equals("nodes")) {
@@ -3061,7 +3033,7 @@ public class LocalFuncs {
                     //occurences_uuid.put("0ce78da1-fe24-4875-9ff0-476a6ef4883d", 0);
                     //occurences_uuid.put("98bf3e62-e23d-4754-af80-6d09a79e8817", 0);
                     
-                    String sPath = DB_PATH;
+                    String sPath = appendage + DB_PATH;
                     String _cf = "Super2";
                     String _sc = "paths";
                     String sCurrentLine = "";
@@ -3348,7 +3320,7 @@ public class LocalFuncs {
             HashMap<String, Integer> occurences_uuid_files = new HashMap<String, Integer>();
             set_backupnodes("keyspace", "NodeInfo","nodes", occurences_uuid_files, "backup");
                                     
-            String sPath = DB_PATH;
+            String sPath = appendage + DB_PATH;
             String _cf = "Standard1";
             String sCurrentLine = "";
             String _key = "batch@" + Long.toString(_batchnum);
@@ -3473,7 +3445,7 @@ public class LocalFuncs {
 
         try {
             
-            String sPath = DB_PATH;
+            String sPath = appendage + DB_PATH;
             String sres = "";
         
             if (_key.equals("nodes")) {
@@ -3524,7 +3496,7 @@ public class LocalFuncs {
             BufferedReader br = null;
                        
             try {
-                String filename = DB_PATH + File.separator + "NodeInfo" + File.separator + _name;
+                String filename = appendage + DB_PATH + File.separator + "NodeInfo" + File.separator + _name;
                 
                 File fh = new File(filename);
                 if (fh.exists()) {
@@ -3594,7 +3566,7 @@ public class LocalFuncs {
 
         try {
             
-            String sPath = DB_PATH;
+            String sPath = appendage + DB_PATH;
             String sres = "";
         
             if (_key.equals("nodes")) {
@@ -3634,7 +3606,7 @@ public class LocalFuncs {
     
     public ArrayList<Node> getNodes(String _key, String _cf){
         ArrayList<Node> nodes = new ArrayList<Node>();
-        String sPath = DB_PATH;
+        String sPath = appendage + DB_PATH;
         String filename = sPath + File.separator + _cf;                
         File ft = new File(filename);
         
@@ -3695,8 +3667,13 @@ public class LocalFuncs {
         BufferedReader br = null;
 
         try {
-            
-            String sPath = DB_PATH;
+            Appendage app = new Appendage();
+            appendage = app.getAppendage();
+            appendageRW = app.getAppendageRW();
+            p("GET node info appendage = " + appendage);
+            String sPath = appendage + DB_PATH;
+            p("sPath = " + sPath);
+
             String sres = "";
         
             if (_key.equals("nodes")) {
@@ -3765,7 +3742,7 @@ public class LocalFuncs {
             _key = _key.replaceAll("/", "#");            
             p("key2:" + _key);            
             
-            String sPath = DB_PATH;
+            String sPath = appendage + DB_PATH;
             String _cf = "BatchJobs";
             
         
@@ -3825,7 +3802,7 @@ public class LocalFuncs {
          BufferedReader br = null;
          
          try {
-                String sPath = DB_PATH;
+                String sPath = appendage + DB_PATH;
                 String _cf = "Super2";
                 String _sc = "paths";       
                 String sCurrentLine = "";
@@ -4142,7 +4119,7 @@ public class LocalFuncs {
                     bNodesLoaded = true;
                 }
                 
-                String sPath = DB_PATH;
+                String sPath = appendage + DB_PATH;
                 String _cf = "Super2";
                 String _sc = "paths";       
                 String sCurrentLine = "";
@@ -4372,7 +4349,7 @@ public class LocalFuncs {
             
             
             try {
-                String sPath = DB_PATH;
+                String sPath = appendage + DB_PATH;
                 String _cf = "Super2";
                 String _sc = "paths";       
                 String sCurrentLine = "";
@@ -4411,7 +4388,7 @@ public class LocalFuncs {
             BufferedReader br = null;
 
             try {
-                String sPath = DB_PATH;
+                String sPath = appendage + DB_PATH;
                 String _cf = "Super2";
                 String _sc = "paths";       
                 String sCurrentLine = "";
@@ -4459,13 +4436,13 @@ public class LocalFuncs {
 
                                 Boolean bAvail_file = false;
                                 if (!optimized) {
-                                    int resultGetFileExist = getfile(sFullPath, "fileexist.fnres", 1, 10,2000);                                
+                                    int resultGetFileExist = getfile(sFullPath, appendage + "fileexist.fnres", 1, 10,2000);                                
                                     if (resultGetFileExist==1) {
-                                        FileReader reader=new FileReader(new File("fileexist.fnres"));
+                                        FileReader reader=new FileReader(new File(appendage + "fileexist.fnres"));
                                         char[ ] cbuf =new char[150];
                                         int i=reader.read(cbuf);
                                         reader.close();
-                                        File fAux2=new File("fileexist.fnres");
+                                        File fAux2=new File(appendage + "fileexist.fnres");
                                         if(fAux2.exists()){
                                             fAux2.delete();
                                         }
@@ -4544,7 +4521,7 @@ public class LocalFuncs {
                 }
                 
             } catch (Exception e) {
-                e.printStackTrace();
+                pw("Exception in read_view_link: " + e.toString());
                 String[] res = new String[2];
                 res[0] = "ERROR";
                 res[1] = "ERROR";
@@ -4671,7 +4648,7 @@ public class LocalFuncs {
         //from file            
         BufferedReader br = null;
 
-        String sPath = DB_PATH;
+        String sPath = appendage + DB_PATH;
         String _ks = "Standard2";
 
         w = w.replace(":", "@");
@@ -5195,7 +5172,7 @@ public class LocalFuncs {
             //from file            
             BufferedReader br = null;
             
-            String sPath = DB_PATH;
+            String sPath = appendage + DB_PATH;
             String _ks = "Standard2";
 
             w = w.replace(":", "@");
@@ -5272,7 +5249,7 @@ public class LocalFuncs {
         try {
         String res = "";
         
-        String sPath = DB_PATH;
+        String sPath = appendage + DB_PATH;
         String _ks = "Standard2";
             
         w = w.replace(":", "@");
@@ -5340,7 +5317,7 @@ public class LocalFuncs {
         BufferedReader br = null;
         
         try {
-            String sPath = DB_PATH;
+            String sPath = appendage + DB_PATH;
             
             String filename = sPath + File.separator + _cf + File.separator + _key;
             File ft = new File(filename);
@@ -5392,7 +5369,7 @@ public class LocalFuncs {
         //p("get_row_attribute" + _cf + _key + _name);
         BufferedReader br = null;
         try {
-            String sPath = DB_PATH;
+            String sPath = appendage + DB_PATH;
             String filename = sPath + File.separator + _cf + File.separator + _key;
             File ft = new File(filename);
             if (ft.exists()) {
@@ -5466,7 +5443,7 @@ public class LocalFuncs {
          BufferedReader br = null;
 
             try {
-                String sPath = DB_PATH;
+                String sPath = appendage + DB_PATH;
                 String _cf = "Super2";                      
                 String sCurrentLine = "";
 
@@ -5691,7 +5668,7 @@ public class LocalFuncs {
             BufferedReader br = null;
 
             try {
-                String sPath = DB_PATH;
+                String sPath = appendage + DB_PATH;
                 String _cf = "Super2";
                 String _sc = "hashesm";       
                 String sCurrentLine = "";
@@ -5747,7 +5724,7 @@ public class LocalFuncs {
     public int insertSuperColumn(String _keyspace, String _cf, String _key, String _sc, String _name, String _value) {
         
         bNewQuery = true;
-        String sPath = DB_PATH;
+        String sPath = appendage + DB_PATH;
         BufferedReader br = null;
         BufferedWriter bw = null;
         String sCurrentLine = "";
@@ -5799,7 +5776,7 @@ public class LocalFuncs {
     public int edit_SuperColumn(String _keyspace, String _cf, String _key, String _sc, String _namex, String _value) {
         
         bNewQuery = true;
-        String sPath = DB_PATH;
+        String sPath = appendage + DB_PATH;
         BufferedReader br = null;
         BufferedWriter bw = null;
         String sFilename = "";
@@ -5870,7 +5847,7 @@ public class LocalFuncs {
         //since we deleted an object, mark as new query
         bNewQuery = true;
         
-        String sPath = DB_PATH;
+        String sPath = appendage + DB_PATH;
         BufferedReader br = null;
         BufferedWriter bw = null;
         
@@ -5917,13 +5894,25 @@ public class LocalFuncs {
     
     public int insert_column(String _ks, String _cf, String _key, String _name, String _value, boolean _doappend) {
      
+        Appendage app = new Appendage();
+        appendage = app.getAppendage();
+        appendageRW = app.getAppendageRW();
+        p("Appendage set to : " + appendage);
+        p("DB_PATH set to   : " + DB_PATH);
+        p("_cf              : " + _cf);
+        p("_key             : " + _key);
+        p("name             : " + _name);
+
         bNewQuery = true;
-        String sPath = DB_PATH;
+
+        String sPath =  appendage + DB_PATH;
+
         BufferedReader br = null;
         BufferedWriter bw = null;
         String sCurrentLine = "";
         
         try {
+            
             String sReg = _name + "," + _value + "\n";
             Boolean bAlreadyExists = false;
             
@@ -5941,6 +5930,8 @@ public class LocalFuncs {
                     }
                 }
                 br.close();                
+            } else {
+                pw("WARNING [LocalFuncs.insert_column]: File does not exist: " + fh.getAbsolutePath());
             }                    
             
             //If register not exists, insert it
@@ -5969,7 +5960,7 @@ public class LocalFuncs {
     public int edit_column(String _ks, String _cf, String _key, String _name, String _value) {
      
         bNewQuery = true;
-        String sPath = DB_PATH;
+        String sPath = appendage + DB_PATH;
         BufferedReader br = null;
         BufferedWriter bw = null;
         
@@ -6019,7 +6010,7 @@ public class LocalFuncs {
         //since we deleted an object, mark as new query
         bNewQuery = true;
 
-        String sPath = DB_PATH;
+        String sPath = appendage + DB_PATH;
         BufferedReader br = null;
         BufferedWriter bw = null;
         
@@ -6373,7 +6364,7 @@ public class LocalFuncs {
             
             
             
-            String sPath = DB_PATH;
+            String sPath = appendage + DB_PATH;
             String _ks = "Standard1";
             
             w = w.replace(":", "@");
@@ -7026,7 +7017,7 @@ public class LocalFuncs {
         
         try {
             
-            String sPath = DB_PATH;
+            String sPath = appendage + DB_PATH;
             String _ks = "Standard1";
             
             w = w.replace(":", "@");
@@ -7180,7 +7171,7 @@ public class LocalFuncs {
         BufferedReader br = null;
         
         try {
-            String sPath = DB_PATH;
+            String sPath = appendage + DB_PATH;
             
             String res = "<table>";
             
@@ -7802,7 +7793,7 @@ public class LocalFuncs {
     public int getNumberOfFilesInTag(String _tag) {
     
         try {
-            String sPath = DB_PATH;
+            String sPath = appendage + DB_PATH;
             String _cf = "Standard1";
             BufferedReader br = null;
             String sCurrentLine = "";
@@ -7836,7 +7827,7 @@ public class LocalFuncs {
         try {
             String sTags = "";
 
-            String sPath = DB_PATH;
+            String sPath = appendage + DB_PATH;
 
             String _cf = "Super2";
             String _sc = "hashesm";
@@ -7875,7 +7866,7 @@ public class LocalFuncs {
     
     public SortableValueMap<String,Integer> getTags(String _currentUser){
     
-        String sPath = DB_PATH;
+        String sPath = appendage + DB_PATH;
         
         String _cf = "Super2";
         String _sc = "hashesm";
@@ -8001,14 +7992,14 @@ public class LocalFuncs {
             
             TxMaker tx_share;
             
-            p("LoadShareMapDB()");  
+            pw("LoadShareMapDB()");  
             
             String sFile = appendageRW + "../rtserver/sharesdb";
             String sDBName = readDoc(appendageRW + "../rtserver/dbsharename.txt");
             if (sDBName.length() > 0) {
                 sFile = sDBName.trim();
             }
-            p("DBName: '" + sFile + "'");
+            pw("DBName: '" + sFile + "'");
             
             String sDBVersion = readDoc(appendageRW + "../rtserver/dbver.txt");
             if (sDBVersion.length() > 0) {
@@ -8017,17 +8008,17 @@ public class LocalFuncs {
                 //assume v0.9.8 if file doesn't exist (beta user legacy)
                 sDBVersion = "0.9.8";
             }
-            p("DBVersion: '" + sDBVersion + "'");
+            pw("DBVersion: '" + sDBVersion + "'");
             
             String sDBCurrent = getCurrentMapDBVersion();
-            p("DBCurrent: '" + sDBCurrent + "'");
+            pw("DBCurrent: '" + sDBCurrent + "'");
                      
-            String sAppend = "./";
+            String sAppend = "../rtserver/";
             if (appendage.length() > 0) sAppend = "";
             
             File fh = new File(sAppend + sFile);
             
-            p("mapDB File '" + fh.getAbsolutePath() + "' exists: " + fh.exists());
+            pw("mapDB File '" + fh.getAbsolutePath() + "' exists: " + fh.exists());
             
             if (fh.exists()) {
                 File parent = fh.getParentFile();
@@ -8042,7 +8033,7 @@ public class LocalFuncs {
             
             boolean bCreate = false;           
             if (fh.exists() && isBackwardCompatible(sDBCurrent, sDBVersion)) {
-                p("Index : DB Exists...");
+                pw("Index : DB Exists...");
                     boolean bOK = false;
                     p("Exist[1]");
                     try {
@@ -8063,11 +8054,11 @@ public class LocalFuncs {
                 }
             } else {
                 if (!fh.exists()) {
-                    p("db does not exist. creating...");
+                    pw("db does not exist. creating...");
                 } else {
                     //file exists, but not backward compatible
                     if (!isBackwardCompatible(sDBCurrent, sDBVersion)) {
-                        p("db not backward compatible. re-creating...");                    
+                        pw("db not backward compatible. re-creating...");                    
                     }                    
                 }
                 bCreate = true;                    

@@ -50,6 +50,7 @@ import java.util.logging.Logger;
 
 import processor.FileDatabaseEntry;
 import processor.DatabaseEntry;
+import utils.Appendage;
 //import static services.BackupClientService.sUUIDpath;
 import utils.NetUtils;
 
@@ -64,7 +65,9 @@ import utils.Stopwatch;
 
 
 public class FileUtils {
-    
+
+    static String appendage = "";
+    static String appendageRW = "";
     
     
     static class Key implements Serializable {
@@ -247,6 +250,11 @@ public class FileUtils {
     
     public FileUtils(String _path, Boolean _debugmode, String _configpath, int _loglevel) {
         try {
+
+            Appendage app = new Appendage();
+            appendage = app.getAppendage();
+            appendageRW = app.getAppendageRW();
+
             mStorage = _path;
             mDEBUG_MODE = _debugmode;
             mCONFIG_PATH = _configpath;
@@ -254,7 +262,9 @@ public class FileUtils {
                                   
             loadBackupProps();
 
-            String sLog = LOG_PATH + LOG_NAME;
+            String sLog = appendage + LOG_PATH + LOG_NAME;
+            p("FileUtils log path = " + sLog);
+
             log = new PrintStream(new BufferedOutputStream(
                                 new FileOutputStream(sLog,true)));
             log("opening log file: " + sLog + " loglevel: " + mLogLevel, 0);
@@ -262,7 +272,7 @@ public class FileUtils {
             p("uuidpath = " + mUUIDPath);                    
             p("outgoing = " + mDatabaseEntryPath);                    
 
-            mUUID = NetUtils.getUUID(mUUIDPath);
+            mUUID = NetUtils.getUUID(appendage + mUUIDPath);
 
             p("uuid = '" + mUUID + "'");        
             p("delay_file = '" + mDelayFile + "'");    
@@ -697,11 +707,15 @@ public class FileUtils {
                                     if (isWin) {
                                         projectsFolderPath = "..\\";
                                     } else {
-                                        projectsFolderPath = "../";
+                                        if (appendage.length()>0){
+                                            projectsFolderPath = appendage + "../";
+                                        } else {
+                                            projectsFolderPath = "../";
+                                        }
                                     }
-
+                                    p("PROJECTS PATH: " + projectsFolderPath);
                                     File altfolder = new File(projectsFolderPath);
-                                    p("ALT_PATH " + altfolder.getCanonicalPath());
+                                    p("ALT_PATH: " + altfolder.getCanonicalPath());
                                     String filename = f.getName();
                                     String filetype = filename.substring(filename.lastIndexOf(".") + 1, filename.length());
                                     if (is_video(filetype.toLowerCase())){
@@ -731,17 +745,19 @@ public class FileUtils {
                                         }else{
                                             outputfolderPath = projectsFolderPath + "rtserver/streaming/" + sMD5;
                                         }
-                                        
+                                        p("outputfolderPath: " + outputfolderPath);
                                         log("outputfolder is " + outputfolderPath, 2);
                                         
                                         String streamingFolderPath;
                                         if (isWin) {
                                             streamingFolderPath = projectsFolderPath + "\\rtserver\\streaming\\";
-                                        }else{
+                                        } else {
                                             streamingFolderPath = projectsFolderPath + "/rtserver/streaming/";
                                         }
+                                        p("streamingfolderPath: " + streamingFolderPath);
                                         File streamingFolder = new File(streamingFolderPath);
                                         log("streamingFolder is " + streamingFolder.getCanonicalPath(), 2);
+                                        p("*** Streaming folder is : " + streamingFolder.getCanonicalPath());
                                         if(!streamingFolder.exists()){
                                             log("mkdir " + streamingFolder.getCanonicalPath(), 0);                                            
                                             streamingFolder.mkdirs();                                        
@@ -1060,7 +1076,7 @@ public class FileUtils {
                 mDatabaseEntryPath += File.separator;
             }
             
-            String sFilename = mDatabaseEntryPath +  dbe.dbe_uuid.toString() + "." + dbe.dbe_md5 + "." + _type;
+            String sFilename = appendage + mDatabaseEntryPath +  dbe.dbe_uuid.toString() + "." + dbe.dbe_md5 + "." + _type;
             p("Saving database record #" + countrecords + " for file " + dbe.dbe_absolutepath + " file: '" + sFilename + "'");
 
             sFilename += "_" + System.currentTimeMillis();                
@@ -1091,9 +1107,9 @@ public class FileUtils {
     public synchronized boolean savePendingFiles() {
         try {
             p("---- Saving Pending Files(db): " + mFilesDatabase.size());
-            p("path for save: " + mStorage);
+            p("path for save: " + appendage + mStorage);
                     
-            FileOutputStream fileOut = new FileOutputStream(mStorage);
+            FileOutputStream fileOut = new FileOutputStream(appendage + mStorage);
             ObjectOutputStream out = new ObjectOutputStream(fileOut);
             out.writeObject(mFilesDatabase);
             out.close();
@@ -1104,10 +1120,10 @@ public class FileUtils {
             
             return true;
         } catch (FileNotFoundException ex) {
-            p("exception> " + ex.toString());
+            pe("exception> " + ex.toString());
             return false;
         } catch (IOException ex) {
-            p("exception> " + ex.toString());
+            pe("exception> " + ex.toString());
             return false;
         }        
     }
@@ -1124,7 +1140,7 @@ public class FileUtils {
     
     static void loadBlacklistContainsMap() {
         try {
-            FileInputStream bf2 = new FileInputStream("../scrubber/config/blacklist_contains.txt");
+            FileInputStream bf2 = new FileInputStream(appendage + "../scrubber/config/blacklist_contains.txt");
             Scanner scanner2 = new Scanner(bf2);
             
             mapBlackC.clear();
@@ -1147,7 +1163,7 @@ public class FileUtils {
 
     public static void loadBlacklistMap() {
         try {
-            FileInputStream bf2 = new FileInputStream("./config/blacklist.txt");
+            FileInputStream bf2 = new FileInputStream(appendage + "./config/blacklist.txt");
             Scanner scanner2 = new Scanner(bf2);
             
             mapBlack.clear();
@@ -1169,7 +1185,7 @@ public class FileUtils {
     
     static void loadFileExtensions() {
         try {
-            FileInputStream fileExtensions = new FileInputStream("./config/FileExtensions.txt");
+            FileInputStream fileExtensions = new FileInputStream(appendage + "./config/FileExtensions.txt");
             Scanner objScanner = new Scanner(fileExtensions);
             
             mapFileExtensions.clear();

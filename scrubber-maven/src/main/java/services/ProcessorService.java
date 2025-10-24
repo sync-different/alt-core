@@ -25,6 +25,7 @@ import java.util.logging.Logger;
 import java.util.logging.Level;
 import java.text.SimpleDateFormat;
 
+import utils.Appendage;
 import utils.Cass7Funcs;
 import utils.sURLPack;
 import utils.LocalFuncs;
@@ -130,6 +131,9 @@ public class ProcessorService implements Runnable{
 
     static int mLogLevel = 0;
     String mCONFIG_PATH = "";
+
+   static String appendage = "";
+    static String appendageRW = "";
     
     public void SetShutdown() {
         mTerminated = true;
@@ -176,8 +180,11 @@ public class ProcessorService implements Runnable{
         Thread t;
 
         try {
+            Appendage app = new Appendage();
+            appendage = app.getAppendage();
+            appendageRW = app.getAppendageRW();
           loadBackupProps();
-          String sLog = LOG_PATH + LOG_NAME;
+          String sLog = appendage + LOG_PATH + LOG_NAME;
           log = new PrintStream(new BufferedOutputStream(
                             new FileOutputStream(sLog,true)));
           log("opening log file: " + sLog, 0);
@@ -336,13 +343,13 @@ public class ProcessorService implements Runnable{
 
     void loadDelimiters() {
         try {
-            File f = new File("config/delimiters.txt");
+            File f = new File(appendage + "config/delimiters.txt");
             if (f.exists()) {
                 Scanner sc = new Scanner(f);
                 delimiters = sc.nextLine();
                 sc.close();
             } else {
-                p("Delimiter file does not exist. Assuming defaults: " + delimiters);
+                pw("WARNING: Delimiter file does not exist. Assuming defaults: " + delimiters);
             }
         } catch (Exception e) {
             e.printStackTrace();
@@ -361,14 +368,20 @@ public class ProcessorService implements Runnable{
     }
     
     void loadLocalUUID() {
-        mUUIDPath = NetUtils.getConfig("uuidpath","./config/www-rtbackup.properties");
-        mUUID = NetUtils.getUUID(mUUIDPath);
-        mUUIDPath = NetUtils.getConfig("uuidpath","./config/www-rtbackup2.properties");
-        mUUID2 = NetUtils.getUUID(mUUIDPath);
-        mUUIDPath = NetUtils.getConfig("uuidpath","./config/www-rtbackup3.properties");
-        mUUID3 = NetUtils.getUUID(mUUIDPath);
-        mUUIDPath = NetUtils.getConfig("uuidpath","./config/www-rtbackup4.properties");
-        mUUID4 = NetUtils.getUUID(mUUIDPath);
+        mUUIDPath = NetUtils.getConfig("uuidpath",appendage + "./config/www-rtbackup.properties");
+        mUUID = NetUtils.getUUID(appendage + mUUIDPath);
+        mUUIDPath = NetUtils.getConfig("uuidpath",appendage + "./config/www-rtbackup2.properties");
+        mUUID2 = NetUtils.getUUID(appendage + mUUIDPath);
+        mUUIDPath = NetUtils.getConfig("uuidpath",appendage + "./config/www-rtbackup3.properties");
+        mUUID3 = NetUtils.getUUID(appendage + mUUIDPath);
+        mUUIDPath = NetUtils.getConfig("uuidpath",appendage + "./config/www-rtbackup4.properties");
+        mUUID4 = NetUtils.getUUID(appendage + mUUIDPath);
+
+
+        p("mUIUID   = " + mUUID);
+        p("mUIUID2  = " + mUUID2);
+        p("mUIUID3  = " + mUUID3);
+        p("mUIUID4  = " + mUUID4);
     }
     
     void loadBackupProps() throws IOException {  
@@ -399,6 +412,7 @@ public class ProcessorService implements Runnable{
         p(System.getProperty("java.home"));
         File f = new File
                 (
+                appendage+
                 "config"+
                 File.separator+
                 "www-processor.properties");
@@ -459,8 +473,8 @@ public class ProcessorService implements Runnable{
             
         }
         
-        p("directory: " + mScanDirectory);
-        File processing_dir = new File(mScanDirectory);
+        p("directory: " + appendage + mScanDirectory);
+        File processing_dir = new File(appendage + mScanDirectory);
         if (processing_dir.exists()){
             File[] files = processing_dir.listFiles();
             for (File file: files){
@@ -708,7 +722,7 @@ public class ProcessorService implements Runnable{
     int addMobileBackupFolder() {
         try {
             
-            String sScanFile = NetUtils.getConfig("scandir", "../scrubber/config/www-rtbackup.properties");            
+            String sScanFile = NetUtils.getConfig("scandir", appendage + "../scrubber/config/www-rtbackup.properties");            
             if (sScanFile.length() > 0) {
                 File f = new File(sScanFile);
                 if (f.exists()) {
@@ -1278,12 +1292,13 @@ public class ProcessorService implements Runnable{
 
             
             //store the real thumbnail
-            File fh = new File(THUMBNAIL_OUTPUT_DIR, key + ".jpg");
+            File fh = new File(appendage + THUMBNAIL_OUTPUT_DIR, key + ".jpg");
             if (!fh.exists()) {                        
                 log("Storing thumbnail at location: '" + fh.getAbsolutePath() + "'", 2);                      
                 boolean success = filewrite(fh, _record.dbe_img_thumbnail);
                 if (!success) {
                     log("WARNING: There was a problem saving the thumbnail", 0);
+                    pw("WARNING: There was a problem saving the thumbnail: " + fh.getAbsolutePath());
                 }
 
             } else {
@@ -1291,12 +1306,13 @@ public class ProcessorService implements Runnable{
             }
             
             //store the thumbnail encoded in Base64 as well
-            File fh64= new File(THUMBNAIL_OUTPUT_DIR, key + ".alt64");
+            File fh64= new File(appendage + THUMBNAIL_OUTPUT_DIR, key + ".alt64");
             if (!fh64.exists()) {
                 log("Storing thumbnail(base64) at location: '" + fh64.getAbsolutePath() + "'", 2);  
                 boolean success = filewrite64(fh, fh64);
                 if (!success) {
                     log("WARNING: There was a problem saving the thumbnail64", 0);
+                    pw("WARNING: There was a problem saving the thumbnail64: " + fh64.getAbsolutePath());
                 }                
             } else {
                 log("Skipping thumbnail64 creation, since file already exists.", 2);                      
@@ -2098,7 +2114,7 @@ public class ProcessorService implements Runnable{
             String sStorePath = "updateNumberofCopies.txt";
             //int nres = NetUtils.getfile(urlStr, sStorePath, 1, 500, 10000);  //1 try, timeout10s    
             
-            File fh = new File("../rtserver/batch_" + _batchid + ".idx");
+            File fh = new File(appendage + "../rtserver/batch_" + _batchid + ".idx");
             FileWriter fw = new FileWriter(fh, true);
             fw.write("done");
             fw.close();
@@ -2129,6 +2145,7 @@ public class ProcessorService implements Runnable{
                 StringWriter sWriter = new StringWriter();
                 e.printStackTrace(new PrintWriter(sWriter));
                 log(sWriter.getBuffer().toString(), 0) ;
+                pe("ERROR: updateNumberOfCopies() Exception: " + e.getMessage());
             return false;
         }
     }

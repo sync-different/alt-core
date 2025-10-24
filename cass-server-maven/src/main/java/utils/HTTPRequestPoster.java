@@ -64,6 +64,9 @@ import java.text.SimpleDateFormat;
 
 public class HTTPRequestPoster {
 
+    static String appendage = "";
+    static String appendageRW = "";
+
     // BEGIN ANSI
     static boolean bConsole = true;
 
@@ -531,11 +534,18 @@ private static void pipe2(Reader reader, Writer writer) throws IOException {
 }
 
 public static int sendGetRequest(String endpoint, String requestParameters, String outfileName, int nTimeout) throws FileNotFoundException
+
+
 {
     byte[] data;
     boolean bSourceExists = false;
    
-    p("***** sendGetRequest");
+    p("***** sendGetRequest -------- ");
+    p("endpoint             : " + endpoint);
+    Appendage app = new Appendage();
+    appendage = app.getAppendage();
+    appendageRW = app.getAppendageRW();
+    p("***** outfilename    : " + outfileName);
     
     String result = null;
     if (endpoint.startsWith("http://")) {
@@ -569,6 +579,7 @@ public static int sendGetRequest(String endpoint, String requestParameters, Stri
                 bSourceExists = true;
 
                 FileOutputStream outFile = new FileOutputStream(outfileName);
+
                 int numRead = 0;
                 int total = 0;
                 data = new byte[524288];
@@ -614,7 +625,7 @@ public static int sendGetRequest(String endpoint, String requestParameters, Stri
                     pw("(getfile) Source File not found: '" + urlStr + "'");
                     return -1;
                 } else {
-                    pw("(getfile) Unable to open dest file: " + outfileName);
+                    pw("(getfile) Unable to open dest file: " + appendage + outfileName);
                     return -3;
                 }
             } catch (Exception e ) {

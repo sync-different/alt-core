@@ -9,6 +9,9 @@
 
 package services;
 
+import static services.BackupClientService.ANSI_RESET;
+import static services.TransferService.ANSI_YELLOW;
+
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.File;
@@ -19,6 +22,8 @@ import java.io.PrintStream;
 import java.net.URLDecoder;
 import java.util.Properties;
 import processor.FileDatabase;
+import utils.Appendage;
+
 import java.util.Calendar;
 import java.util.Date;
 import java.text.SimpleDateFormat;
@@ -58,6 +63,9 @@ public class ScannerLauncher implements Runnable{
 
    static boolean bConsole = true;
 
+    static String appendage = "";
+    static String appendageRW = "";
+
     /* print to stdout */
     static protected void p(String s) {
         Date ts_start = Calendar.getInstance().getTime();
@@ -66,6 +74,17 @@ public class ScannerLauncher implements Runnable{
 
         long threadID = Thread.currentThread().getId();
         System.out.println(sDate+ " [DEBUG] [ScannerLauncher_" + threadID + "] " + s);
+    }
+
+     protected static void pw(String s) {
+        Date ts_start = Calendar.getInstance().getTime();
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy/MM/dd hh:mm:ss");
+        String sDate = sdf.format(ts_start);
+
+        if (bConsole) {
+            long threadID = Thread.currentThread().getId();
+            System.out.println(ANSI_YELLOW + sDate + " [WARNING] [SC.ScannerService-" + threadID + "] " + s + ANSI_RESET);
+        }
     }
 
     public ScannerLauncher( String _recordspath, 
@@ -78,6 +97,9 @@ public class ScannerLauncher implements Runnable{
                             int _loglevel) {
 
        try {
+            Appendage app = new Appendage();
+            appendage = app.getAppendage();
+            appendageRW = app.getAppendageRW();
 
             mRECORDS_FILE_PATH = _recordspath;
             //mUUID = _uuid;
@@ -124,7 +146,7 @@ public class ScannerLauncher implements Runnable{
                     return "";
                 }
             } else {
-                p("File not found. exiting...");
+                pw("File not found. exiting.... File: "+ f.getAbsolutePath());
                 return "";
             }
         } catch (Exception e) {
@@ -135,7 +157,9 @@ public class ScannerLauncher implements Runnable{
     
     public void run() {
         while (!mTerminated) {
-            String sScanNode = getConfig("scannode", mCONFIG_PATH);       
+            p("CONFIG PATH = " + mCONFIG_PATH);
+            
+            String sScanNode = getConfig("scannode", appendage + mCONFIG_PATH);       
             if (sScanNode.equals("on")) {
                 p("ScannerService(core) launched.");
                 ss = new ScannerService(mRECORDS_FILE_PATH, 
@@ -145,7 +169,7 @@ public class ScannerLauncher implements Runnable{
                                 mSignature,
                                 false,
                                 bHostFound,
-                                mCONFIG_PATH,
+                                appendage + mCONFIG_PATH,
                                 mLogLevel);
                 ss.run();
                 p("ScannerService(core) completed.");

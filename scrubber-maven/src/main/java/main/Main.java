@@ -43,6 +43,7 @@ import org.boris.winrun4j.AbstractService;
 import org.boris.winrun4j.EventLog;
 import org.boris.winrun4j.ServiceException;
 
+import utils.Appendage;
 import utils.NetUtils;
 
 import amazon.AmazonDrive;
@@ -88,6 +89,8 @@ public class Main extends AbstractService {
     
     static int mLogLevel = 1;  //defaut loglevel
 
+    static String appendage = "";
+    static String appendageRW = "";
         
     public int serviceRequest(int request) throws ServiceException {
     switch (request) {
@@ -194,7 +197,7 @@ public class Main extends AbstractService {
         try {
             
             p("-------------------CHECK FOR UPDATE-----------------");
-            String IsWindows = NetUtils.getConfig("winserver", "../rtserver/config/www-server.properties");
+            String IsWindows = NetUtils.getConfig("winserver", appendage + "../rtserver/config/www-server.properties");
             boolean bWindows = Boolean.parseBoolean(IsWindows);
 
             String sFile = "../../update.old";
@@ -237,14 +240,14 @@ public class Main extends AbstractService {
         try {
             long mDelay = 5000;
             
-            String sState = getConfig("state", "../rtserver/config/www-setup.properties");
+            String sState = getConfig("state", appendage + "../rtserver/config/www-setup.properties");
             p("Setup State = " + sState);
             if (sState.equals("NEW")) {
                 while (sState.equals("NEW")) {
                     CheckForUpdate();
                     p("State=NEW. Waiting for user to complete Wizard setup. Sleeping for " + mDelay + "ms.");
                     Thread.sleep(mDelay);                
-                    sState = getConfig("state", "../rtserver/config/www-setup.properties");
+                    sState = getConfig("state", appendage + "../rtserver/config/www-setup.properties");
                 }                
             }
         } catch (Exception e) {
@@ -264,6 +267,10 @@ public class Main extends AbstractService {
         String _configpath = "";
         String _flags = "";
 
+        Appendage app = new Appendage();
+        appendage = app.getAppendage();
+        appendageRW = app.getAppendageRW();
+
         p("args.length = " + args.length);
         if (args.length < 4 || args.length > 8) {
             p("Usage: scrubber <0:recordsfile> <1:servername> <2:serverport> <3:scanpath> <4:incomingpath> <5:signature> <6:config> <7:flags>");
@@ -282,7 +289,7 @@ public class Main extends AbstractService {
             String _incoming = args[4];
 
             //signature (from rtbackup.properties).
-            String sSignatureFromFile = getConfig("signature", "config/www-rtbackup.properties");
+            String sSignatureFromFile = getConfig("signature", appendage + "config/www-rtbackup.properties");
             if (sSignatureFromFile.length() > 0) {                   
                 //Use signature from config if exists
                 _signature = sSignatureFromFile;
@@ -326,7 +333,7 @@ public class Main extends AbstractService {
                 _flags = args[7];
             } else {
                 if (sMode.equals("client")) {
-                    String sDBMode = getConfig("dbmode", "config/www-processor.properties");
+                    String sDBMode = getConfig("dbmode", appendage + "config/www-processor.properties");
                     if (sDBMode.equals("p2p") || (sDBMode.equals("both"))) {
                         //P2p mode
                         p("P2P MODE");
@@ -462,16 +469,16 @@ public class Main extends AbstractService {
         clusters)
     */
     private static void vaultCheckSettings() {
-        String allowRemote = getConfig("allowremote", "../rtserver/config/www-server.properties");
+        String allowRemote = getConfig("allowremote", appendage + "../rtserver/config/www-server.properties");
         
-        String bridgeHost = getConfig("bridge-host", "config/www-bridge.properties");
-        String bridgePort = getConfig("bridge-port", "config/www-bridge.properties");
-        String clusterHost = getConfig("cluster-host", "config/www-bridge.properties");
-        String clusterPort = getConfig("port", "../rtserver/config/www-server.properties");
-        String clusterName = getConfig("signature", "config/www-rtbackup.properties");
-        String secure = getConfig("secure", "config/www-bridge.properties");
-        String clusterId = NetUtils.readFileIntoString("data/clusterid").replaceAll("(\\r|\\n)", "");
-        String clusterToken = NetUtils.readFileIntoString("data/clusterToken").replaceAll("(\\r|\\n)", "");
+        String bridgeHost = getConfig("bridge-host", appendage +"config/www-bridge.properties");
+        String bridgePort = getConfig("bridge-port", appendage +"config/www-bridge.properties");
+        String clusterHost = getConfig("cluster-host", appendage +"config/www-bridge.properties");
+        String clusterPort = getConfig("port", appendage +"../rtserver/config/www-server.properties");
+        String clusterName = getConfig("signature", appendage +"config/www-rtbackup.properties");
+        String secure = getConfig("secure", appendage +"config/www-bridge.properties");
+        String clusterId = NetUtils.readFileIntoString(appendage + "data/clusterid").replaceAll("(\\r|\\n)", "");
+        String clusterToken = NetUtils.readFileIntoString(appendage + "data/clusterToken").replaceAll("(\\r|\\n)", "");
         
         p("clusterPort = " + clusterPort);
         

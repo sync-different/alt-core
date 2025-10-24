@@ -36,6 +36,7 @@ import processor.DatabaseEntry;
 import processor.RecordStats;
 import java.util.Random;
 
+import utils.Appendage;
 import utils.HTTPRequestPoster;
 
 import java.net.BindException;
@@ -74,6 +75,9 @@ public class TransferService implements Runnable {
 
     static boolean bConsole = true;
 
+    static String appendage = "";
+    static String appendageRW = "";
+
     /*
      * Scan processing directory
      */
@@ -99,9 +103,11 @@ public class TransferService implements Runnable {
         Thread t;
 
         try {
-            
+            Appendage app = new Appendage();
+            appendage = app.getAppendage();
+            appendageRW = app.getAppendageRW();
           loadBackupProps();
-          String sLog = LOG_PATH + LOG_NAME;
+          String sLog = appendage + LOG_PATH + LOG_NAME;
           log = new PrintStream(new BufferedOutputStream(
                             new FileOutputStream(sLog,true)));
           
@@ -139,10 +145,10 @@ public class TransferService implements Runnable {
                 p("transfer service run. hostfound = " + bHostFound);
                 loadServerProps();
                 loadBackupProps();
-                mDBMode = getConfig("dbmode", "config/www-processor.properties");
+                mDBMode = getConfig("dbmode", appendage + "config/www-processor.properties");
                 printBackupProps();                                
                 
-                mUUID =  NetUtils.getUUID(mUUIDPath);
+                mUUID =  NetUtils.getUUID(appendage + mUUIDPath);
                 
                 if (bHostFound) {
                         p("Server already Found = " + mHostName);                        
@@ -263,8 +269,9 @@ public class TransferService implements Runnable {
             
         }
         
-        log("Scanning directory: " + mScanDirectory, 2);
-        File processing_dir = new File(mScanDirectory);
+        log("Scanning directory: " + appendage + mScanDirectory, 2);
+        p("Scanning dir transfer: " + appendage + mScanDirectory);
+        File processing_dir = new File(appendage + mScanDirectory);
         if (processing_dir.exists()) {
             
             SimpleDateFormat DateFormat = new SimpleDateFormat("yyyyMMddHHmmssSSS");
@@ -290,7 +297,7 @@ public class TransferService implements Runnable {
             ZipOutputStream zip = null;
             FileOutputStream fileWriter = null;
             try {
-                fileWriter = new FileOutputStream(destZipFile);
+                fileWriter = new FileOutputStream(appendage + destZipFile);
             } catch (Exception e) {
                 e.printStackTrace();
             }
@@ -328,7 +335,7 @@ public class TransferService implements Runnable {
                             boolean bres = false;
                             if (sClient.equals(mHostName)) {
                                 log("Copying ZIP file locally: " + file.getCanonicalPath(), 2);
-                                int n = copyfile(file,"../rtserver/incoming/");
+                                int n = copyfile(file, appendage + "../rtserver/incoming/");
                                 if (n == 0) bres = true;
                             } else {
                                 //transfer via HTTP
@@ -377,7 +384,8 @@ public class TransferService implements Runnable {
                               
                             //1. copy file locally
                             log("copying record file to local incoming: " + file.getCanonicalPath(),2);
-                            int n = copyfile(file,"../rtserver/incoming/");
+                            p("copying record file to local incoming: " + file.getCanonicalPath());
+                            int n = copyfile(file,appendage + "../rtserver/incoming/");
                                  
                             //2. add file to ZIP if we need to send it to server.
                             if (bHostFound && !sClient.equals(mHostName) || !bHostFound) {
@@ -394,15 +402,17 @@ public class TransferService implements Runnable {
                                   }    
                             } else {
                                 log("Skipped ZIP creation. Client==SERVER",2);
+                                p("skipped ZIP creation. Client==SERVER");
                             }                            
                             
                             //3. finally, delete the file.
-                            File filer = new File(mScanDirectory + file.getName());
+                            File filer = new File(appendage + mScanDirectory + file.getName());
                             if (filer.exists()) {
                                 if (filer.delete()) {
                                     p("Delete OK");
                                 } else {                                  
                                     log("WARNING: Delete FAIL: " + filer.getCanonicalPath(), 0);
+                                    pw("WARNING: Delete FAIL: " + filer.getCanonicalPath());
                                 }
                             } else {
                                 log("WARNING: record file does not exist: " + filer.getCanonicalPath(), 0);
@@ -423,12 +433,12 @@ public class TransferService implements Runnable {
 
         
             try {
-                p("destZipFile" + destZipFile);                
-                File zap = new File(destZipFile);
+                p("destZipFile: " + destZipFile);                
+                File zap = new File(appendage + destZipFile);
                 if (zap.length() > 0) {
                     zip.close();
                     p("Time to rename the file at " + zap.getCanonicalPath());
-                    File zapn = new File(mScanDirectory + mUUID + "_" + destZipDate + ".zip");
+                    File zapn = new File(appendage + mScanDirectory + mUUID + "_" + destZipDate + ".zip");
                     zap.renameTo(zapn);
                 } else {
                     p("skip len = 0");                    
@@ -439,7 +449,7 @@ public class TransferService implements Runnable {
 
             
         } else {
-            p("scan directory does not exist");
+            pw("[WARNING] scan directory does not exist: " + processing_dir.getAbsolutePath());
         }
         
     }
@@ -494,8 +504,8 @@ public class TransferService implements Runnable {
     
     void loadBackupProps() throws IOException {
         //p(System.getProperty("java.home"));
-        p("loadProps()");
-        File f = new File(mCONFIG_PATH);
+        p("loadProps(): " + mCONFIG_PATH);
+        File f = new File(appendage + mCONFIG_PATH);
         if (f.exists()) {
             InputStream is =new BufferedInputStream(new
                            FileInputStream(f));
@@ -531,6 +541,8 @@ public class TransferService implements Runnable {
                 mLogLevel = Integer.parseInt(r);
             }
 
+        } else {
+            pw("WARNING: file not exists: " + f.getAbsolutePath());
         }
 
     }

@@ -281,45 +281,12 @@ public class MailerFuncs {
             p("wf already loaded.");
         }
    }
-     
-    static void setAppendage() {
-        boolean result = false;
-        File directory = new File("/Applications/Alterante.app/Contents/AlteranteJava.app/Contents/MacOS").getAbsoluteFile();
-        //File directory = new File("../app/projects/rtserver").getAbsoluteFile();
-        if (directory.exists())
-        {
-            p("[MailerFuncs] Found app directory. Setting working dir to it");
-            result = (System.setProperty("user.dir", directory.getAbsolutePath()) != null);
-            
-            appendage = "/Applications/Alterante.app/Contents/AlteranteJava.app/Contents/app/projects/rtserver/";
-            p("appendage  = " + appendage);
-            //appendage = "../app/projects/rtserver/";        
-        }
-        
-        String username = System.getProperty("user.name");
-        p("username: " + username);
-        File directoryRW = new File("/Users/" + username + "/Library/Containers/com.alterante.desktopapp1j");
-        if (directoryRW.exists()) {
-            p("[WebServer] Found container directory. checking folders.");
-            appendageRW = "/Users/" + username + "/Library/Containers/com.alterante.desktopapp1j/Data/app/projects/rtserver";
-            File dir = new File("/Users" + username + "/Library/Containers/com.alterante.desktopapp1j/Data/app/projects/rtserver");
-            if (dir.exists()) {
-                p("appendageRW rtserver exists.");
-            } else {
-                boolean res = new File(appendageRW).mkdirs();
-                p("appendageRW rtserver create = " + res);
-                res = new File(appendageRW + "/logs/").mkdirs();
-                p("appendageRW rtserver create logs = " + res);
-            }               
-        } else {
-            p("[WebServer] Container directory not found.");
-        }
-
-    }
-    
+         
     public static void mailer_loop() {
         loadWebFuncs();
-        setAppendage();
+        Appendage app = new Appendage();
+        appendage = app.getAppendage();
+        appendageRW = app.getAppendageRW();
         while (true) {
             try {
                 loadProps();

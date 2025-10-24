@@ -81,6 +81,8 @@ import static javaapplication1.WebServer.sMailPort;
 import static javaapplication1.WebServer.sMailPortPOP;
 import static javaapplication1.WebServer.scanTreeMode;
 import static javaapplication1.WebServer.scanTreeVariant;
+
+import utils.Appendage;
 //import static javaapplication1.WebServer.wf;
 import utils.CacheMetadataWeb;
 import utils.FolderMetaData;
@@ -909,62 +911,6 @@ public class WebServer extends AbstractService {
 
     }
 
-    static void setAppendage() {
-        boolean result = false;
-        File directory = new File("/Applications/Alterante.app/Contents/AlteranteJava.app/Contents/MacOS").getAbsoluteFile();
-        //File directory = new File("../app/projects/rtserver").getAbsoluteFile();
-        if (directory.exists())
-        {
-            p("[WebServer] Found app directory. Setting working dir to it");
-            result = (System.setProperty("user.dir", directory.getAbsolutePath()) != null);
-
-            appendage = "/Applications/Alterante.app/Contents/AlteranteJava.app/Contents/app/projects/rtserver/";
-            p("appendage  = " + appendage);
-            //appendage = "../app/projects/rtserver/";
-        }
-
-        String username = System.getProperty("user.name");
-        p("username: " + username);
-        File directoryRW = new File("/Users/" + username + "/Library/Containers/com.alterante.desktopapp1j");
-        if (directoryRW.exists()) {
-            p("[WebServer] Found container directory. checking folders.");
-            appendageRW = "/Users/" + username + "/Library/Containers/com.alterante.desktopapp1j/Data/app/projects/rtserver/";
-            p("appendageRW: " + appendageRW);
-
-
-            //rtserver setup
-            File dir = new File("/Users/" + username + "/Library/Containers/com.alterante.desktopapp1j/Data/app/projects/rtserver/");
-            if (dir.exists()) {
-                p("[WebServer] appendageRW rtserver exists.");
-            } else {
-                boolean res = new File(appendageRW).mkdirs();
-                p("[WebServer] appendageRW rtserver create = " + res);
-                res = new File(appendageRW + "/logs/").mkdirs();
-                p("[WebServer] appendageRW rtserver create logs = " + res);
-                res = new File(appendageRW + "/tmp/").mkdirs();
-                p("[WebServer] appendageRW rtserver create tmp = " + res);
-            }
-
-            //scrubber setup
-            String sScrubberPath = "/Users/" + username + "/Library/Containers/com.alterante.desktopapp1j/Data/app/projects/scrubber/";
-            dir = new File(sScrubberPath);
-            if (dir.exists()) {
-                p("[WebServer] appendageRW scrubber exists.");
-            } else {
-                p("[WebServer] scrubber path not exist: " + sScrubberPath);
-                boolean res = new File(sScrubberPath).mkdirs();
-                p("[WebServer] appendageRW scrubber create = " + res);
-                res = new File(sScrubberPath + "/data/").mkdirs();
-                p("[WebServer] appendageRW scrubber create data = " + res);
-                res = new File(sScrubberPath + "/config/").mkdirs();
-                p("[WebServer] appendageRW scrubber create config = " + res);
-            }
-
-        } else {
-            p("[WebServer] Container directory not found.");
-        }
-    }
-
     public static void main(String[] a) throws Exception {
 
         boolean result = false;
@@ -998,7 +944,9 @@ public class WebServer extends AbstractService {
             p("[init] Not Found app directory.");
         }
 
-        setAppendage();
+        Appendage app = new Appendage();
+        appendage = app.getAppendage();
+        appendageRW = app.getAppendageRW();
 
         p("Working Directory[2] = " + System.getProperty("user.dir"));
 
@@ -1259,8 +1207,8 @@ class Worker extends WebServer implements HttpConstants, Runnable {
 
         String sNamer = "";
 
-        int filechunk_offset = 0;
-        int filechunk_size = 0;
+        long filechunk_offset = 0;
+        long filechunk_size = 0;
 
         //p("--handleclient()----------------------");
 
@@ -2563,13 +2511,13 @@ class Worker extends WebServer implements HttpConstants, Runnable {
 
                     if (w.contains("filechunk_offset")) {
                         String sTmp = w.substring(w.indexOf("=")+1,w.length());
-                        filechunk_offset = Integer.parseInt(URLDecoder.decode(sTmp, "UTF-8"));
+                        filechunk_offset = Long.parseLong(URLDecoder.decode(sTmp, "UTF-8"));
                         p("filechunk_offset = " + filechunk_offset);
                     }
 
                     if (w.contains("filechunk_size")) {
                         String sTmp = w.substring(w.indexOf("=")+1,w.length());
-                        filechunk_size = Integer.parseInt(URLDecoder.decode(sTmp, "UTF-8"));
+                        filechunk_size = Long.parseLong(URLDecoder.decode(sTmp, "UTF-8"));
                         p("filechunk_size = " + filechunk_size);
                     }
 
@@ -5894,8 +5842,8 @@ class Worker extends WebServer implements HttpConstants, Runnable {
                     }
                     if (fname.contains("getfile.fn") || fname.contains("getfilepart.fn")) {
                         p("-----------------getfile.fn");
-                        int chunk_size = filechunk_size;
-                        int chunk_offset = filechunk_offset;
+                        long chunk_size = filechunk_size;
+                        long chunk_offset = filechunk_offset;
                         boolean file_partial = false;
                         if ((fname.contains("getfilepart.fn")) || (fname.contains("getfile.fn") && chunk_size > 0)) {
                             file_partial = true;
@@ -6090,28 +6038,50 @@ class Worker extends WebServer implements HttpConstants, Runnable {
                                         p("[getfile.fn] filechunk_size: " + chunk_size);
                                         p("[getfile.fn] filechunk_offset: " + chunk_offset);
 
-                                        is = new FileInputStream(sTmpFileName);
-
-                                        if (chunk_offset > 0) {
-                                            p("[getfile.fn] skipping offset: " + chunk_offset);
-                                            is.skip(chunk_offset);
-                                        }
-
                                         if (file_partial) {
                                             p("********************* PARTIAL FILE CASE ***************************");
                                             p("[getfilepart.fn] partial file case. chunk size = " + chunk_size);
-                                            //partial file case
-                                            byte[] buffer = new byte[chunk_size];
-                                            int bytesRead = 0;
-                                            int bytesReadTotal = 0;
-                                            while ((bytesRead = is.read(buffer)) != -1 && bytesReadTotal < chunk_size) {
-                                                bytesReadTotal += bytesRead;
-                                                p("[getfile.fn] bytesRead: " + bytesRead + " totalread: " + bytesReadTotal);
-                                                outFile.write(buffer, 0, bytesRead);
+
+                                            // Use RandomAccessFile for efficient seeking to large offsets
+                                            RandomAccessFile raf = null;
+                                            try {
+                                                raf = new RandomAccessFile(sTmpFileName, "r");
+
+                                                // Seek to the chunk offset (much faster than skip!)
+                                                if (chunk_offset > 0) {
+                                                    p("[getfile.fn] seeking to offset: " + chunk_offset);
+                                                    raf.seek(chunk_offset);
+                                                }
+
+                                                // Read the chunk in smaller blocks to avoid large buffer allocation
+                                                byte[] buffer = new byte[8192]; // 8KB buffer (reusable)
+                                                int bytesReadTotal = 0;
+                                                int bytesToRead;
+                                                int bytesRead;
+
+                                                while (bytesReadTotal < chunk_size) {
+                                                    bytesToRead = (int)Math.min(buffer.length, chunk_size - bytesReadTotal);
+                                                    bytesRead = raf.read(buffer, 0, bytesToRead);
+
+                                                    if (bytesRead == -1) {
+                                                        break; // EOF reached
+                                                    }
+
+                                                    bytesReadTotal += bytesRead;
+                                                    outFile.write(buffer, 0, bytesRead);
+                                                    p("[getfile.fn] bytesRead: " + bytesRead + " totalread: " + bytesReadTotal);
+                                                }
+
+                                                p("[getfile.fn] Chunk complete. Total bytes read: " + bytesReadTotal);
+                                            } finally {
+                                                if (raf != null) {
+                                                    raf.close();
+                                                }
                                             }
                                         } else {
                                             p("[getfile.fn] FULL FILE CASE...");
                                             //full file case
+                                            is = new FileInputStream(sTmpFileName);
                                             try {
                                                 int n;
                                                 while ((n = is.read(buf)) > 0) {
@@ -6269,7 +6239,7 @@ class Worker extends WebServer implements HttpConstants, Runnable {
                         } else {
                             //local getts
                             if (isUUIDValid(sUUID)) {
-                                String sTmpFileName = "../rtserver/streaming/" + sMD5 + "/" + sTS;
+                                String sTmpFileName = appendage + "../rtserver/streaming/" + sMD5 + "/" + sTS;
 
                                 p("Looking for TS file: " + sTmpFileName);
                                 File fh2 = new File(sTmpFileName);
@@ -6359,7 +6329,7 @@ class Worker extends WebServer implements HttpConstants, Runnable {
                         } else {
                             //local getvideo
                             if (isUUIDValid(sUUID)) {
-                                String sTmpFileName = "../rtserver/streaming/" + sMD5 + "/" + "OUTPUT.m3u8";
+                                String sTmpFileName = appendage + "../rtserver/streaming/" + sMD5 + "/" + "OUTPUT.m3u8";
 
                                 p("Looking for M3u8 file: " + sTmpFileName);
                                 File fh2 = new File(sTmpFileName);

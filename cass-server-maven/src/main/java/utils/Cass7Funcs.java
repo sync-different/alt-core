@@ -9,13 +9,12 @@
 package utils;
 
 import utils.LocalFuncs;
+import utils.Appendage;
 
 import java.awt.image.BufferedImage;
 import java.lang.OutOfMemoryError;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import java.net.URI;
-
 import java.text.SimpleDateFormat;
 
 import org.apache.cassandra.thrift.Cassandra;
@@ -770,41 +769,6 @@ public class Cass7Funcs {
         } 
     }
     
-      void setAppendage() {
-        boolean result = false;
-        File directory = new File("/Applications/Alterante.app/Contents/AlteranteJava.app/Contents/MacOS").getAbsoluteFile();
-        //File directory = new File("../app/projects/rtserver").getAbsoluteFile();
-        if (directory.exists())
-        {
-            p("[loadfuncs] Found app directory. Setting working dir to it");
-            result = (System.setProperty("user.dir", directory.getAbsolutePath()) != null);
-            
-            appendage = "/Applications/Alterante.app/Contents/AlteranteJava.app/Contents/app/projects/rtserver/";
-            p("appendage  = " + appendage);
-            //appendage = "../app/projects/rtserver/";        
-        }
-        
-        String username = System.getProperty("user.name");
-        p("username: " + username);
-        File directoryRW = new File("/Users/" + username + "/Library/Containers/com.alterante.desktopapp1j");
-        if (directoryRW.exists()) {
-            p("[Cass7Funcs] Found container directory. checking folders.");
-            appendageRW = "/Users/" + username + "/Library/Containers/com.alterante.desktopapp1j/Data/app/projects/rtserver/";
-            File dir = new File("/Users" + username + "/Library/Containers/com.alterante.desktopapp1j/Data/app/projects/rtserver");
-            if (dir.exists()) {
-                p("appendageRW rtserver exists.");
-            } else {
-                boolean res = new File(appendageRW).mkdirs();
-                p("appendageRW rtserver create = " + res);
-                res = new File(appendageRW + "/logs/").mkdirs();
-                p("appendageRW rtserver create logs = " + res);
-            }               
-        } else {
-            p("[Cass7Funcs] Container directory not found.");
-        }
-        
-    }
-    
         public String read_row_list2(String _keyin, 
                                 int nMode, 
                                 String _root, 
@@ -851,8 +815,9 @@ public class Cass7Funcs {
         String sDateFile = sdf.format(ts_start);
         
         try {
-            
-            setAppendage();
+            Appendage app = new Appendage();
+            appendage = app.getAppendage();
+            appendageRW = app.getAppendageRW();
                     
             //open error log
             String sFilename = appendageRW + LOG_NAME_PERFORMANCE_PATH + sDateFile + "_performance_server_error.txt";
@@ -3405,13 +3370,13 @@ public class Cass7Funcs {
                            
                     //check if video thumbnail available and if so generate the alt64 file
                     if (is_video(sFileName)) {
-                        File fthumb = new File("../rtserver/streaming/" + sNamer + "/" + "thumbnail.jpg");
+                        File fthumb = new File(appendage + "../rtserver/streaming/" + sNamer + "/" + "thumbnail.jpg");
                         p("looking for thumbnail video: " + fthumb.getAbsolutePath());
                         if (fthumb.exists()) {
                             p("found the thumnail in JPG format");
 
                             //store the thumbnail encoded in Base64 as well
-                            File fh64= new File(THUMBNAIL_OUTPUT_DIR, sNamer + ".alt64");
+                            File fh64= new File(appendage + THUMBNAIL_OUTPUT_DIR, sNamer + ".alt64");
                             if (!fh64.exists()) {
                                 p("did not find the ALT64 file : " + fh64.getAbsolutePath());
                                 p("generating new ALT64 for JPG: " + fthumb.getAbsolutePath());
@@ -3428,7 +3393,7 @@ public class Cass7Funcs {
                     //only check for thumbnail if it's a photo , music, or PDF
                     if (is_video(sFileName) || is_photo(sFileName) || is_pdf(sFileName) || is_music(sFileName)) {
                         p("THUMBNAIL DIR = " + THUMBNAIL_OUTPUT_DIR);
-                        File fh64= new File(THUMBNAIL_OUTPUT_DIR, sNamer.toLowerCase() + ".alt64");
+                        File fh64= new File(appendage + THUMBNAIL_OUTPUT_DIR, sNamer.toLowerCase() + ".alt64");
                         p("@@@@THUMBNAIL DIR2 = " + fh64.getCanonicalPath());
                         if(fh64.exists()){
                             FileInputStream is=new FileInputStream(fh64);
@@ -5986,6 +5951,7 @@ public static boolean isUnix(String sUUID) {
         try {
             //InetAddress addr = InetAddress.getByName(_ipaddress);
             //return addr.isReachable(500);
+            p("isNodeAvailable() evaluating: " + _ipaddress + ":" + _port);
             InetAddress addr = InetAddress.getByName(_ipaddress);
             float portf = Float.parseFloat(_port);
             int port = (int)portf;
@@ -5996,10 +5962,13 @@ public static boolean isUnix(String sUUID) {
             return true;
         } catch (NoRouteToHostException ex) {
             p("Exception: No route to host...");            
+            pe("Exception: no route to host: " + ex.getMessage());
         } catch (SocketTimeoutException ex) {
             p("Exception: isNodeAvailable timeout");
+            pe("Exception: isNodeAvailable timeout" + ex.getMessage());
         } catch (Exception ex) {
             Logger.getLogger(Cass7Funcs.class.getName()).log(Level.SEVERE, null, ex);
+            pe("Exception: isNodeAvailable general exception" + ex.getMessage());
         }
         return false;
     }

@@ -22,6 +22,8 @@ import java.net.NetworkInterface;
 import java.net.SocketException;
 import java.util.Enumeration;
 import java.util.Properties;
+
+import utils.Appendage;
 import utils.HTTPRequestPoster;
 import utils.NetUtils;
 import java.util.Calendar;
@@ -38,13 +40,18 @@ public class BroadcastService implements Runnable {
     protected static Properties props = new Properties();
 
     boolean mTerminated = false;
+    String appendage = "";
+    String appendageRW = "";
 
     static boolean bConsole = true;
 
     public BroadcastService(String _signature) {
         
-        
-      mNodeSignature = _signature;
+        Appendage app = new Appendage();
+        appendage = app.getAppendage();
+        appendageRW = app.getAppendageRW();
+      
+        mNodeSignature = _signature;
       
       t = new Thread(this, "sc_r");
       p("Child thread: " + t);
@@ -237,6 +244,7 @@ public class BroadcastService implements Runnable {
         p("loadProps()");
         File f = new File
                 (
+                appendage + 
                 ".." +
                 File.separator+
                 "rtserver"+
@@ -253,6 +261,8 @@ public class BroadcastService implements Runnable {
             if (r != null) {
                 mLocalPort = r;
             }
+        } else {
+            pw("WARNING: properties file not found:" + f.getAbsolutePath());
         }
         mClusterId = getClusterID();
 
@@ -260,7 +270,7 @@ public class BroadcastService implements Runnable {
     
     
     private String getClusterID() {
-        String clusteridUUIDPath = "data/clusterid";
+        String clusteridUUIDPath = appendage + "data/clusterid";
         String clusteridUUID = NetUtils.getUUID(clusteridUUIDPath);
         p("clusteridUUID = " + clusteridUUID);
         return clusteridUUID;

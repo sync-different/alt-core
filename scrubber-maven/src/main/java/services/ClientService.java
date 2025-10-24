@@ -41,6 +41,8 @@ import java.net.URLDecoder;
 
 import java.util.StringTokenizer;
 import static services.BackupClientService.sUUIDpath;
+
+import utils.Appendage;
 import utils.HTTPRequestPoster;
 //import static services.BroadcastService.mLocalPort;
 //import static services.BroadcastService.p;
@@ -76,7 +78,9 @@ public class ClientService implements Runnable {
    
    public boolean bHostFound = false;
    String mCONFIG_PATH = "";
-   
+    static String appendage = "";
+    static String appendageRW = "";
+       
    public void terminate() {
        
        log("Recieved Termination request.", 0);
@@ -104,9 +108,17 @@ public class ClientService implements Runnable {
       mLogLevel = _loglevel;
 
       try {
+            Appendage app = new Appendage();
+            appendage = app.getAppendage();
+            appendageRW = app.getAppendageRW();
+            p("CONFIG PATH = " + _configpath);
             loadBackupProps();
             
-            String sLog = LOG_PATH + LOG_NAME;
+            String sLog = appendage + LOG_PATH + LOG_NAME;
+
+            p("LOG PATH = " + sLog);
+
+
             log = new PrintStream(new BufferedOutputStream(
                             new FileOutputStream(sLog,true)));
             log("opening log file: " + sLog, 1);
@@ -214,8 +226,8 @@ public class ClientService implements Runnable {
                 bHostFound = true;            
             }
             
-            UpdateConfig("serverip", mServername, "../scrubber/config/serverinfo.properties");
-            UpdateConfig("serverport", mPortRT, "../scrubber/config/serverinfo.properties");
+            UpdateConfig("serverip", mServername, appendage + "../scrubber/config/serverinfo.properties");
+            UpdateConfig("serverport", mPortRT, appendage + "../scrubber/config/serverinfo.properties");
 
             
         } catch (SocketException e) {
@@ -367,7 +379,7 @@ public class ClientService implements Runnable {
                         loadBackupProps();
                         p("uuidpath = " + mUUIDPath);                    
 
-                        String sUUID = NetUtils.getUUID(mUUIDPath);
+                        String sUUID = NetUtils.getUUID(appendage + mUUIDPath);
 
                         mLastSeq = "-";
                         mLastBatch = "-";
@@ -466,7 +478,7 @@ public class ClientService implements Runnable {
     
         //p(System.getProperty("java.home"));
         p("loadBackkupProps()");
-        File f = new File(mCONFIG_PATH);
+        File f = new File(appendage + mCONFIG_PATH);
         if (f.exists()) {
             InputStream is =new BufferedInputStream(new
                            FileInputStream(f));
@@ -507,6 +519,8 @@ public class ClientService implements Runnable {
                 mMode = r;
             }
 
+        } else {
+            pw("WARNING: config file not found: " + f.getAbsolutePath());
         }
 
     }
@@ -520,6 +534,7 @@ void loadProps() throws IOException {
         p("loadProps()");
         File f = new File
                 (
+                appendage+
                 ".."+
                 File.separator+
                 "rtserver"+
@@ -536,6 +551,8 @@ void loadProps() throws IOException {
             if (r != null) {
                 mLocalPort = r;
             }
+        } else {
+            pw("[SC.lientService] WARNING: config file not found: " + f.getAbsolutePath());
         }
 
     }
@@ -589,12 +606,12 @@ public boolean setnode(String _serverIP, String _portRT, String _uuid, String _i
         if (mMode.equals("server")) {
             sMachine = mSignature;
         } else {
-            String sWindows = NetUtils.getConfig("winserver", "../rtserver/config/www-server.properties");
+            String sWindows = NetUtils.getConfig("winserver", appendage + "../rtserver/config/www-server.properties");
             boolean bWindows = Boolean.parseBoolean(sWindows);
             sMachine = NetUtils.getComputerName(bWindows);        
         }
         
-        String nettyport = NetUtils.getConfig("nettyport", "../rtserver/config/www-server.properties");
+        String nettyport = NetUtils.getConfig("nettyport", appendage + "../rtserver/config/www-server.properties");
 
         p("    [setnode()] nettyport  : " + nettyport);
 

@@ -31,6 +31,8 @@ import java.net.DatagramSocket;
 import java.util.StringTokenizer;
 import java.net.SocketTimeoutException;
 import java.util.ArrayList;
+
+import utils.Appendage;
 import utils.NetUtils;
 import java.net.URLDecoder;
 
@@ -39,6 +41,9 @@ import java.net.URLDecoder;
 public class ScannerService implements Runnable {
    Thread t;
  
+   static String appendage = "";
+   static String appendageRW = "";
+
    String mRECORDS_FILE_PATH         = "./data/.records.db";
    String mSCAN_PATH         = "";
    String mSCAN_FILE = "";
@@ -90,7 +95,7 @@ public class ScannerService implements Runnable {
        log = null;
        mFileRecords = null;
    }
-      
+
    public ScannerService(String _recordspath, 
                         String _hostname, 
                         long _delay, 
@@ -112,8 +117,12 @@ public class ScannerService implements Runnable {
       mLogLevel = _loglevel;
    
        try {
+            Appendage app = new Appendage();
+            appendage = app.getAppendage();
+            appendageRW = app.getAppendageRW();
             loadBackupProps();
-            String sFilename = LOG_PATH + LOG_NAME;
+            String sFilename = appendage + LOG_PATH + LOG_NAME;
+            p("log filename = " + sFilename);
             log = new PrintStream(new BufferedOutputStream(
                             new FileOutputStream(sFilename,true)));
             log("opened log file: " + sFilename, 0);
@@ -353,7 +362,7 @@ public class ScannerService implements Runnable {
                     return "";
                 }
             } else {
-                p("File not found. exiting...");
+                pw("WARNING: Config File not found. exiting.... File: " + _config + "'");
                 return "";
             }
         } catch (Exception e) {
@@ -367,8 +376,8 @@ public class ScannerService implements Runnable {
       try {
             int j = 0;
             
-            String sState = getConfig("state", "../rtserver/config/www-setup.properties");
-            String sWindowsServer = getConfig("winserver", "../rtserver/config/www-server.properties");
+            String sState = getConfig("state", appendage + "../rtserver/config/www-setup.properties");
+            String sWindowsServer = getConfig("winserver", appendage + "../rtserver/config/www-server.properties");
             Boolean bWindowsServer = true;
             if (!"".equals(sWindowsServer)){
                 bWindowsServer = Boolean.parseBoolean(sWindowsServer);
@@ -379,7 +388,7 @@ public class ScannerService implements Runnable {
                 while (sState.equals("NEW")) {
                     p("State=NEW. Waiting for user to complete Wizard setup. Sleeping for " + mDelay + "ms.");
                     Thread.sleep(mDelay);                
-                    sState = getConfig("state", "../rtserver/config/www-setup.properties");
+                    sState = getConfig("state", appendage + "../rtserver/config/www-setup.properties");
                 }                
             }
 
@@ -427,9 +436,9 @@ public class ScannerService implements Runnable {
                 if (mSCAN_PATH.length() > 0) {
                     pf.ScanDirectory(mSCAN_PATH, bCheck);
                 } else {
-                    p("********** SCAN CONFIG FILE = " + mSCAN_FILE);
+                    p("********** SCAN CONFIG FILE = " + appendage + mSCAN_FILE);
                     
-                    File f = new File(mSCAN_FILE);
+                    File f = new File(appendage + mSCAN_FILE);
                     if (f.exists()) {
                         InputStream is =new BufferedInputStream(new
                                        FileInputStream(f));

@@ -65,23 +65,10 @@ public class UserCollection {
 
     // END ANSI
 
-     void setAppendage() {
-        boolean result = false;
-        File directory = new File("/Applications/Alterante.app/Contents/AlteranteJava.app/Contents/MacOS").getAbsoluteFile();
-        //File directory = new File("../app/projects/rtserver").getAbsoluteFile();
-        if (directory.exists())
-        {
-            p("[loadfuncs] Found app directory. Setting working dir to it");
-            result = (System.setProperty("user.dir", directory.getAbsolutePath()) != null);
-            
-            appendage = "/Applications/Alterante.app/Contents/AlteranteJava.app/Contents/app/projects/rtserver/";
-            p("appendage  = " + appendage);
-        
-        }
-    }
 
     private UserCollection() {
-        setAppendage();
+        Appendage app = new Appendage();
+        appendage = app.getAppendage();
         loadUserCollection();
     }
     

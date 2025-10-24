@@ -13,13 +13,19 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+
+import utils.Appendage;
 import utils.NetUtils;
+import utils.sURLPack;
 
 import java.util.Calendar;
 import java.util.Date;
 import java.text.SimpleDateFormat;
 
 public class FfmpegExecutor {
+
+    static String appendage = "";
+    static String appendageRW = "";
 
     // BEGIN ANSI
     static boolean bConsole = true;
@@ -249,7 +255,12 @@ public class FfmpegExecutor {
         command = command.replaceAll("\\$\\$ffmpegexePath\\$\\$", "'" + ffmpegexeFile.getCanonicalPath() + "'");
         command = command.replaceAll("\\$\\$inputPath\\$\\$", "'" + _input.getPath() + "'");
         command = command.replace("$$outputm3u8FilePath$$", "'" + outputm3u8File.getCanonicalPath() + "'");
-        String clusteridUUIDPath = "../scrubber/data/clusterid";
+
+            Appendage app = new Appendage();
+            appendage = app.getAppendage();
+            appendageRW = app.getAppendageRW();
+        String clusteridUUIDPath = appendage + "../scrubber/data/clusterid";
+        p("[ffmpegexecutor] clusteridUUIDPath: " + clusteridUUIDPath);
         String clusteridUUID = NetUtils.getUUID(clusteridUUIDPath);
         command = command.replace("$$prefix$$", "'" + "/getts.fn?md5=" + _md5 +"&multiclusterid="+clusteridUUID+ "&ts=" + "'");
         command = command.replace("$$outputtsFile$$", "'" + outputtsFile.getCanonicalPath() + "'");

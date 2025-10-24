@@ -62,6 +62,9 @@ public class WebFuncs {
         
         static int nErrors = 0;
 
+      static String appendage = "";
+      static String appendageRW = "";
+
     public static final String ANSI_RED = "\u001B[31m";
     public static final String ANSI_GREEN = "\u001B[32m";
     public static final String ANSI_YELLOW = "\u001B[33m";
@@ -141,7 +144,10 @@ class UpdateCheck implements Runnable {
       boolean bWindows = true;
       
       UpdateCheck() {
-            String IsWindows = NetUtils.getConfig("winserver", "config/www-server.properties");
+            Appendage app = new Appendage();
+            appendage = app.getAppendage();
+            appendageRW = app.getAppendageRW();
+            String IsWindows = NetUtils.getConfig("winserver", appendage + "config/www-server.properties");
             bWindows = Boolean.parseBoolean(IsWindows);
             Thread t = new Thread(this, "UpdateCheck");
             t.start(); // Start the thread
