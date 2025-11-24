@@ -146,7 +146,7 @@ public class ScannerLauncher implements Runnable{
                     return "";
                 }
             } else {
-                pw("File not found. exiting.... File: "+ f.getAbsolutePath());
+                pw("WARNING: File not found. exiting.... File: '"+ f.getAbsolutePath() + "' + property: '" + _name + "'");
                 return "";
             }
         } catch (Exception e) {
@@ -158,6 +158,7 @@ public class ScannerLauncher implements Runnable{
     public void run() {
         while (!mTerminated) {
             p("CONFIG PATH = " + mCONFIG_PATH);
+            p("appendage = " + appendage);
             
             String sScanNode = getConfig("scannode", appendage + mCONFIG_PATH);       
             if (sScanNode.equals("on")) {
@@ -169,7 +170,7 @@ public class ScannerLauncher implements Runnable{
                                 mSignature,
                                 false,
                                 bHostFound,
-                                appendage + mCONFIG_PATH,
+                                mCONFIG_PATH,
                                 mLogLevel);
                 ss.run();
                 p("ScannerService(core) completed.");
@@ -185,7 +186,7 @@ public class ScannerLauncher implements Runnable{
                 }
             }                        
             
-            String sBackupNode = getConfig("backupnode", mCONFIG_PATH);            
+            String sBackupNode = getConfig("backupnode", appendage + mCONFIG_PATH);            
             if (sBackupNode.equals("yes")) {
                 mBACKUP_PATH = "";
                 try {
@@ -214,11 +215,11 @@ public class ScannerLauncher implements Runnable{
                     p("**** SKIPPING SCAN FOR BACKUP ****");
             }
             
-            String sSyncNode = getConfig("syncnode", mCONFIG_PATH);            
+            String sSyncNode = getConfig("syncnode", appendage + mCONFIG_PATH);            
             if (sSyncNode.equals("yes")) {
                 String mSYNC_PATH = "";
                 try {
-                    mSYNC_PATH = URLDecoder.decode(getConfig("syncpath", mCONFIG_PATH),"UTF-8");
+                    mSYNC_PATH = URLDecoder.decode(getConfig("syncpath", appendage + mCONFIG_PATH),"UTF-8");
                 } catch (Exception e) {
                     e.printStackTrace();
                 }

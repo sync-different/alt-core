@@ -227,7 +227,7 @@ public class Main extends AbstractService {
                     Shutdown(1);
                 }
             } else {
-                p("WARNING: file not found:" + f.getCanonicalPath());
+                pw("WARNING: file not found:" + f.getCanonicalPath());
             }                
         } catch (Exception e) {
             p("Warning: There was an exception checking update.");
@@ -301,6 +301,10 @@ public class Main extends AbstractService {
             //configpath
             _configpath = args[6];
             p("config path: " + _configpath);
+            File f = new File(_configpath);
+            if (!f.exists()) {
+                pw("****WARNING: Config file not found at path: " + _configpath);
+            }
             
             CheckForUpdate();
             WaitForSetup();
@@ -630,6 +634,11 @@ public class Main extends AbstractService {
             }
 
         }
+
+    public static final String ANSI_RED = "\u001B[31m";
+    public static final String ANSI_GREEN = "\u001B[32m";
+    public static final String ANSI_YELLOW = "\u001B[33m";
+    public static final String ANSI_RESET = "\u001B[0m";
       
     /* print to stdout */
     static protected void p(String s) {
@@ -639,6 +648,15 @@ public class Main extends AbstractService {
 
         long threadID = Thread.currentThread().getId();
         System.out.println(sDate + " [DEBUG] [SC.main_" + threadID + "] " + s);
+    }
+
+    protected static void pw(String s) {
+        Date ts_start = Calendar.getInstance().getTime();
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy/MM/dd hh:mm:ss");
+        String sDate = sdf.format(ts_start);
+
+        long threadID = Thread.currentThread().getId();
+        System.out.println(ANSI_YELLOW + sDate + " [WARNING] [SC.main-" + threadID + "] " + s + ANSI_RESET);
     }
     
    static void loadProps() throws IOException {

@@ -41,9 +41,9 @@ public class ScrubberService implements Runnable {
                 System.out.println("scrubber launch flags = " + params);
                 String[] myargs;
                 if (params.length() > 0) {
-                    myargs = new String[]{"data/records.db","localhost",mLocalPort,"/Users/","../rtserver/incoming","macprd","config/www-rtbackup.properties",params};
+                    myargs = new String[]{"../scrubber/data/records.db","localhost",mLocalPort,"/Users/","../rtserver/incoming","macprd","../scrubber/config/www-rtbackup.properties",params};
                 } else {
-                    myargs = new String[]{"data/records.db","localhost",mLocalPort,"/Users/","../rtserver/incoming","macprd","config/www-rtbackup.properties"};                    
+                    myargs = new String[]{"../scrubber/data/records.db","localhost",mLocalPort,"/Users/","../rtserver/incoming","macprd","../scrubber/config/www-rtbackup.properties"};                    
                 }
                 try {
                     mymain.main(myargs);

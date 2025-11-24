@@ -260,6 +260,9 @@ public class FileUtils {
             mCONFIG_PATH = _configpath;
             mLogLevel = _loglevel;
                                   
+            pw("CONFIG PATH: " + mCONFIG_PATH);  
+            pw("STORAGE PATH[1]: " + mStorage);  
+
             loadBackupProps();
 
             String sLog = appendage + LOG_PATH + LOG_NAME;
@@ -269,7 +272,7 @@ public class FileUtils {
                                 new FileOutputStream(sLog,true)));
             log("opening log file: " + sLog + " loglevel: " + mLogLevel, 0);
             
-            p("uuidpath = " + mUUIDPath);                    
+            pw("uuidpath = " + mUUIDPath);                    
             p("outgoing = " + mDatabaseEntryPath);                    
 
             mUUID = NetUtils.getUUID(appendage + mUUIDPath);
@@ -361,6 +364,8 @@ public class FileUtils {
                 LOG_PATH = r;
             }
         
+        } else {
+            pw("WARNING: cannot load backup properties: '" + mCONFIG_PATH + "'");
         }
 
     }
@@ -1037,13 +1042,18 @@ public class FileUtils {
      */
     public boolean loadPendingFiles() {
         try {
-            p(mStorage);
-            File storage = new File(mStorage);            
-            if (!storage.exists())
+            pw("Loading XYZ Pending Files from " + appendage + mStorage);
+            File storage = new File(appendage + mStorage);            
+            if (!storage.exists()) {
+                pw("Storage not exists.");
                 return false;
-            FileInputStream fileIn = new FileInputStream(mStorage);
+            } else {
+                pw("Storage file exists.");
+            }
+            FileInputStream fileIn = new FileInputStream(appendage + mStorage);
             ObjectInputStream in = new ObjectInputStream(fileIn);            
             //mFilesDatabase = (HashMap<Key, FileDatabaseEntry>) in.readObject();
+            pw("before hashmap load");
             mFilesDatabase = (HashMap<String, FileDatabaseEntry>) in.readObject();
             in.close();
             fileIn.close();
@@ -1054,11 +1064,11 @@ public class FileUtils {
                     
             return true;
         } catch (ClassNotFoundException ex) {
-            p("exception> " + ex.toString());
+            pe("exception> " + ex.toString());
         } catch (FileNotFoundException ex) {
-            p("exception> " + ex.toString());
+            pe("exception> " + ex.toString());
         } catch (IOException ex) {
-            p("exception> " + ex.toString());
+            pe("exception> " + ex.toString());
         }
         return false;
     }    

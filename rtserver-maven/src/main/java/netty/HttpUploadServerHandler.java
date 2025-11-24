@@ -60,6 +60,8 @@ import java.util.Map.Entry;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import utils.Appendage;
+
 import static io.netty.buffer.Unpooled.*;
 import static io.netty.handler.codec.http.HttpHeaders.Names.*;
 
@@ -249,6 +251,10 @@ public class HttpUploadServerHandler extends SimpleChannelInboundHandler<HttpObj
 
     private void writeHttpData(InterfaceHttpData data) {
 
+        Appendage app = new Appendage();
+        String appendage = app.getAppendage();
+        String appendageRW = app.getAppendageRW();
+
         if (data.getHttpDataType() == HttpDataType.Attribute) {
             Attribute attribute = (Attribute) data;
             String value;
@@ -294,11 +300,11 @@ public class HttpUploadServerHandler extends SimpleChannelInboundHandler<HttpObj
                     if(isChunked) {
                         Integer chunkIndex= Integer.parseInt(formData.get("dzchunkindex"))+1;
                         String chunkTotal= formData.get("dztotalchunkcount");
-                        dest=new File("../rtserver/incoming" + File.separator +"upload."+ fileUpload.getFilename()+"."+chunkTotal+"."+chunkIndex+".p");
+                        dest=new File(appendage + "../rtserver/incoming" + File.separator +"upload."+ fileUpload.getFilename()+"."+chunkTotal+"."+chunkIndex+".p");
                         System.out.println("incoming Chunked getFileName () (netty): " + fileUpload.getFilename());
                         System.out.println("incoming Chunked getName() (netty): " + fileUpload.getName());
                     }else{
-                        dest=new File("../rtserver/incoming" + File.separator + fileUpload.getName());
+                        dest=new File(appendage + "../rtserver/incoming" + File.separator + fileUpload.getName());
                         System.out.println("incoming getFileName () (netty): " + fileUpload.getFilename());
                         System.out.println("incoming getName() (netty): " + fileUpload.getName());
                     }

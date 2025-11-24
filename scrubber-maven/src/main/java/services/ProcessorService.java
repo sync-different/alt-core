@@ -517,10 +517,13 @@ public class ProcessorService implements Runnable{
                         e.printStackTrace();
                     }                      
                 } else if (filename.endsWith(".b") || filename.endsWith(".p")) {//.b
-                    File dMobileBackup = new File("../scrubber/mobilebackup");
+                    File dMobileBackup = new File(appendage + "../scrubber/mobilebackup");
                     if(!dMobileBackup.exists()){
+                        pw("Mobile backup folder does not exist. Creating...");
                         dMobileBackup.mkdir();
                         addMobileBackupFolder();
+                    } else {
+                        pw("Mobile backup folder exist... Skip Creating...");                       
                     }
                     String[] filenametokens = filename.split("\\.");
                     String deviceid = filenametokens[0];
@@ -567,7 +570,7 @@ public class ProcessorService implements Runnable{
                             //final part arrived, time to build large file
                             boolean allChunksExist = true;
                             for (int i = 1; i<=totalparts && allChunksExist; i++) {
-                                String filePartName = mScanDirectory + "/" + deviceid + "." + name + "." + totalparts + "." + i + ".p";
+                                String filePartName = appendage + mScanDirectory + "/" + deviceid + "." + name + "." + totalparts + "." + i + ".p";
                                 p("file part name: " + filePartName);
                                 File filePart = new File(filePartName);
                                 if (!filePart.exists()) {
@@ -578,7 +581,7 @@ public class ProcessorService implements Runnable{
                             if(!allChunksExist)
                                 continue;
                             p("All file parts exist. Merging...");
-                            File ofile = new File(mScanDirectory + "/" + deviceid + "." + name + ".b");
+                            File ofile = new File(appendage + mScanDirectory + "/" + deviceid + "." + name + ".b");
 
                             p("output large file = " + ofile.getAbsolutePath());
                             p("name = '" + name + "'");
@@ -589,7 +592,7 @@ public class ProcessorService implements Runnable{
                             try {
                                 fos = new FileOutputStream(ofile,true);
                                 for (int i = 1; i<=totalparts; i++) {
-                                    String filePartName = mScanDirectory + "/" + deviceid + "." + name + "." + totalparts + "." + i + ".p";
+                                    String filePartName = appendage + mScanDirectory + "/" + deviceid + "." + name + "." + totalparts + "." + i + ".p";
                                     p("file part name: " + filePartName);
                                     File filePart = new File(filePartName);
                                     if (filePart.exists()) {
@@ -724,7 +727,7 @@ public class ProcessorService implements Runnable{
             
             String sScanFile = NetUtils.getConfig("scandir", appendage + "../scrubber/config/www-rtbackup.properties");            
             if (sScanFile.length() > 0) {
-                File f = new File(sScanFile);
+                File f = new File(appendage + sScanFile);
                 if (f.exists()) {
                     InputStream is =new BufferedInputStream(new FileInputStream(f));    
                     props.clear();
@@ -732,12 +735,13 @@ public class ProcessorService implements Runnable{
                     
                     String r = props.getProperty("scandir");                
                     if (r != null){
-                        String s = "../scrubber/mobilebackup/";
+                        String s = appendage + "../scrubber/mobilebackup/";
                         File f2 = new File(s);
                         f2.mkdir();                       
                         String sPathw = f2.getCanonicalPath() + File.separator;                        
                         String sPath = sPathw;
                         if (isMac()) {
+                            pw("mac case");
                             File volumes = new File("/Volumes/");
                             if (volumes.exists()) {
                                 for (File f3 : volumes.listFiles()) {
@@ -745,23 +749,23 @@ public class ProcessorService implements Runnable{
                                         sPath = f3.getPath() + sPathw;
                                         File f4 = new File(sPath);
                                         if (f4.exists()) {
-                                            p("path: '" + sPath + "' exists");
+                                            pw("path: '" + sPath + "' exists");
                                             break;
                                         } else {
-                                            p("path: " + sPath + "' NOT exists");
+                                            pw("path: " + sPath + "' NOT exists");
                                         }
                                     }
                                 }
                             }
                         } else {
                             if (isWindows()) {
-                                p("**** Case Windows *********");
+                                pw("**** Case Windows *********");
                                 p("sPath = '" + sPath + "'");
                                 p("**** End Case Windows *****");
                                 //case Windows
                             } else {
                                 //case Linux and others
-                                p("**** Case Linux *********");
+                                pw("**** Case Linux *********");
                                 p("sPath = '" + sPath + "'");
                                 p("**** End Case Linux *****");
                             }
@@ -771,7 +775,7 @@ public class ProcessorService implements Runnable{
                         c[0] = Character.toLowerCase(c[0]);
                         sPath = new String(c);
                         
-                        p("**** adding inbox path: " + sPath); 
+                        pw("**** adding inbox path: " + sPath); 
                         String path = URLEncoder.encode(sPath, "UTF-8").replaceAll("\\+", "%20");
                         if (r.trim().length() == 0){
                             r = path;
@@ -787,6 +791,8 @@ public class ProcessorService implements Runnable{
                     OutputStream os =new BufferedOutputStream(new FileOutputStream(f));  
                     props.store(os, "os");                   
                     os.close();
+                } else {
+                    pw("WARNING: Config file does not exist. Cannot add mobile backup folder: Scanfile:" + sScanFile);
                 }
             }            
             return 0;

@@ -120,6 +120,13 @@ public class ScannerService implements Runnable {
             Appendage app = new Appendage();
             appendage = app.getAppendage();
             appendageRW = app.getAppendageRW();
+            
+            if (appendage.length() > 0) {
+                pw("FIXING CONFIG PATH: " + mCONFIG_PATH);
+                mCONFIG_PATH = appendage + mCONFIG_PATH;
+                pw("FIXED CONFIG PATH: " + mCONFIG_PATH);
+            }
+
             loadBackupProps();
             String sFilename = appendage + LOG_PATH + LOG_NAME;
             p("log filename = " + sFilename);
@@ -264,6 +271,8 @@ public class ScannerService implements Runnable {
                 LOG_PATH = r;
             }
 
+        } else {
+            pw("WARNING: cannot load backup properties: '" + mCONFIG_PATH + "'");
         }
 
     }
@@ -415,8 +424,8 @@ public class ScannerService implements Runnable {
 
                 FileUtils pf = new FileUtils(mRECORDS_FILE_PATH, mDEBUG_MODE, mCONFIG_PATH, mLogLevel);
                 Boolean bres = pf.loadPendingFiles();
-                p("load res = " + bres);
-                p("count = " + pf.printFileCount());
+                pw("load res = " + bres);
+                pw("count = " + pf.printFileCount());
 
                 boolean bCheck = false;
                 j++;
@@ -472,9 +481,9 @@ public class ScannerService implements Runnable {
                 long freememdelta = freemem2 - freemem1;
                 p("DELTA = " + freememdelta);
                 
-                p("countrecords[1] = " + pf.countrecords);
+                pw("countrecords[1] = " + pf.countrecords);
                 pf.countrecords = 0;                
-                p("countrecords[2] = " + pf.countrecords);
+                pw("countrecords[2] = " + pf.countrecords);
                 
                 log("file record count = " + pf.printFileCount(),2);
                 bres = pf.savePendingFiles();
@@ -507,19 +516,22 @@ public class ScannerService implements Runnable {
                     }
                     
                     if (bHostFound) {
-                        p("********** SYNC");
+                        pw("************************************ SYNC");
                         mFileRecords = new FileDatabase(mRECORDS_FILE_PATH);
                         log("count before scrub = " + mFileRecords.count(), 1);
+                        pw("before scrub: " + mFileRecords.count());
                         mFileRecords.sync(mHostName,mUUID);
                         log("count after scrub = " + mFileRecords.count(), 1);
+                        pw("after scrub: " + mFileRecords.count());
                         boolean res = mFileRecords.save();
-                        p("res save file = " + res);
+                        pw("res save file = " + res);
                         p("Setting fr to Null");
                         mFileRecords = null;
                     } else {
                         log("[WARNING: Skipped scrubber because server was not found.]", 0);   
                     }
                 } else {
+                    pw("Scanner completed....");
                     log("[Scanner completed: Count : " + mScanRunSoFar + "]", 1);
                 }
 

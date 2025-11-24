@@ -39,6 +39,7 @@ import java.util.UUID;
 
 //import services.FileUtils;
 import utils.LocalFuncs;
+import utils.Appendage;
 
 /*
  * To change this template, choose Tools | Templates
@@ -65,7 +66,10 @@ public final class FileDatabase {
     static boolean bConnect = false;
 
     static String dbmode = "cass"; //assume cassandra db by default
-    
+
+    static String appendage = "";
+    static String appendageRW = "";
+
     void loadDbModeProp() throws IOException {
         //p(System.getProperty("java.home"));
         p("loadProps()");
@@ -87,7 +91,14 @@ public final class FileDatabase {
      * @param _storage String containing path to storage
      */
     public FileDatabase(String _storage) {        
+
+        Appendage app = new Appendage();
+        appendage = app.getAppendage();
+        appendageRW = app.getAppendageRW();
+        
         mStorage = _storage;
+        pw("FilesDatabase STORAGE PATH: " + appendage + mStorage);
+
         if (!load()){
             mFilesDatabase = new HashMap<String, FileDatabaseEntry>();
         }
@@ -415,7 +426,8 @@ public final class FileDatabase {
      */
     public synchronized boolean save() {
         try {
-            FileOutputStream fileOut = new FileOutputStream(mStorage);
+            pw("Saving Records Files to " + appendage + mStorage);
+            FileOutputStream fileOut = new FileOutputStream(appendage + mStorage);
             ObjectOutputStream out = new ObjectOutputStream(fileOut);
             out.writeObject(mFilesDatabase);
             out.close();
@@ -423,6 +435,7 @@ public final class FileDatabase {
             return true;
         } catch (FileNotFoundException ex) {
             ex.printStackTrace();
+            pw("WARNING : FileNotFoundException: " + appendage + mStorage);
             log("Warning: FileNotFoundException");
         } catch (IOException ex) {
             ex.printStackTrace();
@@ -436,11 +449,11 @@ public final class FileDatabase {
      */
     public boolean load() {
         try {
-            p("mStorage = " + mStorage);
-            File storage = new File(mStorage);            
+            pw("Loading Records Files from " + appendage + mStorage);
+            File storage = new File(appendage + mStorage);            
             if (!storage.exists())
                 return false;
-            FileInputStream fileIn = new FileInputStream(mStorage);
+            FileInputStream fileIn = new FileInputStream(appendage + mStorage);
             ObjectInputStream in = new ObjectInputStream(fileIn);            
             mFilesDatabase = (HashMap<String, FileDatabaseEntry>) in.readObject();
             in.close();
@@ -451,6 +464,7 @@ public final class FileDatabase {
             log("Warning: ClassNotFoundException");
         } catch (FileNotFoundException ex) {
             ex.printStackTrace();
+            pw("WARNING : FileNotFoundException: " + appendage + mStorage);
             log("Warning: FileNotFoundException");
         } catch (IOException ex) {
             ex.printStackTrace();

@@ -200,10 +200,11 @@ public class DatabaseEntry implements Serializable {
                        p("[1b]");
                        originalImage = ImageIO.read(fis);
                        p("[1c]");
-                       dbe_img_height = originalImage.getHeight();
-                       p("[1d]");
-                       dbe_img_width = originalImage.getWidth();
-                                                                   
+                       if (originalImage != null) {
+                        dbe_img_height = originalImage.getHeight();
+                        dbe_img_width = originalImage.getWidth();
+
+                                                                  
 //                       image.flush();                       
 //                       image = null;
 //                       fis.close();
@@ -253,6 +254,13 @@ public class DatabaseEntry implements Serializable {
                        pw("Thumbnail was created. Zzz for: " + _delay);
                        Thread.sleep(_delay);
 
+                    } else {
+                        pw("WARNING: originalImage is null!!! for file: " + _file.getAbsolutePath());
+                        dbe_img_height = 0;
+                        dbe_img_width = 0;
+                        dbe_img_thumbnail = null;
+                      }
+ 
                    } catch (java.awt.color.CMMException ex) {                           
                        pw("exception --> CMMException");
                        ex.printStackTrace();
