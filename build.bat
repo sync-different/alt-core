@@ -1,6 +1,6 @@
-.\build-common.bat
-.\build-cs.bat
-.\build-rt.bat
-.\build-sc.bat
-.\build-uber.bat
+call .\build-common.bat
+call .\build-cs.bat
+call .\build-rt.bat
+call .\build-sc.bat
+call .\build-uber.bat
 
