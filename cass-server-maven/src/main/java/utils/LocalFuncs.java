@@ -972,9 +972,11 @@ public class LocalFuncs {
             }
             p("[LocalFuncs.open_mapdb()] DBName: '" + sFile + "'");
             
-            String sAppend = "./";
-            if (appendage.length() > 0) sAppend = "";
-            
+            String sAppend = appendage + "../rtserver/";
+            pw("****Appendage for OpenDB[v8] : " + sAppend);
+            //if (appendage.length() > 0) sAppend = "";
+            pw("will be looking for DB file at: " + sAppend + sFile);
+
             if (tx_mm1 == null) {     
                 //.asyncWriteEnable()
                 tx_mm1 = DBMaker.newFileDB(new File(sAppend + sFile + "_mm1")).closeOnJvmShutdown().cacheLRUEnable().mmapFileEnableIfSupported().makeTxMaker();                            
@@ -7992,7 +7994,8 @@ public class LocalFuncs {
             
             TxMaker tx_share;
             
-            pw("LoadShareMapDB()");  
+            pw("LoadShareMapDB() Appendage: '" + appendage + "'");  
+            pw("LoadShareMapDB() AppendageRW: '" + appendageRW + "'");  
             
             String sFile = appendageRW + "../rtserver/sharesdb";
             String sDBName = readDoc(appendageRW + "../rtserver/dbsharename.txt");
@@ -8014,8 +8017,11 @@ public class LocalFuncs {
             pw("DBCurrent: '" + sDBCurrent + "'");
                      
             String sAppend = "../rtserver/";
-            if (appendage.length() > 0) sAppend = "";
-            
+            if (appendage.length() > 0) sAppend = appendage + "../rtserver/";
+
+            pw("sAppend: '" + sAppend + "'");
+            pw("sFile: '" + sFile + "'");
+
             File fh = new File(sAppend + sFile);
             
             pw("mapDB File '" + fh.getAbsolutePath() + "' exists: " + fh.exists());

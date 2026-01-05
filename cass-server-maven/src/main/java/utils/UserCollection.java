@@ -111,7 +111,8 @@ public class UserCollection {
     private void saveUserCollection(){
         BufferedWriter writer = null;
         try {
-            writer = new BufferedWriter(new FileWriter("config/users.txt"));
+            pw("Saving user collection to " + appendage + "config/users.txt");
+            writer = new BufferedWriter(new FileWriter(appendage + "config/users.txt"));
             for (User user : users) {
                 writer.write(user.getUsername() + "," + user.getPassword() + "," + user.getRole() + "," + user.getEmail());
                 writer.newLine();

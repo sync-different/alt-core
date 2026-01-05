@@ -4343,12 +4343,12 @@ class Worker extends WebServer implements HttpConstants, Runnable {
 
                                 final boolean userPasswordValid = userCollection.isUserPasswordValid(sBoxUser, sBoxPassword);
                                 isUserAdmin = userCollection.getUserAdmin().getUsername().equalsIgnoreCase(sBoxUser);
-                                final boolean allowOthersUsers = GetConfig("allowotherusers", "config/www-server.properties").equals("true");
+                                final boolean allowOthersUsers = GetConfig("allowotherusers", appendage + "config/www-server.properties").equals("true");
 
 
-                                p("[1] " + userPasswordValid);
-                                p("[2] " + isUserAdmin);
-                                p("[3] " + allowOthersUsers);
+                                p("[1] pwvalid = " + userPasswordValid);
+                                p("[2] isadmin = " + isUserAdmin);
+                                p("[3] allowotherusers = " + allowOthersUsers);
 
                                 loggedIn = (userPasswordValid && (isUserAdmin ||allowOthersUsers));
 
@@ -10067,7 +10067,7 @@ class Worker extends WebServer implements HttpConstants, Runnable {
                     return "";
                 }
             } else {
-                p("File not found. exiting...");
+                pw("WARNING: Config File not found. exiting...:" + _name);
                 return "";
             }
         } catch (Exception e) {
