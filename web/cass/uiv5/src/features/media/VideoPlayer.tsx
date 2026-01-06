@@ -4,7 +4,7 @@
  */
 
 import { useState, useRef, useEffect } from 'react';
-import { useDispatch } from 'react-redux';
+import { useDispatch, useSelector } from 'react-redux';
 import { Paper, Box, IconButton, Typography, Chip, Stack } from '@mui/material';
 import {
   Close as CloseIcon,
@@ -16,7 +16,8 @@ import {
 import Hls from 'hls.js';
 import type { File } from '../../types/models';
 import { formatDate, formatFileSize, formatDuration } from '../../utils/formatters';
-import { setCurrentFile, clearCurrentFile, setVideoCurrentTime } from '../../store/slices/viewerSlice';
+import { setCurrentFile, clearCurrentFile, setVideoCurrentTime, setVideoDuration, selectSeekToTime, clearSeekToTime } from '../../store/slices/viewerSlice';
+import type { RootState } from '../../store/store';
 import { buildUrl } from '../../utils/urlHelper';
 import { RightSidebar, RIGHT_SIDEBAR_WIDTH } from '../../components/layout/RightSidebar';
 
@@ -33,6 +34,19 @@ export function VideoPlayer({ open, onClose, file }: VideoPlayerProps) {
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+
+  // Listen for seek requests from chat timestamp clicks
+  const seekToTime = useSelector((state: RootState) => selectSeekToTime(state));
+
+  // Handle seek requests from chat timestamp clicks
+  useEffect(() => {
+    if (seekToTime !== null && videoRef.current) {
+      console.log('Seeking video to:', seekToTime);
+      videoRef.current.currentTime = seekToTime;
+      // Clear the seek request after processing
+      dispatch(clearSeekToTime());
+    }
+  }, [seekToTime, dispatch]);
 
   // Set current file for context-aware chat
   useEffect(() => {
@@ -204,7 +218,11 @@ export function VideoPlayer({ open, onClose, file }: VideoPlayerProps) {
         // Update Redux store for chat timestamp feature
         dispatch(setVideoCurrentTime(video.currentTime));
       };
-      const handleDurationChange = () => setDuration(video.duration);
+      const handleDurationChange = () => {
+        setDuration(video.duration);
+        // Update Redux store for timeline feature
+        dispatch(setVideoDuration(video.duration));
+      };
 
       video.addEventListener('timeupdate', handleTimeUpdate);
       video.addEventListener('durationchange', handleDurationChange);

@@ -2,8 +2,8 @@
  * Chat Panel - Global chat room with real-time messaging
  */
 
-import { useState, useEffect, useRef, useCallback } from 'react';
-import { useSelector } from 'react-redux';
+import { useState, useEffect, useRef, useCallback, type ReactNode } from 'react';
+import { useSelector, useDispatch } from 'react-redux';
 import {
   Box,
   TextField,
@@ -20,17 +20,20 @@ import {
   Download as DownloadIcon,
 } from '@mui/icons-material';
 import { pullMessages, pushMessage, clearAllChat, decodeMessageBody, type Message } from '../../services/chatApi';
-import { selectCurrentFileMD5, selectVideoCurrentTime, selectCurrentFile } from '../../store/slices/viewerSlice';
+import { selectCurrentFileMD5, selectVideoCurrentTime, selectCurrentFile, seekToTime, selectVideoDuration } from '../../store/slices/viewerSlice';
 import type { RootState } from '../../store/store';
+import { CommentTimeline } from './CommentTimeline';
 
 export function ChatPanel() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [messageText, setMessageText] = useState('');
   const [loading, setLoading] = useState(false);
+  const [selectedTimestamp, setSelectedTimestamp] = useState<number | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const intervalRef = useRef<number | null>(null);
   const loadingRef = useRef(false);
   const abortControllerRef = useRef<AbortController | null>(null);
+  const dispatch = useDispatch();
 
   // Check if user is admin (currently not available in auth state, defaulting to false)
   const isAdmin = false;
@@ -46,6 +49,9 @@ export function ChatPanel() {
 
   // Get video current time for timestamp feature
   const videoCurrentTime = useSelector((state: RootState) => selectVideoCurrentTime(state));
+
+  // Get video duration for timeline
+  const videoDuration = useSelector((state: RootState) => selectVideoDuration(state));
 
   // Auto-scroll to bottom when new messages arrive
   const scrollToBottom = () => {
@@ -226,6 +232,76 @@ export function ChatPanel() {
     return `${day}/${month}/${year} ${hours}:${minutes}`;
   };
 
+  // Parse video timestamp string (MM:SS) to seconds
+  const parseTimestampToSeconds = (timestamp: string): number => {
+    const [minutes, seconds] = timestamp.split(':').map(Number);
+    return minutes * 60 + seconds;
+  };
+
+  // Handle click on video timestamp - seek video to that time
+  const handleTimestampClick = (timestamp: string) => {
+    const seconds = parseTimestampToSeconds(timestamp);
+    console.log('[ChatPanel] Timestamp clicked:', timestamp, '-> seeking to', seconds, 'seconds');
+    dispatch(seekToTime(seconds));
+  };
+
+  // Render message body with clickable timestamps
+  // Timestamps in format (MM:SS) become clickable links that seek the video
+  const renderMessageWithClickableTimestamps = (messageBody: string): ReactNode => {
+    const decoded = decodeMessageBody(messageBody);
+    // Match timestamps like (00:04), (12:34), etc.
+    const timestampRegex = /\((\d{2}:\d{2})\)/g;
+
+    const parts: ReactNode[] = [];
+    let lastIndex = 0;
+    let match;
+    let keyIndex = 0;
+
+    while ((match = timestampRegex.exec(decoded)) !== null) {
+      // Add text before the timestamp
+      if (match.index > lastIndex) {
+        parts.push(decoded.slice(lastIndex, match.index));
+      }
+
+      // Add clickable timestamp
+      const timestamp = match[1];
+      parts.push(
+        <span
+          key={`ts-${keyIndex++}`}
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            handleTimestampClick(timestamp);
+          }}
+          style={{
+            cursor: 'pointer',
+            fontWeight: 'bold',
+            color: '#1976d2',
+            textDecoration: 'underline',
+          }}
+          onMouseOver={(e) => (e.currentTarget.style.color = '#1565c0')}
+          onMouseOut={(e) => (e.currentTarget.style.color = '#1976d2')}
+        >
+          ({timestamp})
+        </span>
+      );
+
+      lastIndex = match.index + match[0].length;
+    }
+
+    // Add remaining text after last timestamp
+    if (lastIndex < decoded.length) {
+      parts.push(decoded.slice(lastIndex));
+    }
+
+    // If no timestamps found, return original decoded text
+    if (parts.length === 0) {
+      return decoded;
+    }
+
+    return <>{parts}</>;
+  };
+
   // Download comments as CSV
   const handleDownloadComments = () => {
     if (messages.length === 0) {
@@ -304,6 +380,48 @@ export function ChatPanel() {
     URL.revokeObjectURL(url);
   };
 
+  // Extract comment markers from messages for the timeline
+  const extractCommentMarkers = () => {
+    const markers: Array<{ timestamp: number; text: string; user: string }> = [];
+    const timestampRegex = /\((\d{2}:\d{2})\)/g;
+
+    messages.forEach((msg) => {
+      const decoded = decodeMessageBody(msg.msg_body);
+      let match;
+
+      while ((match = timestampRegex.exec(decoded)) !== null) {
+        const [minutes, seconds] = match[1].split(':').map(Number);
+        const timestamp = minutes * 60 + seconds;
+        // Get the text after the timestamp
+        const textAfter = decoded.slice(match.index + match[0].length).trim().split(/\(\d{2}:\d{2}\)/)[0]?.trim() || '';
+        markers.push({
+          timestamp,
+          text: textAfter || decoded,
+          user: msg.msg_user || 'Unknown',
+        });
+      }
+    });
+
+    // Sort by timestamp
+    return markers.sort((a, b) => a.timestamp - b.timestamp);
+  };
+
+  const commentMarkers = extractCommentMarkers();
+
+  // Check if a message contains the selected timestamp
+  const messageContainsTimestamp = (messageBody: string, timestamp: number | null): boolean => {
+    if (timestamp === null) return false;
+    const decoded = decodeMessageBody(messageBody);
+    const timestampRegex = /\((\d{2}:\d{2})\)/g;
+    let match;
+    while ((match = timestampRegex.exec(decoded)) !== null) {
+      const [minutes, seconds] = match[1].split(':').map(Number);
+      const msgTimestamp = minutes * 60 + seconds;
+      if (msgTimestamp === timestamp) return true;
+    }
+    return false;
+  };
+
   // Reset messages when file context changes
   useEffect(() => {
     // Clear messages when switching between global chat and file comments
@@ -379,6 +497,15 @@ export function ChatPanel() {
         )}
       </Box>
 
+      {/* Comment Timeline - only show when viewing a video with duration */}
+      {videoDuration > 0 && commentMarkers.length > 0 && (
+        <CommentTimeline
+          markers={commentMarkers}
+          onMarkerClick={setSelectedTimestamp}
+          selectedTimestamp={selectedTimestamp}
+        />
+      )}
+
       {/* Messages List - Only this scrolls */}
       <Paper
         sx={{
@@ -397,24 +524,40 @@ export function ChatPanel() {
           </Typography>
         ) : (
           <List sx={{ p: 0 }}>
-            {messages.map((msg, index) => (
-              <ListItem
-                key={`${msg.msg_date}-${index}`}
-                sx={{
-                  flexDirection: 'column',
-                  alignItems: 'flex-start',
-                  p: 1,
-                  borderBottom: '1px solid #eee',
-                }}
-              >
-                <Typography variant="caption" color="text.secondary">
-                  [{formatTimestamp(msg.msg_date)}] {msg.msg_user}
-                </Typography>
-                <Typography variant="body2" sx={{ mt: 0.5, whiteSpace: 'pre-wrap' }}>
-                  {decodeMessageBody(msg.msg_body)}
-                </Typography>
-              </ListItem>
-            ))}
+            {messages.map((msg, index) => {
+              const isHighlighted = messageContainsTimestamp(msg.msg_body, selectedTimestamp);
+              return (
+                <ListItem
+                  key={`${msg.msg_date}-${index}`}
+                  sx={{
+                    flexDirection: 'column',
+                    alignItems: 'flex-start',
+                    p: 1,
+                    borderBottom: '1px solid #eee',
+                    backgroundColor: isHighlighted ? '#e0e0e0' : 'transparent',
+                    transition: 'background-color 0.2s',
+                  }}
+                >
+                  <Typography
+                    variant="caption"
+                    color="text.secondary"
+                    sx={{ fontWeight: isHighlighted ? 'bold' : 'normal' }}
+                  >
+                    [{formatTimestamp(msg.msg_date)}] {msg.msg_user}
+                  </Typography>
+                  <Typography
+                    variant="body2"
+                    sx={{
+                      mt: 0.5,
+                      whiteSpace: 'pre-wrap',
+                      fontWeight: isHighlighted ? 'bold' : 'normal',
+                    }}
+                  >
+                    {renderMessageWithClickableTimestamps(msg.msg_body)}
+                  </Typography>
+                </ListItem>
+              );
+            })}
             <div ref={messagesEndRef} />
           </List>
         )}
