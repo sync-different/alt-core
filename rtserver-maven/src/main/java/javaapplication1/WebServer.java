@@ -3137,6 +3137,8 @@ class Worker extends WebServer implements HttpConstants, Runnable {
 
                         sFolder= URLDecoder.decode(sFolder,"UTF-8");
 
+                        p("after decode: " + sFolder);
+
                         if(sFolder.equals("scanfolders")){
 
                             File f = new File(appendage + "../scrubber/config/www-rtbackup.properties");
@@ -3281,6 +3283,10 @@ class Worker extends WebServer implements HttpConstants, Runnable {
                                 outFile.write(result.getBytes());
                                 p("FIN getfolders-json.fn: "+result);
                             } else {
+                                p("**** case empty or not exists");
+                                if (folder.listFiles() == null) {
+                                    p("folder.listFiles() is null");
+                                }
                                 //empty folder case
                                 String result="[]";
                                 outFile.write(result.getBytes());
