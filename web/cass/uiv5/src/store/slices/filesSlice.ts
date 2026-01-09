@@ -14,6 +14,7 @@ interface FilesState {
   hasMore: boolean;
   filters: FileFilters;
   selectedFileIds: string[];
+  lastSelectedId: string | null;
   viewMode: 'list' | 'grid';
   sortOrder: 'asc' | 'desc';
   refreshTrigger: number;
@@ -32,6 +33,7 @@ const initialState: FilesState = {
     searchQuery: '',
   },
   selectedFileIds: [],
+  lastSelectedId: null,
   viewMode: 'list', // Default to list view (grid view will be added in Phase 4)
   sortOrder: 'desc',
   refreshTrigger: 0,
@@ -69,16 +71,20 @@ const filesSlice = createSlice({
       } else {
         state.selectedFileIds.push(id);
       }
+      state.lastSelectedId = id;
+    },
+    setLastSelectedId: (state, action: PayloadAction<string | null>) => {
+      state.lastSelectedId = action.payload;
     },
     selectRange: (state, action: PayloadAction<{ startId: string; endId: string }>) => {
       const { startId, endId } = action.payload;
-      const startIndex = state.files.findIndex(f => f.multiclusterid === startId);
-      const endIndex = state.files.findIndex(f => f.multiclusterid === endId);
+      const startIndex = state.files.findIndex(f => f.nickname === startId);
+      const endIndex = state.files.findIndex(f => f.nickname === endId);
 
       if (startIndex !== -1 && endIndex !== -1) {
         const start = Math.min(startIndex, endIndex);
         const end = Math.max(startIndex, endIndex);
-        const rangeIds = state.files.slice(start, end + 1).map(f => f.multiclusterid);
+        const rangeIds = state.files.slice(start, end + 1).map(f => f.nickname);
 
         // Add all IDs in range to selection
         rangeIds.forEach(id => {
@@ -87,12 +93,14 @@ const filesSlice = createSlice({
           }
         });
       }
+      state.lastSelectedId = endId;
     },
     selectAll: (state) => {
-      state.selectedFileIds = state.files.map(file => file.multiclusterid);
+      state.selectedFileIds = state.files.map(file => file.nickname);
     },
     deselectAll: (state) => {
       state.selectedFileIds = [];
+      state.lastSelectedId = null;
     },
     setViewMode: (state, action: PayloadAction<'list' | 'grid'>) => {
       state.viewMode = action.payload;
@@ -132,6 +140,7 @@ export const {
   setLoading,
   setFilters,
   toggleFileSelection,
+  setLastSelectedId,
   selectRange,
   selectAll,
   deselectAll,

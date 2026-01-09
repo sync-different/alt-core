@@ -177,7 +177,7 @@ export function FoldersPage() {
     } else {
       // If it's a folder (or no type specified), navigate into it
       // Append the folder name to the current path (skip "scanfolders" prefix)
-      const newPath = currentFolder === 'scanfolders' ? folder.name : `${currentFolder}${folder.name}`;
+      const newPath = currentFolder === 'scanfolders' ? folder.name : `${currentFolder}/${folder.name}`;
       setCurrentFolder(newPath);
       // Add to breadcrumbs for navigation
       setBreadcrumbs([...breadcrumbs, folder.name]);
@@ -256,7 +256,7 @@ export function FoldersPage() {
     } else {
       // Rebuild the path from breadcrumbs (excluding 'scanfolders')
       const pathParts = newBreadcrumbs.filter(b => b !== 'scanfolders');
-      const newPath = pathParts.join('');
+      const newPath = pathParts.join('/');
       setCurrentFolder(newPath);
     }
   };

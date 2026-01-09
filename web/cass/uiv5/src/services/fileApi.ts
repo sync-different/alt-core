@@ -381,9 +381,18 @@ export const fetchFolders = async (sFolder: string = 'scanfolders'): Promise<Fol
   // Backend returns array of folder names or objects with folder info
   const folders = Array.isArray(response.data) ? response.data : response.data?.folders || [];
 
+  // Helper to safely decode URI-encoded strings (backend may return encoded names)
+  const safeDecode = (str: string): string => {
+    try {
+      return decodeURIComponent(str);
+    } catch {
+      return str;
+    }
+  };
+
   return folders.map((folder: any) => ({
-    name: typeof folder === 'string' ? folder : folder.name || folder.folder || '',
-    path: typeof folder === 'object' ? folder.path : undefined,
+    name: safeDecode(typeof folder === 'string' ? folder : folder.name || folder.folder || ''),
+    path: typeof folder === 'object' && folder.path ? safeDecode(folder.path) : undefined,
     count: typeof folder === 'object' ? folder.count : undefined,
     type: typeof folder === 'object' ? folder.type : undefined,
     md5: typeof folder === 'object' ? folder.md5 : undefined,

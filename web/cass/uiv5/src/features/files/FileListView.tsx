@@ -2,7 +2,7 @@
  * File List View - Table Layout
  */
 
-import { useState } from 'react';
+import { useState, useCallback, useRef } from 'react';
 import { useSelector } from 'react-redux';
 import {
   Table,
@@ -14,6 +14,7 @@ import {
   Paper,
   Checkbox,
   TableSortLabel,
+  Box,
 } from '@mui/material';
 import { FileListItem } from './FileListItem';
 import { ImageViewer } from '../media/ImageViewer';
@@ -36,11 +37,107 @@ interface FileListViewProps {
   onLoadMore?: () => void;
 }
 
+// Default column widths
+const DEFAULT_COLUMN_WIDTHS = {
+  thumbnail: 140,
+  name: 300,
+  date: 140,
+  size: 100,
+  tags: 200,
+  actions: 150,
+};
+
+type ColumnKey = keyof typeof DEFAULT_COLUMN_WIDTHS;
+
 export function FileListView({ files, hasMore, onLoadMore }: FileListViewProps) {
   const listSize = useSelector((state: RootState) => state.files.listSize);
   const { selectedCount, selectAll, deselectAll, isAllSelected } = useFileSelection();
   const [sortField, setSortField] = useState<SortField>('date');
   const [sortOrder, setSortOrder] = useState<SortOrder>('desc');
+  const [columnWidths, setColumnWidths] = useState(DEFAULT_COLUMN_WIDTHS);
+  const resizingColumn = useRef<ColumnKey | null>(null);
+  const startX = useRef(0);
+  const startWidth = useRef(0);
+
+  const handleResizeStart = useCallback((column: ColumnKey, event: React.MouseEvent) => {
+    event.preventDefault();
+    event.stopPropagation();
+    resizingColumn.current = column;
+    startX.current = event.clientX;
+    startWidth.current = columnWidths[column];
+
+    const handleMouseMove = (e: MouseEvent) => {
+      if (!resizingColumn.current) return;
+      const diff = e.clientX - startX.current;
+      const newWidth = Math.max(50, startWidth.current + diff);
+      setColumnWidths(prev => ({
+        ...prev,
+        [resizingColumn.current!]: newWidth,
+      }));
+    };
+
+    const handleMouseUp = () => {
+      resizingColumn.current = null;
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+      document.body.style.cursor = '';
+      document.body.style.userSelect = '';
+    };
+
+    document.addEventListener('mousemove', handleMouseMove);
+    document.addEventListener('mouseup', handleMouseUp);
+    document.body.style.cursor = 'col-resize';
+    document.body.style.userSelect = 'none';
+  }, [columnWidths]);
+
+  // Resizable header cell component
+  const ResizableHeaderCell = ({ column, children, align }: { column: ColumnKey; children: React.ReactNode; align?: 'left' | 'right' }) => (
+    <TableCell
+      align={align}
+      sx={{
+        backgroundColor: 'background.paper',
+        fontWeight: 600,
+        width: columnWidths[column],
+        position: 'sticky',
+        top: 0,
+        zIndex: 2,
+        userSelect: 'none',
+        '&:hover .resize-handle': {
+          opacity: 1,
+        },
+      }}
+    >
+      {children}
+      <Box
+        className="resize-handle"
+        onMouseDown={(e) => handleResizeStart(column, e)}
+        sx={{
+          position: 'absolute',
+          right: 0,
+          top: '25%',
+          bottom: '25%',
+          width: 4,
+          cursor: 'col-resize',
+          opacity: 0.4,
+          transition: 'opacity 0.2s, background-color 0.2s',
+          backgroundColor: 'divider',
+          borderRadius: 1,
+          '&:hover': {
+            backgroundColor: 'primary.main',
+            opacity: 1,
+          },
+          '&::before': {
+            content: '""',
+            position: 'absolute',
+            left: -4,
+            right: -4,
+            top: -8,
+            bottom: -8,
+          },
+        }}
+      />
+    </TableCell>
+  );
   const {
     imageViewerOpen,
     currentImageIndex,
@@ -173,9 +270,11 @@ export function FileListView({ files, hasMore, onLoadMore }: FileListViewProps) 
         elevation={0}
         sx={{
           maxHeight: 'calc(100vh - 200px)', // Allow scrolling within the container
+          overflowY: 'auto',
+          overflowX: 'hidden',
         }}
       >
-        <Table size="small" stickyHeader>
+        <Table size="small" stickyHeader sx={{ tableLayout: 'fixed', width: '100%' }}>
           <TableHead>
             <TableRow>
               <TableCell
@@ -183,6 +282,9 @@ export function FileListView({ files, hasMore, onLoadMore }: FileListViewProps) 
                 sx={{
                   backgroundColor: 'background.paper',
                   fontWeight: 600,
+                  position: 'sticky',
+                  top: 0,
+                  zIndex: 2,
                 }}
               >
                 <Checkbox
@@ -191,10 +293,10 @@ export function FileListView({ files, hasMore, onLoadMore }: FileListViewProps) 
                   onChange={handleSelectAll}
                 />
               </TableCell>
-              <TableCell sx={{ backgroundColor: 'background.paper', fontWeight: 600 }}>
+              <ResizableHeaderCell column="thumbnail">
                 Thumbnail
-              </TableCell>
-              <TableCell sx={{ backgroundColor: 'background.paper', fontWeight: 600 }}>
+              </ResizableHeaderCell>
+              <ResizableHeaderCell column="name">
                 <TableSortLabel
                   active={sortField === 'name'}
                   direction={sortField === 'name' ? sortOrder : 'asc'}
@@ -202,8 +304,8 @@ export function FileListView({ files, hasMore, onLoadMore }: FileListViewProps) 
                 >
                   Name
                 </TableSortLabel>
-              </TableCell>
-              <TableCell sx={{ backgroundColor: 'background.paper', fontWeight: 600 }}>
+              </ResizableHeaderCell>
+              <ResizableHeaderCell column="date">
                 <TableSortLabel
                   active={sortField === 'date'}
                   direction={sortField === 'date' ? sortOrder : 'asc'}
@@ -211,8 +313,8 @@ export function FileListView({ files, hasMore, onLoadMore }: FileListViewProps) 
                 >
                   Date
                 </TableSortLabel>
-              </TableCell>
-              <TableCell sx={{ backgroundColor: 'background.paper', fontWeight: 600 }}>
+              </ResizableHeaderCell>
+              <ResizableHeaderCell column="size">
                 <TableSortLabel
                   active={sortField === 'size'}
                   direction={sortField === 'size' ? sortOrder : 'asc'}
@@ -220,18 +322,18 @@ export function FileListView({ files, hasMore, onLoadMore }: FileListViewProps) 
                 >
                   Size
                 </TableSortLabel>
-              </TableCell>
-              <TableCell sx={{ backgroundColor: 'background.paper', fontWeight: 600 }}>
+              </ResizableHeaderCell>
+              <ResizableHeaderCell column="tags">
                 Tags
-              </TableCell>
-              <TableCell align="right" sx={{ backgroundColor: 'background.paper', fontWeight: 600 }}>
+              </ResizableHeaderCell>
+              <ResizableHeaderCell column="actions" align="right">
                 Actions
-              </TableCell>
+              </ResizableHeaderCell>
             </TableRow>
           </TableHead>
           <TableBody>
             {sortedFiles.map((file) => (
-              <FileListItem key={file.nickname} file={file} onRowClick={handleRowClick} onDownload={startDownload} listSize={listSize} />
+              <FileListItem key={file.nickname} file={file} onRowClick={handleRowClick} onDownload={startDownload} listSize={listSize} columnWidths={columnWidths} />
             ))}
           </TableBody>
         </Table>

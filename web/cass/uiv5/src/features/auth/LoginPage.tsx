@@ -196,7 +196,7 @@ export function LoginPage() {
       }
 
       dispatch(setAuth({ uuid: backendUuid, username }));
-      navigate('/home');
+      navigate('/files/.all/.all');
     } catch (error) {
       console.error('Login error:', error);
       setError('An error occurred during login. Please try again.');

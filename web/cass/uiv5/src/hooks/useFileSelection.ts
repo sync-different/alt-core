@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useRef } from 'react';
+import { useCallback, useMemo } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import type { RootState, AppDispatch } from '../store/store';
 import {
@@ -15,7 +15,7 @@ export const useFileSelection = () => {
   const dispatch = useDispatch<AppDispatch>();
   const selectedFileIds = useSelector((state: RootState) => state.files.selectedFileIds);
   const files = useSelector((state: RootState) => state.files.files);
-  const lastSelectedIdRef = useRef<string | null>(null);
+  const lastSelectedId = useSelector((state: RootState) => state.files.lastSelectedId);
 
   const selectedFiles = useMemo(() => {
     return files.filter((file) => selectedFileIds.includes(file.nickname));
@@ -24,16 +24,15 @@ export const useFileSelection = () => {
   const toggleSelect = useCallback(
     (fileId: string) => {
       dispatch(toggleFileSelection(fileId));
-      lastSelectedIdRef.current = fileId;
     },
     [dispatch]
   );
 
   const handleClick = useCallback(
     (fileId: string, event: React.MouseEvent) => {
-      if (event.shiftKey && lastSelectedIdRef.current) {
+      if (event.shiftKey && lastSelectedId) {
         // Range selection
-        dispatch(selectRange({ startId: lastSelectedIdRef.current, endId: fileId }));
+        dispatch(selectRange({ startId: lastSelectedId, endId: fileId }));
       } else if (event.ctrlKey || event.metaKey) {
         // Multi-select (Ctrl/Cmd+Click)
         dispatch(toggleFileSelection(fileId));
@@ -42,9 +41,8 @@ export const useFileSelection = () => {
         dispatch(deselectAll());
         dispatch(toggleFileSelection(fileId));
       }
-      lastSelectedIdRef.current = fileId;
     },
-    [dispatch]
+    [dispatch, lastSelectedId]
   );
 
   const handleSelectAll = useCallback(() => {
@@ -53,7 +51,6 @@ export const useFileSelection = () => {
 
   const handleDeselectAll = useCallback(() => {
     dispatch(deselectAll());
-    lastSelectedIdRef.current = null;
   }, [dispatch]);
 
   const isSelected = useCallback(

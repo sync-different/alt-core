@@ -43,14 +43,24 @@ import type { File } from '../../types/models';
 import type { AppDispatch, RootState } from '../../store/store';
 import { useSelector } from 'react-redux';
 
+interface ColumnWidths {
+  thumbnail: number;
+  name: number;
+  date: number;
+  size: number;
+  tags: number;
+  actions: number;
+}
+
 interface FileListItemProps {
   file: File;
   onRowClick?: (file: File) => void;
   onDownload?: (file: File) => void;
   listSize?: 'xs' | 'small' | 'medium' | 'large';
+  columnWidths?: ColumnWidths;
 }
 
-export function FileListItem({ file, onRowClick, onDownload, listSize = 'medium' }: FileListItemProps) {
+export function FileListItem({ file, onRowClick, onDownload, listSize = 'medium', columnWidths }: FileListItemProps) {
   const dispatch = useDispatch<AppDispatch>();
   const { isSelected, toggleSelect, handleClick } = useFileSelection();
   const selected = isSelected(file.nickname);
@@ -78,23 +88,26 @@ export function FileListItem({ file, onRowClick, onDownload, listSize = 'medium'
   };
 
   const handleRowClick = (event: React.MouseEvent) => {
-    // Don't trigger selection if clicking on action buttons
-    if ((event.target as HTMLElement).closest('.actions, .MuiCheckbox-root')) {
+    // Don't trigger selection if clicking on action buttons or checkbox
+    if ((event.target as HTMLElement).closest('.actions, .MuiCheckbox-root, .thumbnail-container')) {
       return;
     }
 
-    // If multi-selecting (shift/ctrl/cmd), use selection handler
+    // Shift-click for range selection, Ctrl/Cmd-click for multi-select
     if (event.shiftKey || event.ctrlKey || event.metaKey) {
       handleClick(file.nickname, event);
       return;
     }
 
-    // If custom click handler provided, use it (e.g., open viewer)
+    // Normal click toggles selection (like checkbox)
+    toggleSelect(file.nickname);
+  };
+
+  const handleThumbnailClick = (event: React.MouseEvent) => {
+    event.stopPropagation();
+    // Open media viewer when thumbnail is clicked
     if (onRowClick) {
       onRowClick(file);
-    } else {
-      // Fallback to selection
-      handleClick(file.nickname, event);
     }
   };
 
@@ -238,17 +251,28 @@ export function FileListItem({ file, onRowClick, onDownload, listSize = 'medium'
         <Checkbox checked={selected} onChange={handleCheckboxChange} />
       </TableCell>
 
-      <TableCell>
-        <Box sx={{ display: 'flex', alignItems: 'center', py: 1 }}>
+      <TableCell sx={{ width: columnWidths?.thumbnail }}>
+        <Box
+          className="thumbnail-container"
+          onClick={handleThumbnailClick}
+          sx={{
+            display: 'flex',
+            alignItems: 'center',
+            py: 1,
+            cursor: 'pointer',
+            '&:hover': {
+              opacity: 0.8,
+            },
+          }}
+        >
           {getThumbnail()}
         </Box>
       </TableCell>
 
-      <TableCell>
+      <TableCell sx={{ width: columnWidths?.name }}>
         <Tooltip title={file.name}>
           <Box
             sx={{
-              maxWidth: 300,
               overflow: 'hidden',
               textOverflow: 'ellipsis',
               whiteSpace: 'nowrap',
@@ -262,11 +286,11 @@ export function FileListItem({ file, onRowClick, onDownload, listSize = 'medium'
         </Tooltip>
       </TableCell>
 
-      <TableCell sx={{ fontSize }}>{formatDate(file.file_date_long)}</TableCell>
+      <TableCell sx={{ fontSize, width: columnWidths?.date }}>{formatDate(file.file_date_long)}</TableCell>
 
-      <TableCell sx={{ fontSize }}>{formatFileSize(file.file_size)}</TableCell>
+      <TableCell sx={{ fontSize, width: columnWidths?.size }}>{formatFileSize(file.file_size)}</TableCell>
 
-      <TableCell>
+      <TableCell sx={{ width: columnWidths?.tags }}>
         <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap', alignItems: 'center' }}>
           {(showAllTags ? getTags() : getTags().slice(0, maxTags)).map((tag) => (
             <Chip
@@ -367,7 +391,7 @@ export function FileListItem({ file, onRowClick, onDownload, listSize = 'medium'
         </Box>
       </TableCell>
 
-      <TableCell align="right">
+      <TableCell align="right" sx={{ width: columnWidths?.actions }}>
         <Box className="actions" sx={{ opacity: 0, transition: 'opacity 0.2s' }}>
           {file.file_group === 'music' && (
             <Tooltip title="Add to Playlist">
