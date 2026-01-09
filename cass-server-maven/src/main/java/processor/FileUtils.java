@@ -546,7 +546,7 @@ public class FileUtils {
                         }
                         
                         if (f.isFile()) {
-                                p("Found a file: " + f.getPath() + " " + f.getCanonicalPath());
+                                p("[!!!] Found a file: " + f.getPath() + " " + f.getCanonicalPath());
                                 count++;
                                 
                                 //p("ZZZzzz...[scannerservice10ms]");
@@ -778,7 +778,9 @@ public class FileUtils {
                                         }
                                     }
                                                            
-                        } 
+                        } else {
+                            pw("*** Skipping non-file entry: " + f.getAbsolutePath());
+                        }
 
                         f = null;
                     } // end if file
@@ -1221,11 +1223,22 @@ public class FileUtils {
 
         int nPos = _filename.lastIndexOf(".");
         if (nPos > 0) {
+            
+            //check if valid extension
             String sExtension = _filename.substring(_filename.lastIndexOf("."), _filename.length());
             String ct = (String) mapFileExtensions.get(sExtension);
             if (ct != null) {
-                bRes = true;
+                //valid extension, check if file is hidden
+                String realfilename = _filename.substring(_filename.lastIndexOf(File.separator) + 1, _filename.length());
+                pw("realfilename='" + realfilename + "'");
+                if (realfilename.startsWith(".")) {
+                    pw("Skipping hidden file: " + _filename);
+                    bRes = false;
+                } else {
+                    bRes = true;
+                }
             }
+
         }
 
         return bRes;
