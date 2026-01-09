@@ -1338,6 +1338,7 @@ public class ProcessorService implements Runnable{
             //c8.insert_hashtag(keyspace, key, "mobilebackup", true, sdf.format(new Date()));            
             strDateModified = c8.get_row_attribute(keyspace, "Standard1" , key, "date_modified", null);
             c8.insert_hashtag(keyspace, key, "mobilebackup", true, strDateModified);            
+            c8.insert_hashtag(keyspace, key, "uploads", true, strDateModified);            
         }
         
         return true;
