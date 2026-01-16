@@ -65,10 +65,69 @@ import utils.Appendage;
 import static io.netty.buffer.Unpooled.*;
 import static io.netty.handler.codec.http.HttpHeaders.Names.*;
 
+import java.nio.file.Path;
+import java.nio.file.Paths;
+
 public class HttpUploadServerHandler extends SimpleChannelInboundHandler<HttpObject> {
     HashMap<String,String> formData = new HashMap<>();
 
     private static final Logger logger = Logger.getLogger(HttpUploadServerHandler.class.getName());
+
+    /**
+     * Sanitizes a filename to prevent path traversal attacks.
+     * Removes path separators, parent directory references, and null bytes.
+     * @param filename The original filename from the upload
+     * @return A safe filename containing only the base name
+     */
+    private static String sanitizeFilename(String filename) {
+        if (filename == null || filename.isEmpty()) {
+            return "unnamed_upload";
+        }
+
+        // First, trim and remove null bytes and path separators
+        String safeName = filename.trim()
+                                  .replace("\0", "")
+                                  .replace("..", "")
+                                  .replace("/", "")
+                                  .replace("\\", "");
+
+        // Try to extract just the filename using Path (handles edge cases)
+        if (!safeName.isEmpty()) {
+            try {
+                Path path = Paths.get(safeName);
+                Path fileNamePath = path.getFileName();
+                if (fileNamePath != null) {
+                    safeName = fileNamePath.toString();
+                }
+            } catch (Exception e) {
+                // If Paths.get fails, continue with the sanitized string
+            }
+        }
+
+        // Ensure we have a valid filename
+        if (safeName.isEmpty() || safeName.equals(".")) {
+            return "unnamed_upload";
+        }
+        return safeName;
+    }
+
+    /**
+     * Validates that the destination file path is within the allowed upload directory.
+     * @param uploadDir The base upload directory
+     * @param destFile The destination file to validate
+     * @return true if the path is safe, false if path traversal was detected
+     */
+    private static boolean isPathSafe(File uploadDir, File destFile) {
+        try {
+            String canonicalUploadDir = uploadDir.getCanonicalPath();
+            String canonicalDest = destFile.getCanonicalPath();
+            return canonicalDest.startsWith(canonicalUploadDir + File.separator)
+                   || canonicalDest.equals(canonicalUploadDir);
+        } catch (IOException e) {
+            logger.log(Level.WARNING, "Path validation failed", e);
+            return false;
+        }
+    }
 
     private HttpRequest request;
 
@@ -296,18 +355,30 @@ public class HttpUploadServerHandler extends SimpleChannelInboundHandler<HttpObj
                     // fileUpload.isInMemory();// tells if the file is in Memory
                     // or on File
                     boolean isChunked = formData.containsKey("dzchunkindex");
-                    File dest =null;
+                    File dest = null;
+                    File uploadDir = new File(appendage + "../rtserver/incoming");
+
                     if(isChunked) {
-                        Integer chunkIndex= Integer.parseInt(formData.get("dzchunkindex"))+1;
-                        String chunkTotal= formData.get("dztotalchunkcount");
-                        dest=new File(appendage + "../rtserver/incoming" + File.separator +"upload."+ fileUpload.getFilename()+"."+chunkTotal+"."+chunkIndex+".p");
+                        Integer chunkIndex = Integer.parseInt(formData.get("dzchunkindex")) + 1;
+                        String chunkTotal = formData.get("dztotalchunkcount");
+                        String safeFilename = sanitizeFilename(fileUpload.getFilename());
+                        dest = new File(uploadDir, "upload." + safeFilename + "." + chunkTotal + "." + chunkIndex + ".p");
                         System.out.println("incoming Chunked getFileName () (netty): " + fileUpload.getFilename());
-                        System.out.println("incoming Chunked getName() (netty): " + fileUpload.getName());
-                    }else{
-                        dest=new File(appendage + "../rtserver/incoming" + File.separator + fileUpload.getName());
+                        System.out.println("incoming Chunked sanitized filename: " + safeFilename);
+                    } else {
+                        String safeFilename = sanitizeFilename(fileUpload.getName());
+                        dest = new File(uploadDir, safeFilename);
                         System.out.println("incoming getFileName () (netty): " + fileUpload.getFilename());
-                        System.out.println("incoming getName() (netty): " + fileUpload.getName());
+                        System.out.println("incoming sanitized filename: " + safeFilename);
                     }
+
+                    // Validate the destination path is within the upload directory
+                    if (!isPathSafe(uploadDir, dest)) {
+                        System.err.println("SECURITY: Path traversal attempt blocked for: " + fileUpload.getFilename());
+                        responseContent.append("\r\nSECURITY ERROR: Invalid filename rejected\r\n");
+                        return;
+                    }
+
                     try {
                         fileUpload.renameTo(dest);
                     } catch (Exception e) {

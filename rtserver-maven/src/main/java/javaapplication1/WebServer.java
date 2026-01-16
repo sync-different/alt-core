@@ -144,6 +144,64 @@ public class WebServer extends AbstractService {
 
     static UserMessageCollection chats = UserMessageCollection.getInstance();
 
+    /* Security helper methods */
+
+    /**
+     * Sanitizes a filename to prevent path traversal attacks.
+     * Removes path separators, parent directory references, and null bytes.
+     * @param filename The original filename from the upload
+     * @return A safe filename containing only the base name
+     */
+    protected static String sanitizeFilename(String filename) {
+        if (filename == null || filename.isEmpty()) {
+            return "unnamed_upload";
+        }
+
+        // First, trim and remove null bytes and path separators
+        String safeName = filename.trim()
+                                  .replace("\0", "")
+                                  .replace("..", "")
+                                  .replace("/", "")
+                                  .replace("\\", "");
+
+        // Try to extract just the filename using Path (handles edge cases)
+        if (!safeName.isEmpty()) {
+            try {
+                Path path = Paths.get(safeName);
+                Path fileNamePath = path.getFileName();
+                if (fileNamePath != null) {
+                    safeName = fileNamePath.toString();
+                }
+            } catch (Exception e) {
+                // If Paths.get fails, continue with the sanitized string
+            }
+        }
+
+        // Ensure we have a valid filename
+        if (safeName.isEmpty() || safeName.equals(".")) {
+            return "unnamed_upload";
+        }
+        return safeName;
+    }
+
+    /**
+     * Validates that the destination file path is within the allowed directory.
+     * @param allowedDir The base allowed directory
+     * @param destFile The destination file to validate
+     * @return true if the path is safe, false if path traversal was detected
+     */
+    protected static boolean isPathSafe(File allowedDir, File destFile) {
+        try {
+            String canonicalAllowedDir = allowedDir.getCanonicalPath();
+            String canonicalDest = destFile.getCanonicalPath();
+            return canonicalDest.startsWith(canonicalAllowedDir + File.separator)
+                   || canonicalDest.equals(canonicalAllowedDir);
+        } catch (IOException e) {
+            System.err.println("SECURITY: Path validation failed - " + e.getMessage());
+            return false;
+        }
+    }
+
     /* static class data/methods */
 
     public int serviceRequest(int request) throws ServiceException {
@@ -8861,37 +8919,51 @@ class Worker extends WebServer implements HttpConstants, Runnable {
 
         p("**********-------> .    Start = '" + start + "' End:" + end);
 
-        p("sFilename POST = '" +  sFileName + "'");
-//        if (sFileName.substring(0, 1).equals("/")) {
-//            p("removing slash...");
-//            String sFileName2 = sFileName.substring(1, sFileName.length());
-//            sFileName = sFileName2;
-//            p("sFilename = " +  sFileName );
-//        }
+        p("sFilename POST (raw) = '" +  sFileName + "'");
+
+        // Security: Sanitize the filename to prevent path traversal attacks
+        String w2 = URLDecoder.decode(sFileName, "UTF-8").trim();
+        String safeFilename = sanitizeFilename(w2);
+        p("sFilename POST (sanitized) = '" + safeFilename + "'");
 
         String sFileNew = "";
+        File targetDir = null;
+
         if (!sFileName.contains("rpc.php")) {
-            //String sFileNew = "payload.txt";
-            //FileOutputStream outFile = new FileOutputStream(sFileNew);
-            String w2 = URLDecoder.decode(sFileName, "UTF-8");
-            if (sFileName.trim().endsWith(".c")) {
-                sFileNew = appendage + "../scrubber/config" + File.separator + sFileName.substring(1,sFileName.length()).trim();
+            if (safeFilename.endsWith(".c")) {
+                // Config files go to scrubber/config
+                targetDir = new File(appendage + "../scrubber/config");
+                sFileNew = targetDir.getPath() + File.separator + safeFilename;
+            } else if (safeFilename.endsWith(".p")) {
+                // .p files go to incoming
+                targetDir = incoming;
+                sFileNew = incoming.getPath() + File.separator + safeFilename;
             } else {
-                if (w2.trim().endsWith(".p")) {
-                    sFileNew = incoming.getPath() + File.separator + w2.substring(1, w2.length()).trim();
-                } else {
-                    sFileNew = incoming.getPath() + File.separator + "upload." + w2.substring(1, w2.length()).trim() + ".b";
-                }
+                // Other files go to incoming with upload. prefix and .b suffix
+                targetDir = incoming;
+                sFileNew = incoming.getPath() + File.separator + "upload." + safeFilename + ".b";
             }
         } else {
             sFileNew = "payload.txt";
+            targetDir = new File(".");
         }
 
         p("sFileNew = '" +  sFileNew + "'");
+
         if (foundBridge) {
             sFileNew = "bridge.clusterdummyfile";
+            targetDir = new File(".");
         }
-        sFileName=sFileName.trim();
+
+        // Security: Validate the final path is within the allowed directory
+        File destFile = new File(sFileNew);
+        if (targetDir != null && !isPathSafe(targetDir, destFile)) {
+            System.err.println("SECURITY: Path traversal attempt blocked in POST for: " + sFileName);
+            pw("SECURITY ERROR: Invalid filename rejected - " + sFileName);
+            return "";
+        }
+
+        sFileName = sFileName.trim();
         if(sFileName.endsWith(".p")){
              if(!connectToNetty(buf)){
 
@@ -8907,12 +8979,6 @@ class Worker extends WebServer implements HttpConstants, Runnable {
 
                  if (success) {
                      p("✓ Binary extraction successful!");
-
-                     // Read and display the extracted content
-                     //byte[] extractedData = Files.readAllBytes(Paths.get("extracted-binary.bin"));
-                     //p("Extracted " + extractedData.length + " bytes");
-                     //p("Content preview: " + new String(extractedData).substring(0,
-                     //Math.min(100, extractedData.length)) + "...");
                  } else {
                      pw("✗ WARNING: Binary extraction failed");
                  }
