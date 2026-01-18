@@ -132,7 +132,7 @@ open browser and login with your admin credentials
 
 uiv5 (React)
 ```
-$ open http://localhost:8081/cass/uiv5/dist/i.htm
+$ open http://localhost:8081/cass/uiv5/dist/i.html
 ```
 
 uiv3 (Legacy/Angular)
