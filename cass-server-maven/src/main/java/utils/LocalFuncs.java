@@ -6679,11 +6679,11 @@ public class LocalFuncs {
             }
             
             p("occurences.size():" + occurences.size());
-            
+
             timer.stop();
             logPerfIndex(timestampPerf,"casss_server","get_objects_sorted", "BeforeFor","", timer.getElapsedTime()+"", _writeLog);
             sDebug += " beforefor=" + String.valueOf(timer.getElapsedTime()) + "ms ";
-   
+
             boolean bSkipFirst = true;
             ArrayList<String> cache = null;
             
@@ -6708,8 +6708,17 @@ public class LocalFuncs {
                     ndaysback = Integer.parseInt(_daysback);
                 } catch (Exception e) {
                     //unable to parse integer
-                }             
-                
+                }
+
+                // Filter files by date if days parameter is specified
+                if (ndaysback > 0) {
+                    long fileTimestamp = occurences.get(key);
+                    long cutoffTimestamp = System.currentTimeMillis() - ((long) ndaysback * 24 * 60 * 60 * 1000);
+                    if (fileTimestamp < cutoffTimestamp) {
+                        bSkip = true;  // File is older than the requested time range
+                    }
+                }
+
                 //increment_counter(key, occurences_names.get(key), ndaysback, _filetype);                    
                 
                 
@@ -6877,14 +6886,14 @@ public class LocalFuncs {
                 
                 timer.stop();
                 arrayFor[2] += timer.getElapsedTime();
-                
+
                 timer = new Stopwatch().start();
-                
+
                 if (!bSkip) {
-                    
+
                     //p("adding #: " + occurences_hash.size());
                     //Thread.sleep(100);
-           
+
                     boolean bAdd = false;
                     if (bCompoundQuery) {
                         //N token case - always add, since we will count outside of this routine
@@ -6893,14 +6902,12 @@ public class LocalFuncs {
                         //1 token case - only add if we haven't exceeded the limit
                         if (occurences_hash.size() < nObj) {
                             bAdd = true;
-                        }                        
+                        }
                     }
-                    
+
                     if (bAdd) {
-                        String sfilename = occurences_names.get(key);      
+                        String sfilename = occurences_names.get(key);
                         read_row_hash(key, occurences_hash, occurences_names, _filetype, cache, sfilename);
-                    } else {
-                        //p("skip add: " + key);
                     }
                     
                     /*if (!bCompoundQuery) {

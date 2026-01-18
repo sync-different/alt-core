@@ -1000,8 +1000,11 @@ public class Cass7Funcs {
                 //    st.nextToken();   
                 //}
                                 
-                if (dbmode.equals("p2p") && (w.length() > 0)) {                    
-                    sLast = sStartDate;
+                if (dbmode.equals("p2p") && (w.length() > 0)) {
+                    // Only use sStartDate for pagination when _datestart was provided (user is paginating)
+                    // When _datestart is empty, sStartDate is computed from _daysback as a date range filter,
+                    // not a pagination cursor. Passing it as sLast causes incorrect file skipping in descending order.
+                    sLast = _datestart.length() > 0 ? sStartDate : "";
                     timer_index = new Stopwatch().start();
                     sDebug = lf.get_objects_sorted(w, 
                             occurences, 
@@ -1621,22 +1624,22 @@ public class Cass7Funcs {
                 Time[5] += timerAux.getElapsedTime();
                 
 
-                int xn = 0;                
+                int xn = 0;
                 boolean bContinue = true;
-                while (It.hasNext() && bContinue) {     
-//------------------ 3-Principio While                    
+                while (It.hasNext() && bContinue) {
+//------------------ 3-Principio While
                     timerAux = new Stopwatch().start();
 
                     xn++;
                     //p("processing: " + xn);
-                    
+
                     String sNamer = "";
                     Integer nCount3 = 0;
                     synchronized (occurences_hash) {
                         sNamer = (String) It.next();
-                        nCount3 = (Integer) occurences_hash.get(sNamer);                    
+                        nCount3 = (Integer) occurences_hash.get(sNamer);
                     }
-                                        
+
                     if (!nCount3.equals(nTokens) && _key.indexOf("&") < 0) {
                         continue;
                     }
@@ -3272,7 +3275,7 @@ public class Cass7Funcs {
                 }
                 break;
                 
-            case 10:                
+            case 10:
                 boolean bLoop = true;
                 int nTry = 0;
                 db_attr = null;
