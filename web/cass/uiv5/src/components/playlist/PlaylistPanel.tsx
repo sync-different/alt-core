@@ -24,6 +24,7 @@ import {
 } from '@mui/icons-material';
 import type { RootState } from '../../store/store';
 import type { File } from '../../types/models';
+import { decodeFilename } from '../../utils/formatters';
 
 interface PlaylistPanelProps {
   embedded?: boolean; // If true, render without Drawer wrapper
@@ -174,14 +175,14 @@ export function PlaylistPanel({ embedded = false }: PlaylistPanelProps = {}) {
   // Get song title or filename
   const getSongTitle = (file: File) => {
     return file.file_artist
-      ? decodeURIComponent(file.file_artist)
-      : file.name;
+      ? decodeFilename(file.file_artist)
+      : decodeFilename(file.name);
   };
 
   // Get artist name
   const getArtistName = (file: File) => {
     return file.file_album
-      ? decodeURIComponent(file.file_album)
+      ? decodeFilename(file.file_album)
       : undefined;
   };
 

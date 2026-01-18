@@ -390,11 +390,13 @@ export const fetchFolders = async (sFolder: string = 'scanfolders'): Promise<Fol
     }
   };
 
-  return folders.map((folder: any) => ({
-    name: safeDecode(typeof folder === 'string' ? folder : folder.name || folder.folder || ''),
-    path: typeof folder === 'object' && folder.path ? safeDecode(folder.path) : undefined,
-    count: typeof folder === 'object' ? folder.count : undefined,
-    type: typeof folder === 'object' ? folder.type : undefined,
-    md5: typeof folder === 'object' ? folder.md5 : undefined,
-  }));
+  return folders
+    .map((folder: any) => ({
+      name: safeDecode(typeof folder === 'string' ? folder : folder.name || folder.folder || ''),
+      path: typeof folder === 'object' && folder.path ? safeDecode(folder.path) : undefined,
+      count: typeof folder === 'object' ? folder.count : undefined,
+      type: typeof folder === 'object' ? folder.type : undefined,
+      md5: typeof folder === 'object' ? folder.md5 : undefined,
+    }))
+    .filter((folder: Folder) => !folder.name.startsWith('.')); // Filter out hidden files/folders
 };

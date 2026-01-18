@@ -15,7 +15,7 @@ import {
 } from '@mui/icons-material';
 import Hls from 'hls.js';
 import type { File } from '../../types/models';
-import { formatDate, formatFileSize, formatDuration } from '../../utils/formatters';
+import { formatDate, formatFileSize, formatDuration, decodeFilename } from '../../utils/formatters';
 import { setCurrentFile, clearCurrentFile, setVideoCurrentTime, setVideoDuration, selectSeekToTime, clearSeekToTime } from '../../store/slices/viewerSlice';
 import type { RootState } from '../../store/store';
 import { buildUrl } from '../../utils/urlHelper';
@@ -279,7 +279,7 @@ export function VideoPlayer({ open, onClose, file }: VideoPlayerProps) {
       >
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
           <Typography variant="h6" sx={{ color: 'white' }}>
-            {file.name}
+            {decodeFilename(file.name)}
           </Typography>
           {duration > 0 && (
             <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.7)' }}>

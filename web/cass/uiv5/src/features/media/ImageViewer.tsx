@@ -27,7 +27,7 @@ import 'swiper/css/navigation';
 import 'swiper/css/keyboard';
 
 import type { File } from '../../types/models';
-import { formatDate, formatFileSize } from '../../utils/formatters';
+import { formatDate, formatFileSize, decodeFilename } from '../../utils/formatters';
 import { setCurrentFile, clearCurrentFile } from '../../store/slices/viewerSlice';
 import { buildUrl } from '../../utils/urlHelper';
 import { RightSidebar, RIGHT_SIDEBAR_WIDTH } from '../../components/layout/RightSidebar';
@@ -299,7 +299,7 @@ export function ImageViewer({
                 {shouldLoadImage(index) ? (
                   <img
                     src={getImageUrlWithUuid(file)}
-                    alt={file.name}
+                    alt={decodeFilename(file.name)}
                     style={{
                       maxWidth: '100%',
                       maxHeight: '100%',

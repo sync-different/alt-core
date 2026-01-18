@@ -14,7 +14,7 @@ import {
   ChevronRight as ChevronRightIcon,
 } from '@mui/icons-material';
 import type { File } from '../../types/models';
-import { formatDate, formatFileSize } from '../../utils/formatters';
+import { formatDate, formatFileSize, decodeFilename } from '../../utils/formatters';
 import { setCurrentFile, clearCurrentFile } from '../../store/slices/viewerSlice';
 import { buildUrl } from '../../utils/urlHelper';
 import { RightSidebar, RIGHT_SIDEBAR_WIDTH } from '../../components/layout/RightSidebar';
@@ -96,7 +96,7 @@ export function PdfViewer({ onClose, file }: PdfViewerProps) {
         }}
       >
         <Box>
-          <Typography variant="h6">{file.name}</Typography>
+          <Typography variant="h6">{decodeFilename(file.name)}</Typography>
           <Typography variant="body2" color="text.secondary">
             {formatFileSize(file.file_size)} • {formatDate(file.file_date_long)}
           </Typography>

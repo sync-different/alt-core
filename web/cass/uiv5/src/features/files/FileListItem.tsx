@@ -34,7 +34,7 @@ import {
   Add as AddIcon,
   QueueMusic as QueueMusicIcon,
 } from '@mui/icons-material';
-import { formatDate, formatFileSize } from '../../utils/formatters';
+import { formatDate, formatFileSize, decodeFilename } from '../../utils/formatters';
 import { useFileSelection } from '../../hooks/useFileSelection';
 import { removeTags, addTags } from '../../services/fileApi';
 import { setFilters, updateFileTags } from '../../store/slices/filesSlice';
@@ -270,7 +270,7 @@ export function FileListItem({ file, onRowClick, onDownload, listSize = 'medium'
       </TableCell>
 
       <TableCell sx={{ width: columnWidths?.name }}>
-        <Tooltip title={file.name}>
+        <Tooltip title={decodeFilename(file.name)}>
           <Box
             sx={{
               overflow: 'hidden',
@@ -281,7 +281,7 @@ export function FileListItem({ file, onRowClick, onDownload, listSize = 'medium'
               '&:hover': { textDecoration: 'underline' },
             }}
           >
-            {file.name}
+            {decodeFilename(file.name)}
           </Box>
         </Tooltip>
       </TableCell>

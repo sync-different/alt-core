@@ -12,7 +12,7 @@ import {
   Description as DocumentIcon,
 } from '@mui/icons-material';
 import type { File } from '../../types/models';
-import { formatDate, formatFileSize } from '../../utils/formatters';
+import { formatDate, formatFileSize, decodeFilename } from '../../utils/formatters';
 import { setCurrentFile, clearCurrentFile } from '../../store/slices/viewerSlice';
 
 interface DocumentViewerProps {
@@ -71,7 +71,7 @@ export function DocumentViewer({ open, onClose, file }: DocumentViewerProps) {
           borderBottom: '1px solid #e0e0e0',
         }}
       >
-        <Typography variant="h6">{file.name}</Typography>
+        <Typography variant="h6">{decodeFilename(file.name)}</Typography>
 
         <Box sx={{ display: 'flex', gap: 1 }}>
           <IconButton onClick={handleDownload} title="Download">

@@ -38,7 +38,7 @@ import {
   Add as AddIcon,
   QueueMusic as QueueMusicIcon,
 } from '@mui/icons-material';
-import { formatDate, formatFileSize } from '../../utils/formatters';
+import { formatDate, formatFileSize, decodeFilename } from '../../utils/formatters';
 import { useFileSelection } from '../../hooks/useFileSelection';
 import { removeTags, addTags } from '../../services/fileApi';
 import { setFilters, updateFileTags } from '../../store/slices/filesSlice';
@@ -309,7 +309,7 @@ export function FileCard({ file, onCardClick, onDownload, showDetails = true, gr
             component="img"
             height={thumbnailHeight}
             image={thumbnail}
-            alt={file.name}
+            alt={decodeFilename(file.name)}
             loading="lazy"
             sx={{
               objectFit: 'cover',
@@ -351,9 +351,9 @@ export function FileCard({ file, onCardClick, onDownload, showDetails = true, gr
               mb: gridSize === 'xs' || gridSize === 'small' ? 0.5 : 1,
               minHeight: gridSize === 'xs' || gridSize === 'small' ? 20 : 40,
             }}
-            title={file.name}
+            title={decodeFilename(file.name)}
           >
-            {file.name}
+            {decodeFilename(file.name)}
           </Typography>
 
           {gridSize !== 'xs' && gridSize !== 'small' && (

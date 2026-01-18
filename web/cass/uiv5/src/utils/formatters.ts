@@ -144,3 +144,23 @@ export const truncateString = (str: string, maxLength: number): string => {
   if (str.length <= maxLength) return str;
   return `${str.substring(0, maxLength - 3)}...`;
 };
+
+/**
+ * Decode URL-encoded filename to human-readable string
+ * Handles both + signs (spaces) and percent-encoded characters
+ * @param filename - URL-encoded filename (e.g., "Screenshot+2026-01-10+at+11.06.15%E2%80%AFPM.png")
+ * @returns Decoded filename (e.g., "Screenshot 2026-01-10 at 11.06.15 PM.png")
+ */
+export const decodeFilename = (filename: string | undefined | null): string => {
+  if (!filename) return '';
+
+  try {
+    // First replace + with spaces, then decode URI components
+    const withSpaces = filename.replace(/\+/g, ' ');
+    return decodeURIComponent(withSpaces);
+  } catch (e) {
+    // If decoding fails (e.g., malformed encoding), return original
+    // but still replace + with spaces
+    return filename.replace(/\+/g, ' ');
+  }
+};
