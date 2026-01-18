@@ -129,9 +129,15 @@ $ open http://localhost:8081/cass/setup.htm?spage=1
 
 ### Step 5 - Login to App
 open browser and login with your admin credentials
+
+uiv5 (React)
+```
+$ open http://localhost:8081/cass/uiv5/dist/i.htm
+```
+
+uiv3 (Legacy/Angular)
 ```
 $ open http://localhost:8081/cass/uiv3/indexv2.htm
-
 ```
 note: default login credentials ``user:admin`` ``password:valid``
 
