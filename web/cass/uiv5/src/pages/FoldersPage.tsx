@@ -3,6 +3,7 @@
  */
 
 import { useEffect, useState } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
 import { Box, Typography, Card, CardContent, CircularProgress, IconButton, Button, Menu, MenuItem } from '@mui/material';
 import {
   Folder as FolderIcon,
@@ -17,23 +18,33 @@ import {
   AudioFile as AudioIcon,
 } from '@mui/icons-material';
 import { fetchFolders } from '../services/fileApi';
+import { checkFolderPermission } from '../services/folderPermissionApi';
 import { ImageViewer } from '../features/media/ImageViewer';
 import { VideoPlayer } from '../features/media/VideoPlayer';
 import { PdfViewer } from '../features/media/PdfViewer';
 import { DocumentViewer } from '../features/media/DocumentViewer';
 import { DownloadProgressModal } from '../components/download/DownloadProgressModal';
+import { FolderInfoSidebar } from '../components/folders/FolderInfoSidebar';
+import { FolderTreeSidebar } from '../components/folders/FolderTreeSidebar';
 import { useMediaViewer } from '../hooks/useMediaViewer';
 import { useFileDownload } from '../hooks/useFileDownload';
+import { selectFolder, selectSelectedFolder, selectIsSidebarOpen } from '../store/slices/folderPermissionsSlice';
+import type { AppDispatch } from '../store/store';
 import type { Folder } from '../services/fileApi';
 import type { File } from '../types/models';
 
 export function FoldersPage() {
+  const dispatch = useDispatch<AppDispatch>();
+  const selectedFolder = useSelector(selectSelectedFolder);
+  const isSidebarOpen = useSelector(selectIsSidebarOpen);
+
   const [folders, setFolders] = useState<Folder[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [currentFolder, setCurrentFolder] = useState<string>('scanfolders');
   const [breadcrumbs, setBreadcrumbs] = useState<string[]>(['scanfolders']);
   const [imageFiles, setImageFiles] = useState<File[]>([]);
+  const [treeViewOpen, setTreeViewOpen] = useState(false);
 
   // Menu state
   const [fileMenuAnchor, setFileMenuAnchor] = useState<null | HTMLElement>(null);
@@ -84,7 +95,27 @@ export function FoldersPage() {
         setLoading(true);
       }
       const data = await fetchFolders(sFolder);
-      setFolders(data);
+
+      // Filter folders by permission (only filter folders, not files)
+      const foldersOnly = data.filter((f) => f.type !== 'file');
+      const filesOnly = data.filter((f) => f.type === 'file');
+
+      // Check permissions for each folder
+      const foldersWithPermissions = await Promise.all(
+        foldersOnly.map(async (folder) => {
+          // Build the full path for permission check
+          const folderPath = sFolder === 'scanfolders' ? folder.name : `${sFolder}/${folder.name}`;
+          const permission = await checkFolderPermission(folderPath);
+          return { folder, permission };
+        })
+      );
+
+      // Filter out folders with 'none' permission and combine with files
+      const allowedFolders = foldersWithPermissions
+        .filter(({ permission }) => permission !== 'none')
+        .map(({ folder }) => folder);
+
+      setFolders([...allowedFolders, ...filesOnly]);
 
       // Extract image files for the viewer
       const images = data.filter(f => f.type === 'file' && getFileGroup(f.name) === 'photo').map(f => ({
@@ -243,6 +274,23 @@ export function FoldersPage() {
     return { Icon: FileIcon, color: 'white' };
   };
 
+  // Single-click handler to select a folder and show the info sidebar
+  const handleFolderSelect = (folder: Folder) => {
+    // Only select folders, not files
+    if (folder.type !== 'file') {
+      // Build the full path for the folder
+      const folderPath = currentFolder === 'scanfolders'
+        ? folder.name
+        : `${currentFolder}/${folder.name}`;
+
+      dispatch(selectFolder({
+        name: folder.name,
+        path: folderPath,
+        count: folder.count,
+      }));
+    }
+  };
+
   const handleGoBack = () => {
     if (breadcrumbs.length <= 1) return; // Already at root (scanfolders)
 
@@ -261,41 +309,88 @@ export function FoldersPage() {
     }
   };
 
+  // Handle navigation from tree view
+  const handleTreeNavigate = (folderPath: string) => {
+    // Build breadcrumbs from the path
+    const pathParts = folderPath.split('/');
+    const newBreadcrumbs = ['scanfolders', ...pathParts];
+    setBreadcrumbs(newBreadcrumbs);
+    setCurrentFolder(folderPath);
+  };
+
+  const handleTreeToggle = () => {
+    setTreeViewOpen((prev) => !prev);
+  };
+
+  const SIDEBAR_WIDTH = 320;
+  const TREE_SIDEBAR_WIDTH = 280;
+
+  // Render loading/error states but keep TreeSidebar mounted
   if (loading) {
     return (
-      <Box
-        sx={{
-          display: 'flex',
-          justifyContent: 'center',
-          alignItems: 'center',
-          minHeight: 400,
-          background: '#004080',
-        }}
-      >
-        <CircularProgress sx={{ color: 'white' }} />
-      </Box>
+      <>
+        {/* Keep TreeSidebar mounted during loading */}
+        <FolderTreeSidebar
+          open={treeViewOpen}
+          onToggle={handleTreeToggle}
+          onFolderNavigate={handleTreeNavigate}
+        />
+        <Box
+          sx={{
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'center',
+            minHeight: 400,
+            background: '#004080',
+            marginLeft: treeViewOpen ? `${TREE_SIDEBAR_WIDTH}px` : 0,
+            transition: 'margin-left 0.3s ease',
+          }}
+        >
+          <CircularProgress sx={{ color: 'white' }} />
+        </Box>
+      </>
     );
   }
 
   if (error) {
     return (
-      <Box sx={{ p: 3, background: '#004080', minHeight: '100vh' }}>
-        <Typography color="error">{error}</Typography>
-      </Box>
+      <>
+        {/* Keep TreeSidebar mounted during error */}
+        <FolderTreeSidebar
+          open={treeViewOpen}
+          onToggle={handleTreeToggle}
+          onFolderNavigate={handleTreeNavigate}
+        />
+        <Box sx={{ p: 3, background: '#004080', minHeight: '100vh' }}>
+          <Typography color="error">{error}</Typography>
+        </Box>
+      </>
     );
   }
 
   return (
-    <Box
-      sx={{
-        height: '100%',
-        background: '#004080',
-        overflow: 'auto',
-        display: 'flex',
-        flexDirection: 'column',
-      }}
-    >
-      {/* Menu Bar */}
+    <>
+      {/* Left Tree Sidebar */}
+      <FolderTreeSidebar
+        open={treeViewOpen}
+        onToggle={handleTreeToggle}
+        onFolderNavigate={handleTreeNavigate}
+      />
+
+      <Box
+        sx={{
+          height: '100%',
+          background: '#004080',
+          overflow: 'auto',
+          display: 'flex',
+          flexDirection: 'column',
+          // Adjust for sidebars when open
+          marginLeft: treeViewOpen ? `${TREE_SIDEBAR_WIDTH}px` : 0,
+          marginRight: isSidebarOpen ? `${SIDEBAR_WIDTH}px` : 0,
+          transition: 'margin-left 0.3s ease, margin-right 0.3s ease',
+        }}
+      >
+        {/* Menu Bar */}
       <Box
         sx={{
           display: 'flex',
@@ -418,12 +513,19 @@ export function FoldersPage() {
             return (
               <Card
                 key={index}
+                onClick={() => handleFolderSelect(folder)}
                 onDoubleClick={() => handleFolderClick(folder)}
                 sx={{
                   cursor: 'pointer',
-                  backgroundColor: 'transparent',
+                  backgroundColor: selectedFolder?.name === folder.name && folder.type !== 'file'
+                    ? 'rgba(255, 255, 255, 0.2)'
+                    : 'transparent',
                   boxShadow: 'none',
                   transition: 'all 0.2s ease-in-out',
+                  border: selectedFolder?.name === folder.name && folder.type !== 'file'
+                    ? '2px solid rgba(255, 255, 255, 0.5)'
+                    : '2px solid transparent',
+                  borderRadius: 2,
                   '&:hover': {
                     transform: 'translateY(-4px)',
                     backgroundColor: 'rgba(255, 255, 255, 0.1)',
@@ -553,6 +655,10 @@ export function FoldersPage() {
         <MenuItem onClick={() => setHelpMenuAnchor(null)}>Documentation</MenuItem>
         <MenuItem onClick={() => setHelpMenuAnchor(null)}>Keyboard Shortcuts</MenuItem>
       </Menu>
-    </Box>
+
+        {/* Folder Info Sidebar (admin only) */}
+        <FolderInfoSidebar />
+      </Box>
+    </>
   );
 }

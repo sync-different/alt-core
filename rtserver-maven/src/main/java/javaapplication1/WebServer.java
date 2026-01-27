@@ -1733,6 +1733,7 @@ class Worker extends WebServer implements HttpConstants, Runnable {
                 String sFolder="";
                 String sFolderSel="";
                 String sBlacklist="";
+                String sPermissions="";
 
                 String shareType = "";
                 String shareKey = "";
@@ -1997,6 +1998,12 @@ class Worker extends WebServer implements HttpConstants, Runnable {
                         String sTmp = w.substring(10,w.length());
                         sBlacklist = URLDecoder.decode(sTmp, "UTF-8");
                         p("sBlacklist: " + sBlacklist);
+                    }
+
+                    if (w.contains("permissions=")) {
+                        String sTmp = w.substring(12,w.length());
+                        sPermissions = URLDecoder.decode(sTmp, "UTF-8");
+                        p("sPermissions: " + sPermissions);
                     }
 
                     if (w.contains("scan1")) {
@@ -3384,6 +3391,196 @@ class Worker extends WebServer implements HttpConstants, Runnable {
                             outFile.write("{segments:[]}".getBytes());
                         }
                     }
+
+// ***************************************************
+// getfolderperm.fn - Get folder permissions from .acl.hivebot file
+// Returns JSON with permissions array and current user's permission
+// ***************************************************
+                    if (fname.contains("getfolderperm.fn")) {
+                        p("   ***   -----getfolderperm.fn - sFolder: '" + sFolder + "'");
+
+                        String decodedFolder = URLDecoder.decode(sFolder, "UTF-8");
+                        p("decoded folder: " + decodedFolder);
+
+                        // Get current user info
+                        UserSession us = uuidmap.get(sAuthUUID);
+                        String currentUser = null;
+                        boolean isAdmin = false;
+                        if (us != null) {
+                            currentUser = us.getUsername();
+                            UserCollection uc = UserCollection.getInstance();
+                            User user = uc.getUsersByName(currentUser);
+                            if (user != null && user.getRole().equals("admin")) {
+                                isAdmin = true;
+                            }
+                        }
+                        p("currentUser: " + currentUser + ", isAdmin: " + isAdmin);
+
+                        // Build the path to .acl.hivebot file
+                        String aclFilePath = decodedFolder + File.separator + ".acl.hivebot";
+                        File aclFile = new File(aclFilePath);
+                        p("ACL file path: " + aclFilePath);
+
+                        StringBuilder jsonResult = new StringBuilder();
+                        jsonResult.append("{");
+                        jsonResult.append("\"permissions\":[");
+
+                        String currentUserPermission = "none";
+
+                        if (aclFile.exists()) {
+                            p("ACL file exists, reading...");
+                            try {
+                                Properties aclProps = new Properties();
+                                InputStream aclStream = new BufferedInputStream(new FileInputStream(aclFile));
+                                aclProps.load(aclStream);
+                                aclStream.close();
+
+                                // Format: username=permission (r, rw, or none)
+                                boolean firstPerm = true;
+                                for (String username : aclProps.stringPropertyNames()) {
+                                    String permission = aclProps.getProperty(username, "none");
+
+                                    if (!firstPerm) {
+                                        jsonResult.append(",");
+                                    }
+                                    firstPerm = false;
+
+                                    jsonResult.append("{");
+                                    jsonResult.append("\"username\":\"").append(username).append("\",");
+                                    jsonResult.append("\"permission\":\"").append(permission).append("\"");
+                                    jsonResult.append("}");
+
+                                    // Check if this is the current user's permission
+                                    if (currentUser != null && username.equals(currentUser)) {
+                                        currentUserPermission = permission;
+                                    }
+                                }
+                            } catch (Exception e) {
+                                p("Error reading ACL file: " + e.getMessage());
+                            }
+                        } else {
+                            p("ACL file does not exist");
+                        }
+
+                        // Admin always has rw access
+                        if (isAdmin) {
+                            currentUserPermission = "rw";
+                        }
+
+                        jsonResult.append("],");
+                        jsonResult.append("\"currentUserPermission\":\"").append(currentUserPermission).append("\"");
+                        jsonResult.append("}");
+
+                        String result = jsonResult.toString();
+                        p("getfolderperm.fn result: " + result);
+                        outFile.write(result.getBytes("UTF-8"));
+                        outFile.close();
+                    }
+
+// ***************************************************
+// setfolderperm.fn - Save folder permissions to .acl.hivebot file
+// Requires admin role. Accepts permissions as URL parameter (JSON array)
+// Format: ?sFolder=path&permissions=[{"username":"user1","permission":"rw"},...]
+// ***************************************************
+                    if (fname.contains("setfolderperm.fn")) {
+                        p("   ***   -----setfolderperm.fn - sFolder: '" + sFolder + "'");
+                        p("   ***   permissions: '" + sPermissions + "'");
+
+                        String decodedFolder = URLDecoder.decode(sFolder, "UTF-8");
+                        p("decoded folder: " + decodedFolder);
+
+                        // Get current user info - only admins can set permissions
+                        UserSession us = uuidmap.get(sAuthUUID);
+                        String currentUser = null;
+                        boolean isAdmin = false;
+                        if (us != null) {
+                            currentUser = us.getUsername();
+                            UserCollection uc = UserCollection.getInstance();
+                            User user = uc.getUsersByName(currentUser);
+                            if (user != null && user.getRole().equals("admin")) {
+                                isAdmin = true;
+                            }
+                        }
+                        p("currentUser: " + currentUser + ", isAdmin: " + isAdmin);
+
+                        String resultMsg;
+                        if (!isAdmin) {
+                            resultMsg = "{\"success\":false,\"error\":\"Permission denied. Admin role required.\"}";
+                            p("setfolderperm.fn: permission denied - not admin");
+                        } else if (sPermissions == null || sPermissions.isEmpty()) {
+                            resultMsg = "{\"success\":false,\"error\":\"No permissions data provided.\"}";
+                            p("setfolderperm.fn: no permissions data");
+                        } else {
+                            try {
+                                // Build the path to .acl.hivebot file
+                                String aclFilePath = decodedFolder + File.separator + ".acl.hivebot";
+                                File aclFile = new File(aclFilePath);
+                                p("ACL file path: " + aclFilePath);
+
+                                // Parse the JSON permissions array
+                                // Format: [{"username":"user1","permission":"rw"},{"username":"user2","permission":"r"}]
+                                Properties aclProps = new Properties();
+
+                                // Simple JSON parsing (without external library)
+                                String jsonArray = sPermissions.trim();
+                                if (jsonArray.startsWith("[") && jsonArray.endsWith("]")) {
+                                    jsonArray = jsonArray.substring(1, jsonArray.length() - 1);
+
+                                    // Split by },{ to get individual objects
+                                    String[] items = jsonArray.split("\\},\\s*\\{");
+                                    for (String item : items) {
+                                        // Clean up the item
+                                        item = item.replace("{", "").replace("}", "").trim();
+                                        if (item.isEmpty()) continue;
+
+                                        // Parse username and permission from the item
+                                        String username = null;
+                                        String permission = null;
+
+                                        String[] parts = item.split(",");
+                                        for (String part : parts) {
+                                            part = part.trim();
+                                            if (part.contains("\"username\"")) {
+                                                // Extract value after the colon
+                                                int colonPos = part.indexOf(":");
+                                                if (colonPos >= 0) {
+                                                    username = part.substring(colonPos + 1).trim()
+                                                            .replace("\"", "").trim();
+                                                }
+                                            } else if (part.contains("\"permission\"")) {
+                                                int colonPos = part.indexOf(":");
+                                                if (colonPos >= 0) {
+                                                    permission = part.substring(colonPos + 1).trim()
+                                                            .replace("\"", "").trim();
+                                                }
+                                            }
+                                        }
+
+                                        if (username != null && permission != null) {
+                                            p("Adding permission: " + username + "=" + permission);
+                                            aclProps.setProperty(username, permission);
+                                        }
+                                    }
+                                }
+
+                                // Write the properties file
+                                FileOutputStream fos = new FileOutputStream(aclFile);
+                                aclProps.store(fos, "Folder permissions - managed by Alterante");
+                                fos.close();
+
+                                resultMsg = "{\"success\":true}";
+                                p("setfolderperm.fn: saved successfully");
+                            } catch (Exception e) {
+                                p("setfolderperm.fn error: " + e.getMessage());
+                                e.printStackTrace();
+                                resultMsg = "{\"success\":false,\"error\":\"" + e.getMessage().replace("\"", "'") + "\"}";
+                            }
+                        }
+
+                        outFile.write(resultMsg.getBytes("UTF-8"));
+                        outFile.close();
+                    }
+
                     if (fname.contains("getfolders.fn")) {
 
                         p("   ***   -----getfolders.fn - sFolder: '" + sFolder+ "'");
@@ -11595,10 +11792,11 @@ class Worker extends WebServer implements HttpConstants, Runnable {
             String sPath = DB_PATH;
             String _cf = "Standard1";
             String _key = getFileExtension(_file).toLowerCase();
-            String filename = sPath + File.separator + _cf + File.separator + "." + _key;
+            String filename = appendage + sPath + File.separator + _cf + File.separator + "." + _key;
             String sMD5 = "";
             File ft = new File(filename);
-            p("filename md5 = " + filename);
+            p("*** filename md5 = " + filename);
+            p("*** filename md path = " + ft.getAbsolutePath());
             if (ft.exists()) {
                 p("file found");
 
@@ -11624,9 +11822,11 @@ class Worker extends WebServer implements HttpConstants, Runnable {
                     //p("_file       :" + _file);
 
                     if (sLineName.equals(_file)) {
-                        p("match found: '" + sLineName + "' md5: " + sLineMD5);
+                        pw("match found: '" + sLineName + "' md5: " + sLineMD5);
                         sMD5 = sLineMD5;
                         break;
+                    } else {
+                        pw("no match: '" + sLineName + "' vs '" + _file + "'");
                     }
                 }
                 return sMD5;

@@ -9,6 +9,7 @@ import tagsReducer from './slices/tagsSlice';
 import sidebarReducer from './slices/sidebarSlice';
 import viewerReducer from './slices/viewerSlice';
 import playlistReducer from './slices/playlistSlice';
+import folderPermissionsReducer from './slices/folderPermissionsSlice';
 
 export const store = configureStore({
   reducer: {
@@ -18,6 +19,7 @@ export const store = configureStore({
     sidebar: sidebarReducer,
     viewer: viewerReducer,
     playlist: playlistReducer,
+    folderPermissions: folderPermissionsReducer,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({
