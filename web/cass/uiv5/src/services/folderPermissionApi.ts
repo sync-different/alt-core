@@ -7,25 +7,29 @@
 import api from './api';
 
 export type PermissionLevel = 'r' | 'rw' | 'none';
+export type PermissionDepth = '.' | '*'; // '.' = current folder only, '*' = recursive
 
 export interface FolderPermission {
   username: string;
   permission: PermissionLevel;
+  depth: PermissionDepth; // Whether permission applies to subfolders
+  inheritedFrom?: string | null; // Path of parent folder if this permission is inherited
 }
 
 export interface FolderPermissionsResponse {
   permissions: FolderPermission[];
+  inheritedFrom: string | null; // Path of parent folder if ALL permissions are inherited (for backwards compat)
 }
 
 // Mock data for testing until backend is ready
 const MOCK_PERMISSIONS: Record<string, FolderPermission[]> = {
   'scanfolders': [
-    { username: 'admin', permission: 'rw' },
-    { username: 'user1', permission: 'r' },
-    { username: 'user2', permission: 'rw' },
+    { username: 'admin', permission: 'rw', depth: '.' },
+    { username: 'user1', permission: 'r', depth: '.' },
+    { username: 'user2', permission: 'rw', depth: '.' },
   ],
   'default': [
-    { username: 'admin', permission: 'rw' },
+    { username: 'admin', permission: 'rw', depth: '.' },
   ],
 };
 
@@ -53,16 +57,28 @@ export const fetchFolderPermissions = async (
     await new Promise((resolve) => setTimeout(resolve, 300));
 
     const permissions = MOCK_PERMISSIONS[folderPath] || MOCK_PERMISSIONS['default'];
-    return { permissions: [...permissions] };
+    return { permissions: [...permissions], inheritedFrom: null };
   }
 
-  // Real API call (to be implemented with backend)
+  // Real API call
   const response = await api.get('/cass/getfolderperm.fn', {
     params: { sFolder: folderPath },
   });
 
+  const globalInheritedFrom = response.data?.inheritedFrom || null;
+
+  // Map backend response to include depth and per-user inheritedFrom
+  const permissions = (response.data?.permissions || []).map((p: any) => ({
+    username: p.username,
+    permission: p.permission,
+    depth: p.depth || '.',
+    // If there's a global inheritedFrom, apply it to each user (they all came from that parent)
+    inheritedFrom: globalInheritedFrom,
+  }));
+
   return {
-    permissions: response.data?.permissions || [],
+    permissions,
+    inheritedFrom: globalInheritedFrom,
   };
 };
 

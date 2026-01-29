@@ -11,6 +11,7 @@ import {
   saveFolderPermissions as saveFolderPermissionsApi,
   type FolderPermission,
   type PermissionLevel,
+  type PermissionDepth,
 } from '../../services/folderPermissionApi';
 
 interface FolderPermissionsState {
@@ -19,6 +20,9 @@ interface FolderPermissionsState {
 
   // Permissions for the selected folder
   permissions: FolderPermission[];
+
+  // Path of parent folder if permissions are inherited (null if local ACL)
+  inheritedFrom: string | null;
 
   // Loading states
   isLoading: boolean;
@@ -37,6 +41,7 @@ interface FolderPermissionsState {
 const initialState: FolderPermissionsState = {
   selectedFolder: null,
   permissions: [],
+  inheritedFrom: null,
   isLoading: false,
   isSaving: false,
   error: null,
@@ -50,7 +55,10 @@ export const loadFolderPermissions = createAsyncThunk(
   async (folderPath: string, { rejectWithValue }) => {
     try {
       const response = await fetchFolderPermissions(folderPath);
-      return response.permissions;
+      return {
+        permissions: response.permissions,
+        inheritedFrom: response.inheritedFrom,
+      };
     } catch (error: any) {
       return rejectWithValue(error.message || 'Failed to load permissions');
     }
@@ -132,6 +140,20 @@ const folderPermissionsSlice = createSlice({
       }
     },
 
+    // Update a user's permission depth (applies to subfolders)
+    updateUserDepth: (
+      state,
+      action: PayloadAction<{ username: string; depth: PermissionDepth }>
+    ) => {
+      const perm = state.permissions.find(
+        (p) => p.username === action.payload.username
+      );
+      if (perm) {
+        perm.depth = action.payload.depth;
+        state.isDirty = true;
+      }
+    },
+
     // Clear any errors
     clearError: (state) => {
       state.error = null;
@@ -146,7 +168,8 @@ const folderPermissionsSlice = createSlice({
       })
       .addCase(loadFolderPermissions.fulfilled, (state, action) => {
         state.isLoading = false;
-        state.permissions = action.payload;
+        state.permissions = action.payload.permissions;
+        state.inheritedFrom = action.payload.inheritedFrom;
         state.isDirty = false;
       })
       .addCase(loadFolderPermissions.rejected, (state, action) => {
@@ -180,6 +203,7 @@ export const {
   addUserPermission,
   removeUserPermission,
   updateUserPermission,
+  updateUserDepth,
   clearError,
 } = folderPermissionsSlice.actions;
 
@@ -204,6 +228,9 @@ export const selectIsDirty = (state: RootState) =>
 
 export const selectError = (state: RootState) =>
   state.folderPermissions.error;
+
+export const selectInheritedFrom = (state: RootState) =>
+  state.folderPermissions.inheritedFrom;
 
 // Reducer
 export default folderPermissionsSlice.reducer;

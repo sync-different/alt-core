@@ -37,10 +37,11 @@ import {
   addUserPermission,
   removeUserPermission,
   updateUserPermission,
+  updateUserDepth,
   clearError,
 } from '../../store/slices/folderPermissionsSlice';
 import type { AppDispatch } from '../../store/store';
-import type { PermissionLevel } from '../../services/folderPermissionApi';
+import type { PermissionLevel, PermissionDepth } from '../../services/folderPermissionApi';
 import { UserPermissionList } from './UserPermissionList';
 import { RIGHT_SIDEBAR_WIDTH } from '../layout/RightSidebar';
 import { useSidebarContext } from '../../contexts/SidebarContext';
@@ -84,7 +85,8 @@ export function FolderInfoSidebar() {
   };
 
   const handleAddUser = (username: string, permission: PermissionLevel) => {
-    dispatch(addUserPermission({ username, permission }));
+    // Default depth is '.' (current folder only) - checkbox defaults to unchecked
+    dispatch(addUserPermission({ username, permission, depth: '.' }));
   };
 
   const handleRemoveUser = (username: string) => {
@@ -93,6 +95,10 @@ export function FolderInfoSidebar() {
 
   const handleUpdatePermission = (username: string, permission: PermissionLevel) => {
     dispatch(updateUserPermission({ username, permission }));
+  };
+
+  const handleUpdateDepth = (username: string, depth: PermissionDepth) => {
+    dispatch(updateUserDepth({ username, depth }));
   };
 
   const handleCloseError = () => {
@@ -196,6 +202,15 @@ export function FolderInfoSidebar() {
               </Box>
             )}
 
+            {/* Admin Override Notice */}
+            {!isLoading && isAdmin && (
+              <Alert severity="success" sx={{ mb: 2 }}>
+                <Typography variant="body2">
+                  Admin override: You have full access to all folders.
+                </Typography>
+              </Alert>
+            )}
+
             {/* Permissions List */}
             {!isLoading && (
               <UserPermissionList
@@ -204,6 +219,7 @@ export function FolderInfoSidebar() {
                 onAddUser={handleAddUser}
                 onRemoveUser={handleRemoveUser}
                 onUpdatePermission={handleUpdatePermission}
+                onUpdateDepth={handleUpdateDepth}
                 disabled={isSaving}
               />
             )}

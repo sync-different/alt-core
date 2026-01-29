@@ -3394,7 +3394,8 @@ class Worker extends WebServer implements HttpConstants, Runnable {
 
 // ***************************************************
 // getfolderperm.fn - Get folder permissions from .acl.hivebot file
-// Returns JSON with permissions array and current user's permission
+// Returns JSON with permissions array, current user's permission, and inheritedFrom path
+// Supports recursive parent lookup for inherited permissions with depth='*'
 // ***************************************************
                     if (fname.contains("getfolderperm.fn")) {
                         p("   ***   -----getfolderperm.fn - sFolder: '" + sFolder + "'");
@@ -3416,6 +3417,41 @@ class Worker extends WebServer implements HttpConstants, Runnable {
                         }
                         p("currentUser: " + currentUser + ", isAdmin: " + isAdmin);
 
+                        // Get list of scan root folders to know when to stop recursive lookup
+                        java.util.Set<String> scanRoots = new java.util.HashSet<>();
+                        try {
+                            File scanConfigFile = new File(appendage + "../scrubber/config/www-rtbackup.properties");
+                            if (scanConfigFile.exists()) {
+                                Properties scanProps = new Properties();
+                                InputStream scanStream = new BufferedInputStream(new FileInputStream(scanConfigFile));
+                                scanProps.load(scanStream);
+                                scanStream.close();
+                                String scanDirPath = scanProps.getProperty("scandir");
+                                if (scanDirPath != null) {
+                                    File scanFile = new File(appendage + scanDirPath);
+                                    if (scanFile.exists()) {
+                                        Properties scanDirProps = new Properties();
+                                        InputStream scanDirStream = new BufferedInputStream(new FileInputStream(scanFile));
+                                        scanDirProps.load(scanDirStream);
+                                        scanDirStream.close();
+                                        String scanDirs = scanDirProps.getProperty("scandir", "");
+                                        for (String dir : scanDirs.split(";")) {
+                                            if (!dir.isEmpty()) {
+                                                String decodedDir = URLDecoder.decode(dir.trim(), "UTF-8");
+                                                scanRoots.add(decodedDir);
+                                                p("Scan root: " + decodedDir);
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        } catch (Exception e) {
+                            p("Error loading scan roots: " + e.getMessage());
+                        }
+
+                        // Check if folder is a scan root
+                        boolean isScanRoot = scanRoots.contains(decodedFolder);
+
                         // Build the path to .acl.hivebot file
                         String aclFilePath = decodedFolder + File.separator + ".acl.hivebot";
                         File aclFile = new File(aclFilePath);
@@ -3426,40 +3462,103 @@ class Worker extends WebServer implements HttpConstants, Runnable {
                         jsonResult.append("\"permissions\":[");
 
                         String currentUserPermission = "none";
+                        String inheritedFrom = null;
+                        Properties aclProps = null;
 
+                        // First, check if local ACL exists
                         if (aclFile.exists()) {
                             p("ACL file exists, reading...");
                             try {
-                                Properties aclProps = new Properties();
+                                aclProps = new Properties();
                                 InputStream aclStream = new BufferedInputStream(new FileInputStream(aclFile));
                                 aclProps.load(aclStream);
                                 aclStream.close();
-
-                                // Format: username=permission (r, rw, or none)
-                                boolean firstPerm = true;
-                                for (String username : aclProps.stringPropertyNames()) {
-                                    String permission = aclProps.getProperty(username, "none");
-
-                                    if (!firstPerm) {
-                                        jsonResult.append(",");
-                                    }
-                                    firstPerm = false;
-
-                                    jsonResult.append("{");
-                                    jsonResult.append("\"username\":\"").append(username).append("\",");
-                                    jsonResult.append("\"permission\":\"").append(permission).append("\"");
-                                    jsonResult.append("}");
-
-                                    // Check if this is the current user's permission
-                                    if (currentUser != null && username.equals(currentUser)) {
-                                        currentUserPermission = permission;
-                                    }
-                                }
                             } catch (Exception e) {
                                 p("Error reading ACL file: " + e.getMessage());
+                                aclProps = null;
                             }
                         } else {
-                            p("ACL file does not exist");
+                            p("ACL file does not exist, checking parent folders...");
+                            // Walk up parent directories looking for inherited permissions
+                            File currentDir = new File(decodedFolder).getParentFile();
+                            while (currentDir != null) {
+                                String parentPath = currentDir.getAbsolutePath();
+                                p("Checking parent: " + parentPath);
+
+                                File parentAclFile = new File(parentPath + File.separator + ".acl.hivebot");
+                                if (parentAclFile.exists()) {
+                                    try {
+                                        Properties parentProps = new Properties();
+                                        InputStream parentStream = new BufferedInputStream(new FileInputStream(parentAclFile));
+                                        parentProps.load(parentStream);
+                                        parentStream.close();
+
+                                        // Check if any user has '*' depth (recursive permission)
+                                        // Only inherit permissions with '*' depth
+                                        Properties inheritedProps = new Properties();
+                                        boolean hasInheritablePerms = false;
+                                        for (String username : parentProps.stringPropertyNames()) {
+                                            String value = parentProps.getProperty(username, "");
+                                            // Parse format: permission,depth (e.g., "rw,*" or "r,.")
+                                            String[] parts = value.split(",");
+                                            String permission = parts[0].trim();
+                                            String depth = parts.length > 1 ? parts[1].trim() : ".";
+
+                                            if ("*".equals(depth)) {
+                                                // This permission is inheritable
+                                                inheritedProps.setProperty(username, value);
+                                                hasInheritablePerms = true;
+                                                p("Found inheritable permission: " + username + "=" + value);
+                                            }
+                                        }
+
+                                        if (hasInheritablePerms) {
+                                            aclProps = inheritedProps;
+                                            inheritedFrom = parentPath;
+                                            p("Inheriting permissions from: " + parentPath);
+                                            break;
+                                        }
+                                    } catch (Exception e) {
+                                        p("Error reading parent ACL file: " + e.getMessage());
+                                    }
+                                }
+
+                                // Stop at scan root
+                                if (scanRoots.contains(parentPath)) {
+                                    p("Reached scan root, stopping lookup: " + parentPath);
+                                    break;
+                                }
+
+                                currentDir = currentDir.getParentFile();
+                            }
+                        }
+
+                        // Build the JSON response from permissions
+                        if (aclProps != null && !aclProps.isEmpty()) {
+                            boolean firstPerm = true;
+                            for (String username : aclProps.stringPropertyNames()) {
+                                String value = aclProps.getProperty(username, "none");
+                                // Parse format: permission,depth (e.g., "rw,*" or "r,." or just "rw")
+                                String[] parts = value.split(",");
+                                String permission = parts[0].trim();
+                                String depth = parts.length > 1 ? parts[1].trim() : ".";
+
+                                if (!firstPerm) {
+                                    jsonResult.append(",");
+                                }
+                                firstPerm = false;
+
+                                jsonResult.append("{");
+                                jsonResult.append("\"username\":\"").append(username).append("\",");
+                                jsonResult.append("\"permission\":\"").append(permission).append("\",");
+                                jsonResult.append("\"depth\":\"").append(depth).append("\"");
+                                jsonResult.append("}");
+
+                                // Check if this is the current user's permission
+                                if (currentUser != null && username.equals(currentUser)) {
+                                    currentUserPermission = permission;
+                                }
+                            }
                         }
 
                         // Admin always has rw access
@@ -3468,7 +3567,8 @@ class Worker extends WebServer implements HttpConstants, Runnable {
                         }
 
                         jsonResult.append("],");
-                        jsonResult.append("\"currentUserPermission\":\"").append(currentUserPermission).append("\"");
+                        jsonResult.append("\"currentUserPermission\":\"").append(currentUserPermission).append("\",");
+                        jsonResult.append("\"inheritedFrom\":").append(inheritedFrom != null ? "\"" + inheritedFrom + "\"" : "null");
                         jsonResult.append("}");
 
                         String result = jsonResult.toString();
@@ -3480,7 +3580,8 @@ class Worker extends WebServer implements HttpConstants, Runnable {
 // ***************************************************
 // setfolderperm.fn - Save folder permissions to .acl.hivebot file
 // Requires admin role. Accepts permissions as URL parameter (JSON array)
-// Format: ?sFolder=path&permissions=[{"username":"user1","permission":"rw"},...]
+// Format: ?sFolder=path&permissions=[{"username":"user1","permission":"rw","depth":"*"},...]
+// Depth: "." = current folder only, "*" = recursive (applies to subfolders)
 // ***************************************************
                     if (fname.contains("setfolderperm.fn")) {
                         p("   ***   -----setfolderperm.fn - sFolder: '" + sFolder + "'");
@@ -3518,7 +3619,7 @@ class Worker extends WebServer implements HttpConstants, Runnable {
                                 p("ACL file path: " + aclFilePath);
 
                                 // Parse the JSON permissions array
-                                // Format: [{"username":"user1","permission":"rw"},{"username":"user2","permission":"r"}]
+                                // Format: [{"username":"user1","permission":"rw","depth":"*"},...]
                                 Properties aclProps = new Properties();
 
                                 // Simple JSON parsing (without external library)
@@ -3533,9 +3634,10 @@ class Worker extends WebServer implements HttpConstants, Runnable {
                                         item = item.replace("{", "").replace("}", "").trim();
                                         if (item.isEmpty()) continue;
 
-                                        // Parse username and permission from the item
+                                        // Parse username, permission, and depth from the item
                                         String username = null;
                                         String permission = null;
+                                        String depth = "."; // Default to current folder only
 
                                         String[] parts = item.split(",");
                                         for (String part : parts) {
@@ -3553,12 +3655,24 @@ class Worker extends WebServer implements HttpConstants, Runnable {
                                                     permission = part.substring(colonPos + 1).trim()
                                                             .replace("\"", "").trim();
                                                 }
+                                            } else if (part.contains("\"depth\"")) {
+                                                int colonPos = part.indexOf(":");
+                                                if (colonPos >= 0) {
+                                                    depth = part.substring(colonPos + 1).trim()
+                                                            .replace("\"", "").trim();
+                                                    // Validate depth value
+                                                    if (!".".equals(depth) && !"*".equals(depth)) {
+                                                        depth = "."; // Default to current folder only
+                                                    }
+                                                }
                                             }
                                         }
 
                                         if (username != null && permission != null) {
-                                            p("Adding permission: " + username + "=" + permission);
-                                            aclProps.setProperty(username, permission);
+                                            // Store as "permission,depth" format (e.g., "rw,*" or "r,.")
+                                            String value = permission + "," + depth;
+                                            p("Adding permission: " + username + "=" + value);
+                                            aclProps.setProperty(username, value);
                                         }
                                     }
                                 }

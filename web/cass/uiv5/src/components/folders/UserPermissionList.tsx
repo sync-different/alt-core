@@ -15,13 +15,15 @@ import {
   Typography,
   Tooltip,
   Divider,
+  Checkbox,
+  FormControlLabel,
 } from '@mui/material';
 import {
   Add as AddIcon,
   Remove as RemoveIcon,
   Person as PersonIcon,
 } from '@mui/icons-material';
-import type { FolderPermission, PermissionLevel } from '../../services/folderPermissionApi';
+import type { FolderPermission, PermissionLevel, PermissionDepth } from '../../services/folderPermissionApi';
 import { AddUserDialog } from './AddUserDialog';
 import { RemoveUserDialog } from './RemoveUserDialog';
 
@@ -31,6 +33,7 @@ interface UserPermissionListProps {
   onAddUser: (username: string, permission: PermissionLevel) => void;
   onRemoveUser: (username: string) => void;
   onUpdatePermission: (username: string, permission: PermissionLevel) => void;
+  onUpdateDepth: (username: string, depth: PermissionDepth) => void;
   disabled?: boolean;
 }
 
@@ -40,6 +43,7 @@ export function UserPermissionList({
   onAddUser,
   onRemoveUser,
   onUpdatePermission,
+  onUpdateDepth,
   disabled = false,
 }: UserPermissionListProps) {
   const [addDialogOpen, setAddDialogOpen] = useState(false);
@@ -120,12 +124,33 @@ export function UserPermissionList({
               sx={{
                 px: 0,
                 py: 0.5,
+                flexDirection: 'column',
+                alignItems: 'stretch',
                 '&:hover': {
                   bgcolor: 'action.hover',
                   borderRadius: 1,
                 },
               }}
-              secondaryAction={
+            >
+              {/* Top row: username, permission select, remove button */}
+              <Box sx={{ display: 'flex', alignItems: 'center', width: '100%' }}>
+                <PersonIcon
+                  sx={{ mr: 1, color: 'text.secondary', fontSize: 20 }}
+                />
+                <ListItemText
+                  primary={perm.username}
+                  secondary={perm.inheritedFrom ? `(inherited from ${perm.inheritedFrom})` : null}
+                  primaryTypographyProps={{
+                    variant: 'body2',
+                    fontWeight: 500,
+                  }}
+                  secondaryTypographyProps={{
+                    variant: 'caption',
+                    color: 'info.main',
+                    sx: { fontStyle: 'italic' },
+                  }}
+                  sx={{ flex: 1 }}
+                />
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
                   <Select
                     size="small"
@@ -156,18 +181,28 @@ export function UserPermissionList({
                     </IconButton>
                   </Tooltip>
                 </Box>
-              }
-            >
-              <PersonIcon
-                sx={{ mr: 1, color: 'text.secondary', fontSize: 20 }}
-              />
-              <ListItemText
-                primary={perm.username}
-                primaryTypographyProps={{
-                  variant: 'body2',
-                  fontWeight: 500,
-                }}
-              />
+              </Box>
+              {/* Bottom row: Apply to subfolders checkbox */}
+              <Box sx={{ pl: 4, mt: 0.5 }}>
+                <FormControlLabel
+                  control={
+                    <Checkbox
+                      size="small"
+                      checked={perm.depth === '*'}
+                      onChange={(e) =>
+                        onUpdateDepth(perm.username, e.target.checked ? '*' : '.')
+                      }
+                      disabled={disabled}
+                    />
+                  }
+                  label={
+                    <Typography variant="caption" color="text.secondary">
+                      Apply to subfolders
+                    </Typography>
+                  }
+                  sx={{ m: 0 }}
+                />
+              </Box>
             </ListItem>
           ))}
         </List>
