@@ -18,6 +18,7 @@ import {
   Menu,
   MenuItem,
   Avatar,
+  Tooltip,
 } from '@mui/material';
 import {
   Search as SearchIcon,
@@ -39,6 +40,7 @@ import { fetchSearchSuggestions } from '../../services/fileApi';
 import type { RootState } from '../../store/store';
 import Cookies from 'js-cookie';
 import { UploadZone } from '../upload/UploadZone';
+import { useFolderUpload } from '../../contexts/FolderUploadContext';
 
 // Inline SVG logo
 const HivebotLogo = () => (
@@ -77,6 +79,13 @@ export function TopNav() {
   const [searchValue, setSearchValue] = useState(searchQuery);
   const [suggestions, setSuggestions] = useState<string[]>([]);
   const [uploadOpen, setUploadOpen] = useState(false);
+
+  // Folder upload context - for permission-aware upload button
+  const { currentFolder, canUpload, uploadDisabledReason, isOnFoldersPage } = useFolderUpload();
+
+  // Determine if upload button should be disabled
+  const isUploadDisabled = isOnFoldersPage && !canUpload;
+  const uploadTooltip = isUploadDisabled ? uploadDisabledReason : 'Upload';
 
   // Sync local search value with Redux searchQuery (e.g., when tag is clicked)
   useEffect(() => {
@@ -351,19 +360,27 @@ export function TopNav() {
         {/* Right: Upload & User Menu */}
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, justifyContent: 'flex-end' }}>
           {/* Upload Button */}
-          <IconButton
-            color="inherit"
-            title="Upload"
-            onClick={() => setUploadOpen(true)}
-            sx={{
-              backgroundColor: 'rgba(255, 255, 255, 0.15)',
-              '&:hover': {
-                backgroundColor: 'rgba(255, 255, 255, 0.25)',
-              },
-            }}
-          >
-            <UploadIcon />
-          </IconButton>
+          <Tooltip title={uploadTooltip || ''} arrow>
+            <span>
+              <IconButton
+                color="inherit"
+                onClick={() => setUploadOpen(true)}
+                disabled={isUploadDisabled}
+                sx={{
+                  backgroundColor: 'rgba(255, 255, 255, 0.15)',
+                  '&:hover': {
+                    backgroundColor: 'rgba(255, 255, 255, 0.25)',
+                  },
+                  '&.Mui-disabled': {
+                    color: 'rgba(255, 255, 255, 0.3)',
+                    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+                  },
+                }}
+              >
+                <UploadIcon />
+              </IconButton>
+            </span>
+          </Tooltip>
 
           {/* User Menu */}
           <IconButton
@@ -417,7 +434,11 @@ export function TopNav() {
       </Toolbar>
 
       {/* Upload Zone */}
-      <UploadZone open={uploadOpen} onClose={() => setUploadOpen(false)} />
+      <UploadZone
+        open={uploadOpen}
+        onClose={() => setUploadOpen(false)}
+        targetFolder={isOnFoldersPage ? currentFolder : undefined}
+      />
     </AppBar>
   );
 }

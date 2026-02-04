@@ -11,6 +11,7 @@ import { TopNav } from './TopNav';
 import { LeftSidebar } from './LeftSidebar';
 import { RightSidebar, RIGHT_SIDEBAR_WIDTH } from './RightSidebar';
 import { SidebarContext } from '../../contexts/SidebarContext';
+import { FolderUploadProvider } from '../../contexts/FolderUploadContext';
 import { fetchUserSessionInfo } from '../../services/fileApi';
 import { setIsAdmin } from '../../store/slices/authSlice';
 import type { AppDispatch } from '../../store/store';
@@ -35,8 +36,9 @@ export function AppLayout() {
   }, [dispatch]);
 
   return (
-    <SidebarContext.Provider value={{ rightSidebarOpen }}>
-      <Box sx={{ display: 'flex', flexDirection: 'column', height: '100vh' }}>
+    <FolderUploadProvider>
+      <SidebarContext.Provider value={{ rightSidebarOpen }}>
+        <Box sx={{ display: 'flex', flexDirection: 'column', height: '100vh' }}>
         {/* Top Navigation */}
         <TopNav />
 
@@ -74,6 +76,7 @@ export function AppLayout() {
           <RightSidebar onOpenChange={setRightSidebarOpen} />
         </Box>
       </Box>
-    </SidebarContext.Provider>
+      </SidebarContext.Provider>
+    </FolderUploadProvider>
   );
 }

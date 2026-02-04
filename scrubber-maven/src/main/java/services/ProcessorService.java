@@ -545,12 +545,65 @@ public class ProcessorService implements Runnable{
 
                     if (filename.endsWith(".b")) {
                         try {
-                            //5F18AA9A-9425-45D4-8B30-546AB347F7C3.IMG_0004.JPG.24C1066A-A0AD-44F8-801E-83B615161CB3.JPG
-                            File folderDevice = new File(dMobileBackup.getAbsolutePath() + "/" + deviceid);
-                            if(!folderDevice.exists()){
-                                folderDevice.mkdir();
-                            }                               
-                            Files.move(file.toPath(), (new File(folderDevice.getAbsolutePath() + "/" + name)).toPath(), StandardCopyOption.REPLACE_EXISTING);
+                            // Check for .meta file with targetFolder
+                            String targetFolder = null;
+                            File metaFile = new File(appendage + mScanDirectory + "/" + deviceid + "." + name + ".meta");
+                            p("[FOLDER UPLOAD] Looking for meta file: " + metaFile.getAbsolutePath());
+                            if (metaFile.exists()) {
+                                try {
+                                    Properties metaProps = new Properties();
+                                    FileInputStream metaFis = new FileInputStream(metaFile);
+                                    metaProps.load(metaFis);
+                                    metaFis.close();
+                                    targetFolder = metaProps.getProperty("targetFolder");
+                                    p("[FOLDER UPLOAD] Found targetFolder: " + targetFolder);
+                                    metaFile.delete(); // Clean up meta file
+                                } catch (Exception e) {
+                                    pw("Failed to read meta file: " + e.getMessage());
+                                }
+                            }
+
+                            File destFolder = null;
+                            if (targetFolder != null && !targetFolder.isEmpty()) {
+                                // Validate targetFolder is within allowed scan directories
+                                String decodedPath = java.net.URLDecoder.decode(targetFolder, "UTF-8");
+                                p("Decoded targetFolder: " + decodedPath);
+
+                                // Security: Check if path is within scan directories
+                                if (isPathWithinScanDirs(decodedPath)) {
+                                    destFolder = new File(decodedPath);
+                                    if (!destFolder.exists() || !destFolder.isDirectory()) {
+                                        pw("Target folder does not exist or is not a directory: " + decodedPath);
+                                        destFolder = null;
+                                    }
+                                } else {
+                                    pw("SECURITY: targetFolder is not within allowed scan directories: " + decodedPath);
+                                    destFolder = null;
+                                }
+                            }
+
+                            // Fallback to mobilebackup if targetFolder is invalid
+                            if (destFolder == null) {
+                                File folderDevice = new File(dMobileBackup.getAbsolutePath() + "/" + deviceid);
+                                if (!folderDevice.exists()) {
+                                    folderDevice.mkdir();
+                                }
+                                destFolder = folderDevice;
+                            }
+
+                            // Handle file collision: append timestamp if file exists
+                            File destFile = new File(destFolder.getAbsolutePath() + "/" + name);
+                            if (destFile.exists()) {
+                                // Add timestamp to avoid collision
+                                SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMddHHmmss");
+                                String timestamp = sdf.format(new Date());
+                                String nameWithTimestamp = addTimestampToFilename(name, timestamp);
+                                destFile = new File(destFolder.getAbsolutePath() + "/" + nameWithTimestamp);
+                                p("File exists, using timestamped name: " + nameWithTimestamp);
+                            }
+
+                            Files.move(file.toPath(), destFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
+                            p("Moved file to: " + destFile.getAbsolutePath());
                         } catch (IOException ex) {
                             Logger.getLogger(ProcessorService.class.getName()).log(Level.SEVERE, null, ex);
                         }
@@ -1941,7 +1994,80 @@ public class ProcessorService implements Runnable{
        }
        
        private boolean isNumeric(String _string) {
-           return _string.matches("[0-9]+");           
+           return _string.matches("[0-9]+");
+       }
+
+       /**
+        * Check if a path is within one of the configured scan directories.
+        * This is a security check to prevent path traversal attacks.
+        */
+       private boolean isPathWithinScanDirs(String path) {
+           try {
+               File targetPath = new File(path).getCanonicalFile();
+               String targetCanonical = targetPath.getCanonicalPath();
+
+               // Read scan directories from config file
+               // First get the path to scan config file
+               String sScanFilePath = NetUtils.getConfig("scandir", appendage + "../scrubber/config/www-rtbackup.properties");
+               if (sScanFilePath == null || sScanFilePath.isEmpty()) {
+                   sScanFilePath = NetUtils.getConfig("scandir", appendage + "../scrubber/config/www-server.properties");
+               }
+
+               // The scandir config points to a file (e.g., ./config/scan1.txt), read that file
+               String scanDirsValue = null;
+               if (sScanFilePath != null && !sScanFilePath.isEmpty()) {
+                   // Resolve relative path
+                   String fullPath = sScanFilePath;
+                   if (sScanFilePath.startsWith("./")) {
+                       fullPath = appendage + "../scrubber/" + sScanFilePath.substring(2);
+                   }
+
+                   // Read the scandir value from the scan config file
+                   scanDirsValue = NetUtils.getConfig("scandir", fullPath);
+               }
+
+               if (scanDirsValue != null && !scanDirsValue.isEmpty()) {
+                   // Scan dirs are semicolon-separated and URL-encoded
+                   String[] scanDirs = scanDirsValue.split(";");
+                   for (String scanDir : scanDirs) {
+                       try {
+                           String decodedScanDir = java.net.URLDecoder.decode(scanDir.trim(), "UTF-8");
+                           File scanDirFile = new File(decodedScanDir).getCanonicalFile();
+                           String scanDirCanonical = scanDirFile.getCanonicalPath();
+
+                           // Check if target is within this scan directory
+                           if (targetCanonical.startsWith(scanDirCanonical + File.separator) ||
+                               targetCanonical.equals(scanDirCanonical)) {
+                               return true;
+                           }
+                       } catch (Exception e) {
+                           pw("Error checking scan dir: " + e.getMessage());
+                       }
+                   }
+               }
+
+               pw("Path " + path + " is NOT within any scan directory");
+               return false;
+           } catch (Exception e) {
+               pw("Error in isPathWithinScanDirs: " + e.getMessage());
+               return false;
+           }
+       }
+
+       /**
+        * Add a timestamp to a filename before the extension.
+        * Example: "photo.jpg" + "20260203143052" -> "photo-20260203143052.jpg"
+        */
+       private String addTimestampToFilename(String filename, String timestamp) {
+           int lastDot = filename.lastIndexOf('.');
+           if (lastDot > 0) {
+               String nameWithoutExt = filename.substring(0, lastDot);
+               String ext = filename.substring(lastDot);
+               return nameWithoutExt + "-" + timestamp + ext;
+           } else {
+               // No extension
+               return filename + "-" + timestamp;
+           }
        }
 
        private int storeBatchInfo(RecordStats mStatistics) {

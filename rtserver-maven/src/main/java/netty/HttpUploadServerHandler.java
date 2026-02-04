@@ -320,6 +320,9 @@ public class HttpUploadServerHandler extends SimpleChannelInboundHandler<HttpObj
             try {
                 value = attribute.getValue();
                 formData.put(attribute.getName(),value);
+                if ("targetFolder".equals(attribute.getName())) {
+                    System.out.println("[FOLDER UPLOAD] Received targetFolder: " + value);
+                }
             } catch (IOException e1) {
                 // Error while reading data from File, only print name and error
                 e1.printStackTrace();
@@ -358,6 +361,9 @@ public class HttpUploadServerHandler extends SimpleChannelInboundHandler<HttpObj
                     File dest = null;
                     File uploadDir = new File(appendage + "../rtserver/incoming");
 
+                    // Check for targetFolder from folder upload feature
+                    String targetFolder = formData.get("targetFolder");
+
                     if(isChunked) {
                         Integer chunkIndex = Integer.parseInt(formData.get("dzchunkindex")) + 1;
                         String chunkTotal = formData.get("dztotalchunkcount");
@@ -367,6 +373,44 @@ public class HttpUploadServerHandler extends SimpleChannelInboundHandler<HttpObj
                         System.out.println("incoming Chunked sanitized filename: " + safeFilename);
                     } else {
                         String safeFilename = sanitizeFilename(fileUpload.getName());
+                        // If targetFolder is provided, create a .meta file with the target path
+                        // This works for both .b files (complete uploads) and .p files (chunked uploads)
+                        if (targetFolder != null && !targetFolder.isEmpty()) {
+                            // Create metadata file with targetFolder info
+                            // For .p files: write meta for the base filename (without chunk info)
+                            // Pattern: upload.filename.totalChunks.chunkIndex.p -> upload.filename.meta
+                            String metaBaseName = safeFilename;
+                            if (safeFilename.endsWith(".p")) {
+                                // Extract base filename from chunk pattern: upload.name.totalChunks.chunkIndex.p
+                                // We want: upload.name.meta
+                                String[] parts = safeFilename.split("\\.");
+                                if (parts.length >= 5) {
+                                    // Rebuild: upload.name (skip totalChunks, chunkIndex, p)
+                                    StringBuilder sb = new StringBuilder();
+                                    for (int i = 0; i < parts.length - 3; i++) {
+                                        if (i > 0) sb.append(".");
+                                        sb.append(parts[i]);
+                                    }
+                                    metaBaseName = sb.toString() + ".meta";
+                                } else {
+                                    metaBaseName = safeFilename + ".meta";
+                                }
+                            } else {
+                                metaBaseName = safeFilename + ".meta";
+                            }
+                            try {
+                                File metaFile = new File(uploadDir, metaBaseName);
+                                // Only create if doesn't exist (first chunk creates it)
+                                if (!metaFile.exists()) {
+                                    java.io.FileWriter fw = new java.io.FileWriter(metaFile);
+                                    fw.write("targetFolder=" + targetFolder + "\n");
+                                    fw.close();
+                                    System.out.println("Created metadata file: " + metaFile.getAbsolutePath());
+                                }
+                            } catch (Exception e) {
+                                System.err.println("Failed to create metadata file: " + e.getMessage());
+                            }
+                        }
                         dest = new File(uploadDir, safeFilename);
                         System.out.println("incoming getFileName () (netty): " + fileUpload.getFilename());
                         System.out.println("incoming sanitized filename: " + safeFilename);

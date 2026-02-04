@@ -28,6 +28,7 @@ import { FolderInfoSidebar } from '../components/folders/FolderInfoSidebar';
 import { FolderTreeSidebar } from '../components/folders/FolderTreeSidebar';
 import { useMediaViewer } from '../hooks/useMediaViewer';
 import { useFileDownload } from '../hooks/useFileDownload';
+import { useFolderUpload } from '../contexts/FolderUploadContext';
 import { selectFolder, selectSelectedFolder, selectIsSidebarOpen } from '../store/slices/folderPermissionsSlice';
 import type { AppDispatch } from '../store/store';
 import type { Folder } from '../services/fileApi';
@@ -37,6 +38,7 @@ export function FoldersPage() {
   const dispatch = useDispatch<AppDispatch>();
   const selectedFolder = useSelector(selectSelectedFolder);
   const isSidebarOpen = useSelector(selectIsSidebarOpen);
+  const { setCurrentFolder: setUploadCurrentFolder, setIsOnFoldersPage } = useFolderUpload();
 
   const [folders, setFolders] = useState<Folder[]>([]);
   const [loading, setLoading] = useState(true);
@@ -45,6 +47,19 @@ export function FoldersPage() {
   const [breadcrumbs, setBreadcrumbs] = useState<string[]>(['scanfolders']);
   const [imageFiles, setImageFiles] = useState<File[]>([]);
   const [treeViewOpen, setTreeViewOpen] = useState(false);
+
+  // Notify context that we're on the Folders page and update current folder
+  useEffect(() => {
+    setIsOnFoldersPage(true);
+    return () => {
+      setIsOnFoldersPage(false);
+    };
+  }, [setIsOnFoldersPage]);
+
+  // Update upload context when current folder changes
+  useEffect(() => {
+    setUploadCurrentFolder(currentFolder);
+  }, [currentFolder, setUploadCurrentFolder]);
 
   // Menu state
   const [fileMenuAnchor, setFileMenuAnchor] = useState<null | HTMLElement>(null);

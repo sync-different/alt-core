@@ -79,6 +79,8 @@ interface GlobalStats {
 interface UploadZoneProps {
   open: boolean;
   onClose: () => void;
+  /** Target folder path for uploads (when on Folders page) */
+  targetFolder?: string | null;
 }
 
 // ============ Utility Functions ============
@@ -124,7 +126,7 @@ const generateId = (): string => {
 
 // ============ Main Component ============
 
-export function UploadZone({ open, onClose }: UploadZoneProps) {
+export function UploadZone({ open, onClose, targetFolder }: UploadZoneProps) {
   // File state
   const [files, setFiles] = useState<UploadFile[]>([]);
 
@@ -339,6 +341,13 @@ export function UploadZone({ open, onClose }: UploadZoneProps) {
         const formData = new FormData();
         const paramName = `upload.${file.name}.${totalChunks}.${chunkIndex + 1}.p`;
         const chunkFile = new File([chunk], paramName, { type: file.type });
+
+        // Add targetFolder BEFORE the file (server processes form fields in order)
+        if (targetFolder && targetFolder !== 'scanfolders') {
+          formData.append('targetFolder', targetFolder);
+          console.log('[UPLOAD] Adding targetFolder to FormData:', targetFolder);
+        }
+
         formData.append(paramName, chunkFile);
 
         let url: string;
@@ -704,6 +713,15 @@ export function UploadZone({ open, onClose }: UploadZoneProps) {
         >
           <CloseIcon />
         </IconButton>
+
+        {/* Target Folder Display */}
+        {targetFolder && targetFolder !== 'scanfolders' && (
+          <Alert severity="info" sx={{ mb: 2 }}>
+            <Typography variant="body2">
+              <strong>Uploading to:</strong> {decodeURIComponent(targetFolder)}
+            </Typography>
+          </Alert>
+        )}
 
         {/* Settings Section */}
         <Box sx={{ mb: 3 }}>
