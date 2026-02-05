@@ -5,7 +5,8 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import type { PayloadAction } from '@reduxjs/toolkit';
 import type { RootState } from '../store';
-import type { Folder } from '../../services/fileApi';
+import type { Folder, FileInfo } from '../../services/fileApi';
+import { fetchFileInfo } from '../../services/fileApi';
 import {
   fetchFolderPermissions,
   saveFolderPermissions as saveFolderPermissionsApi,
@@ -18,6 +19,9 @@ interface FolderPermissionsState {
   // Currently selected folder for the info sidebar
   selectedFolder: Folder | null;
 
+  // File info for the selected file (when type === 'file')
+  fileInfo: FileInfo | null;
+
   // Permissions for the selected folder
   permissions: FolderPermission[];
 
@@ -26,6 +30,7 @@ interface FolderPermissionsState {
 
   // Loading states
   isLoading: boolean;
+  isLoadingFileInfo: boolean;
   isSaving: boolean;
 
   // Error state
@@ -40,9 +45,11 @@ interface FolderPermissionsState {
 
 const initialState: FolderPermissionsState = {
   selectedFolder: null,
+  fileInfo: null,
   permissions: [],
   inheritedFrom: null,
   isLoading: false,
+  isLoadingFileInfo: false,
   isSaving: false,
   error: null,
   sidebarOpen: false,
@@ -81,6 +88,19 @@ export const saveFolderPermissions = createAsyncThunk(
   }
 );
 
+// Async thunk for loading file info by MD5
+export const loadFileInfo = createAsyncThunk(
+  'folderPermissions/loadFileInfo',
+  async (md5: string, { rejectWithValue }) => {
+    try {
+      const fileInfo = await fetchFileInfo(md5);
+      return fileInfo;
+    } catch (error: any) {
+      return rejectWithValue(error.message || 'Failed to load file info');
+    }
+  }
+);
+
 const folderPermissionsSlice = createSlice({
   name: 'folderPermissions',
   initialState,
@@ -88,6 +108,7 @@ const folderPermissionsSlice = createSlice({
     // Set the selected folder and open sidebar
     selectFolder: (state, action: PayloadAction<Folder | null>) => {
       state.selectedFolder = action.payload;
+      state.fileInfo = null; // Clear previous file info
       state.sidebarOpen = action.payload !== null;
       state.isDirty = false;
       state.error = null;
@@ -97,6 +118,7 @@ const folderPermissionsSlice = createSlice({
     closeSidebar: (state) => {
       state.sidebarOpen = false;
       state.selectedFolder = null;
+      state.fileInfo = null;
       state.permissions = [];
       state.isDirty = false;
       state.error = null;
@@ -158,6 +180,13 @@ const folderPermissionsSlice = createSlice({
     clearError: (state) => {
       state.error = null;
     },
+
+    // Update file info tags (after adding/removing a tag)
+    updateFileInfoTags: (state, action: PayloadAction<string>) => {
+      if (state.fileInfo) {
+        state.fileInfo.file_tags = action.payload;
+      }
+    },
   },
   extraReducers: (builder) => {
     // Load permissions
@@ -192,6 +221,21 @@ const folderPermissionsSlice = createSlice({
         state.isSaving = false;
         state.error = action.payload as string;
       });
+
+    // Load file info
+    builder
+      .addCase(loadFileInfo.pending, (state) => {
+        state.isLoadingFileInfo = true;
+        state.error = null;
+      })
+      .addCase(loadFileInfo.fulfilled, (state, action) => {
+        state.isLoadingFileInfo = false;
+        state.fileInfo = action.payload;
+      })
+      .addCase(loadFileInfo.rejected, (state, action) => {
+        state.isLoadingFileInfo = false;
+        state.error = action.payload as string;
+      });
   },
 });
 
@@ -205,6 +249,7 @@ export const {
   updateUserPermission,
   updateUserDepth,
   clearError,
+  updateFileInfoTags,
 } = folderPermissionsSlice.actions;
 
 // Selectors
@@ -231,6 +276,12 @@ export const selectError = (state: RootState) =>
 
 export const selectInheritedFrom = (state: RootState) =>
   state.folderPermissions.inheritedFrom;
+
+export const selectFileInfo = (state: RootState) =>
+  state.folderPermissions.fileInfo;
+
+export const selectIsLoadingFileInfo = (state: RootState) =>
+  state.folderPermissions.isLoadingFileInfo;
 
 // Reducer
 export default folderPermissionsSlice.reducer;

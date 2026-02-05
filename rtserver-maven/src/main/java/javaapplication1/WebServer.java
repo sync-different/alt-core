@@ -6215,6 +6215,37 @@ class Worker extends WebServer implements HttpConstants, Runnable {
                             outFile.close();
                         }
                     }
+
+                    // getfileinfo.fn - Returns JSON with file metadata for a given MD5
+                    if (fname.contains("getfileinfo.fn")) {
+                        p("-----------------getfileinfo.fn");
+                        if (bUserAuthenticated) {
+                            UserSession us = uuidmap.get(sAuthUUID);
+                            String sUser = us != null ? us.getUsername() : null;
+
+                            InetAddress clientIP = NetUtils.getLocalAddressNonLoopback2();
+                            String LocalIP = "127.0.0.1";
+                            if (clientIP != null) {
+                                LocalIP = clientIP.getHostAddress();
+                            }
+
+                            // sMD5 parameter contains the file hash
+                            // Load thumbnail dir if not loaded yet
+                            if(THUMBNAIL_OUTPUT_DIR==null || THUMBNAIL_OUTPUT_DIR.trim().length()==0){
+                                loadPropsProcessor();
+                            }
+                            String res = wf.getFileInfo(sMD5, sUser, LocalIP, Integer.toString(port), dbmode, THUMBNAIL_OUTPUT_DIR);
+                            byte[] kk = res.getBytes("UTF-8");
+                            outFile.write(kk);
+                            outFile.close();
+                        } else {
+                            String res = "{\"error\": \"Authentication required\"}";
+                            byte[] kk = res.getBytes();
+                            outFile.write(kk);
+                            outFile.close();
+                        }
+                    }
+
                     if (fname.contains("getfile.fn") || fname.contains("getfilepart.fn")) {
                         p("-----------------getfile.fn");
                         long chunk_size = filechunk_size;

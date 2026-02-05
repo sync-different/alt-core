@@ -400,3 +400,66 @@ export const fetchFolders = async (sFolder: string = 'scanfolders'): Promise<Fol
     }))
     .filter((folder: Folder) => !folder.name.startsWith('.')); // Filter out hidden files/folders
 };
+
+/**
+ * File info response from getfileinfo.fn
+ */
+export interface FileInfo {
+  nickname: string;
+  name: string;
+  file_ext: string;
+  file_group: string;
+  file_size: number;
+  file_date: string;
+  file_date_long: number;
+  file_tags: string;
+  file_path_webapp: string;
+  file_remote_webapp: string;
+  file_folder_webapp: string;
+  file_thumbnail?: string;
+  video_url_webapp?: string;
+  audio_url_webapp?: string;
+  error?: string;
+}
+
+/**
+ * Fetch file info by MD5 hash
+ * Uses getfileinfo.fn endpoint
+ */
+export const fetchFileInfo = async (md5: string): Promise<FileInfo> => {
+  const response = await api.get('/cass/getfileinfo.fn', {
+    params: { md5 }
+  });
+
+  const data = response.data;
+
+  // Check for error response
+  if (data.error) {
+    throw new Error(data.error);
+  }
+
+  // Decode URL-encoded filename
+  let decodedName = data.name || '';
+  try {
+    decodedName = decodeURIComponent(decodedName);
+  } catch {
+    // Keep original if decoding fails
+  }
+
+  return {
+    nickname: data.nickname || md5,
+    name: decodedName,
+    file_ext: data.file_ext || '',
+    file_group: data.file_group || 'other',
+    file_size: parseInt(data.file_size || '0', 10),
+    file_date: data.file_date || '',
+    file_date_long: parseInt(data.file_date_long || '0', 10),
+    file_tags: data.file_tags || '',
+    file_path_webapp: data.file_path_webapp || '',
+    file_remote_webapp: data.file_remote_webapp || '',
+    file_folder_webapp: data.file_folder_webapp || '',
+    file_thumbnail: data.file_thumbnail,
+    video_url_webapp: data.video_url_webapp,
+    audio_url_webapp: data.audio_url_webapp,
+  };
+};

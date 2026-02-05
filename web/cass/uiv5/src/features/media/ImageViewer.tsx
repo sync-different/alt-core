@@ -7,6 +7,8 @@
 import { useState, useEffect } from 'react';
 import { useDispatch } from 'react-redux';
 import { Paper, Box, IconButton, Typography, Chip, Stack } from '@mui/material';
+import { useFileDownload } from '../../hooks/useFileDownload';
+import { DownloadProgressModal } from '../../components/download/DownloadProgressModal';
 import {
   Close as CloseIcon,
   Download as DownloadIcon,
@@ -55,6 +57,17 @@ export function ImageViewer({
   const [isSlideshow, setIsSlideshow] = useState(false);
   const [slideshowInterval, setSlideshowInterval] = useState<number | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+
+  // Download manager hook
+  const {
+    isDownloading,
+    downloadProgress,
+    isComplete,
+    currentFile: downloadingFile,
+    startDownload,
+    cancelDownload,
+    closeModal,
+  } = useFileDownload();
 
   const currentFile = files[activeIndex];
 
@@ -143,20 +156,10 @@ export function ImageViewer({
     }
   };
 
-  // Handle download
+  // Handle download - use Download Manager modal
   const handleDownload = () => {
-    if (!currentFile) return;
-
-    const uuid = localStorage.getItem('uuid');
-    const url = currentFile.file_path_webapp;
-
-    if (url) {
-      // Add UUID to URL
-      const separator = url.includes('?') ? '&' : '?';
-      const downloadUrl = buildUrl(`${url}${separator}uuid=${uuid}`);
-
-      // Open in new tab - browser will download if server sends Content-Disposition header
-      window.open(downloadUrl, '_blank');
+    if (currentFile) {
+      startDownload(currentFile);
     }
   };
 
@@ -396,6 +399,15 @@ export function ImageViewer({
     >
       <RightSidebar fullscreen={true} externalOpen={sidebarOpen} onOpenChange={setSidebarOpen} />
     </Box>
+
+    {/* Download Progress Modal */}
+    <DownloadProgressModal
+      open={isDownloading || isComplete}
+      fileName={downloadingFile?.name || currentFile?.name || ''}
+      progress={downloadProgress}
+      onCancel={isComplete ? closeModal : cancelDownload}
+      isComplete={isComplete}
+    />
     </>
   );
 }

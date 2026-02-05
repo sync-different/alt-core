@@ -289,21 +289,20 @@ export function FoldersPage() {
     return { Icon: FileIcon, color: 'white' };
   };
 
-  // Single-click handler to select a folder and show the info sidebar
+  // Single-click handler to select a folder or file and show the info sidebar
   const handleFolderSelect = (folder: Folder) => {
-    // Only select folders, not files
-    if (folder.type !== 'file') {
-      // Build the full path for the folder
-      const folderPath = currentFolder === 'scanfolders'
-        ? folder.name
-        : `${currentFolder}/${folder.name}`;
+    // Build the full path
+    const itemPath = currentFolder === 'scanfolders'
+      ? folder.name
+      : `${currentFolder}/${folder.name}`;
 
-      dispatch(selectFolder({
-        name: folder.name,
-        path: folderPath,
-        count: folder.count,
-      }));
-    }
+    dispatch(selectFolder({
+      name: folder.name,
+      path: itemPath,
+      count: folder.count,
+      type: folder.type,
+      md5: folder.md5,
+    }));
   };
 
   const handleGoBack = () => {
@@ -532,12 +531,12 @@ export function FoldersPage() {
                 onDoubleClick={() => handleFolderClick(folder)}
                 sx={{
                   cursor: 'pointer',
-                  backgroundColor: selectedFolder?.name === folder.name && folder.type !== 'file'
+                  backgroundColor: selectedFolder?.name === folder.name
                     ? 'rgba(255, 255, 255, 0.2)'
                     : 'transparent',
                   boxShadow: 'none',
                   transition: 'all 0.2s ease-in-out',
-                  border: selectedFolder?.name === folder.name && folder.type !== 'file'
+                  border: selectedFolder?.name === folder.name
                     ? '2px solid rgba(255, 255, 255, 0.5)'
                     : '2px solid transparent',
                   borderRadius: 2,

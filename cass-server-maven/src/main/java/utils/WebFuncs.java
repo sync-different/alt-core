@@ -819,6 +819,133 @@ public String get_node_attribute(String _uuid, String _name) {
         return "ERROR";
     }
 
+/**
+ * Get file info as JSON for a given MD5 hash
+ * Used by getfileinfo.fn endpoint
+ */
+public String getFileInfo(String _md5, String _user, String _host, String _port, String _dbmode, String _thumbnailDir) {
+    try {
+        if (_md5 == null || _md5.trim().length() == 0) {
+            return "{\"error\": \"MD5 parameter required\"}";
+        }
+
+        loadProps();
+
+        StringBuilder res = new StringBuilder();
+        res.append("{\n");
+
+        // Get file name
+        String sFileName = c8.get_row_attribute("Keyspace1b", "Standard1", _md5, "name", null);
+        if (sFileName == null || sFileName.equals("ERROR") || sFileName.trim().length() == 0) {
+            return "{\"error\": \"File not found\"}";
+        }
+
+        // URL encode the filename for safety in JSON
+        String encodedFileName = java.net.URLEncoder.encode(sFileName, "UTF-8");
+        res.append("\"nickname\": \"" + _md5 + "\",\n");
+        res.append("\"name\": \"" + encodedFileName + "\",\n");
+
+        // Get file extension and group
+        String ext = "";
+        if (sFileName.lastIndexOf(".") > 0) {
+            ext = sFileName.substring(sFileName.lastIndexOf(".") + 1).toLowerCase();
+        }
+        res.append("\"file_ext\": \"" + ext + "\",\n");
+
+        // Determine file group
+        String sFileGroup = "other";
+        if (Cass7Funcs.is_music(sFileName)) sFileGroup = "music";
+        else if (Cass7Funcs.is_movie(sFileName)) sFileGroup = "movie";
+        else if (Cass7Funcs.is_document(sFileName) || c7.is_office(sFileName)) sFileGroup = "document";
+        else if (Cass7Funcs.is_photo(sFileName)) sFileGroup = "photo";
+        res.append("\"file_group\": \"" + sFileGroup + "\",\n");
+
+        // Get file size
+        String fsize = c8.get_row_attribute("Keyspace1b", "Standard1", _md5, "size", null);
+        if (fsize != null && !fsize.equals("ERROR")) {
+            res.append("\"file_size\": " + fsize + ",\n");
+        } else {
+            res.append("\"file_size\": 0,\n");
+        }
+
+        // Get file date
+        String sDate = c8.get_row_attribute("Keyspace1b", "Standard1", _md5, "date_modified", null);
+        if (sDate != null && !sDate.equals("ERROR")) {
+            res.append("\"file_date\": \"" + sDate + "\",\n");
+            try {
+                java.text.SimpleDateFormat f = new java.text.SimpleDateFormat("yyyy.MM.dd HH:mm:ss.SSS z");
+                java.util.Date d = f.parse(sDate);
+                long milliseconds = d.getTime();
+                res.append("\"file_date_long\": " + milliseconds + ",\n");
+            } catch (Exception e) {
+                res.append("\"file_date_long\": 0,\n");
+            }
+        } else {
+            res.append("\"file_date\": \"\",\n");
+            res.append("\"file_date_long\": 0,\n");
+        }
+
+        // Get tags for user
+        String ftags = getTagsForFile(_md5, _user);
+        if (ftags != null) {
+            res.append("\"file_tags\": \"" + ftags + "\",\n");
+        } else {
+            res.append("\"file_tags\": \"\",\n");
+        }
+
+        // Build webapp URLs
+        res.append("\"file_path_webapp\": \"/cass/getfile.fn?sNamer=" + _md5 + "&sFileExt=" + ext + "&sFileName=" + encodedFileName + "\",\n");
+        res.append("\"file_remote_webapp\": \"/cass/openfile.fn?sNamer=" + _md5 + "&ftype=" + ext + "\",\n");
+        res.append("\"file_folder_webapp\": \"/cass/openfolder.fn?sNamer=" + _md5 + "&sFileName=" + encodedFileName + "\",\n");
+
+        // Video URL for video files
+        if (sFileGroup.equals("movie")) {
+            res.append("\"video_url_webapp\": \"getvideo.m3u8?md5=" + _md5 + "\",\n");
+        }
+
+        // Audio URL for audio files
+        if (sFileGroup.equals("music")) {
+            res.append("\"audio_url_webapp\": \"getaudio.m3u8?md5=" + _md5 + "\",\n");
+        }
+
+        // Get thumbnail if exists - use THUMBNAIL_OUTPUT_DIR
+        String sThumbnailPath = appendage + _thumbnailDir + java.io.File.separator + _md5.toLowerCase() + ".alt64";
+        java.io.File fh64 = new java.io.File(sThumbnailPath);
+        pw("Thumbnail path: " + sThumbnailPath);
+        if (fh64.exists()) {
+            try {
+                java.io.FileInputStream is = new java.io.FileInputStream(fh64);
+                java.io.ByteArrayOutputStream out = new java.io.ByteArrayOutputStream();
+                byte[] buf = new byte[1024 * 64];
+                int n;
+                while ((n = is.read(buf)) > 0) {
+                    out.write(buf, 0, n);
+                }
+                is.close();
+                res.append("\"file_thumbnail\": \"" + out.toString() + "\",\n");
+                out.close();
+            } catch (Exception e) {
+                p("Error reading thumbnail: " + e.getMessage());
+            }
+        } else {
+            pw("WARNING: Thumbnail file not found: " + sThumbnailPath);
+        }
+
+        // Remove trailing comma and close JSON
+        String result = res.toString();
+        if (result.endsWith(",\n")) {
+            result = result.substring(0, result.length() - 2) + "\n";
+        }
+        result += "}";
+
+        return result;
+
+    } catch (Exception ex) {
+        Logger.getLogger(WebFuncs.class.getName()).log(Level.SEVERE, null, ex);
+        return "{\"error\": \"" + ex.getMessage() + "\"}";
+    }
+}
+
 public int insert_name_value(String _keyspace, String _columnfamily, String _key, String _name, String _value, String _dbmode) {
         try {
             loadProps();
