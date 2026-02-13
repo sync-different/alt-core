@@ -481,7 +481,7 @@ public class ProcessorService implements Runnable{
                 if (file.isDirectory())
                     continue;
                 final String filename = file.getName();
-                if (filename.contains(".zip")) {
+                if (filename.endsWith(".zip")) {
                     
                     //unzip packed file.
                     try {
