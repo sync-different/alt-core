@@ -71,3 +71,7 @@ web/cass/shares*.tmp
 web/cass/setup.htm_*.tmp
 /scrubber/tmp
 *.tmp
+/internal
+/test-files
+/alt-core-cli/target
+/scrubber/corrupted
