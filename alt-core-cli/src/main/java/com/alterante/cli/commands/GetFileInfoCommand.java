@@ -1,0 +1,24 @@
+package com.alterante.cli.commands;
+
+import com.alterante.cli.HttpSession;
+import com.alterante.cli.OutputFormatter;
+import com.alterante.cli.Main;
+
+import java.net.http.HttpResponse;
+
+public class GetFileInfoCommand {
+
+    public void run(HttpSession session, String[] args) throws Exception {
+        String md5 = Main.getArg(args, "md5");
+        if (md5 == null) {
+            System.err.println("Usage: fileinfo --md5 <hash>");
+            System.exit(1);
+        }
+
+        String path = "/cass/getfileinfo.fn?md5=" + HttpSession.encode(md5);
+
+        boolean noAuth = Main.hasFlag(args, "noauth");
+        HttpResponse<String> response = session.get(path, !noAuth);
+        OutputFormatter.print(response);
+    }
+}
