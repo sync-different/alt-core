@@ -363,6 +363,15 @@ public class HttpUploadServerHandler extends SimpleChannelInboundHandler<HttpObj
 
                     // Check for targetFolder from folder upload feature
                     String targetFolder = formData.get("targetFolder");
+                    // Sanitize targetFolder: strip newlines (prevents Properties injection)
+                    // and reject path traversal (defense-in-depth; ProcessorService also validates)
+                    if (targetFolder != null) {
+                        targetFolder = targetFolder.replace("\n", "").replace("\r", "");
+                        if (targetFolder.contains("..")) {
+                            System.err.println("SECURITY: targetFolder contains path traversal: " + targetFolder);
+                            targetFolder = null;
+                        }
+                    }
 
                     if(isChunked) {
                         Integer chunkIndex = Integer.parseInt(formData.get("dzchunkindex")) + 1;

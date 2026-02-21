@@ -27,25 +27,26 @@ public class Appendage {
 
     static void setAppendage() {
         boolean result = false;
+        String userHome = System.getProperty("user.home");
+        String appSupportPath = userHome + "/Library/Application Support/hivebot/scrubber/";
+
         File directory = new File("/Applications/hivebot.localized/hivebot.app/Contents/MacOS").getAbsoluteFile();
-        //File directory = new File("../app/projects/rtserver").getAbsoluteFile();
         if (directory.exists())
         {
-            p("[CS.Localfuncs] Found hivebotlocalized app directory. Setting working dir to it");
+            p("[CS.Localfuncs] Found hivebotlocalized app directory. Using Application Support for data.");
             result = (System.setProperty("user.dir", directory.getAbsolutePath()) != null);
-            appendage = "/Applications/hivebot.localized/hivebot.app/Contents/app/scrubber/";
-            appendageRW = "/Applications/hivebot.localized/hivebot.app/Contents/app/scrubber/";
+            appendage = appSupportPath;
+            appendageRW = appSupportPath;
             p("appendage  = " + appendage);
             p("appendageRW  = " + appendageRW);
         } else {
             directory = new File("/Applications/alt-core.app/Contents/MacOS").getAbsoluteFile();
-            //File directory = new File("../app/projects/rtserver").getAbsoluteFile();
             if (directory.exists())
             {
-                p("[CS.Localfuncs] Found alt-core app directory. Setting working dir to it");
+                p("[CS.Localfuncs] Found alt-core app directory. Using Application Support for data.");
                 result = (System.setProperty("user.dir", directory.getAbsolutePath()) != null);
-                appendage = "/Applications/alt-core.app/Contents/app/scrubber/";
-                appendageRW = "/Applications/alt-core.app/Contents/app/scrubber/";
+                appendage = appSupportPath;
+                appendageRW = appSupportPath;
                 p("appendage  = " + appendage);
                 p("appendageRW  = " + appendageRW);
             } else {

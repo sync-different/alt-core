@@ -153,19 +153,28 @@ public class HttpStaticFileServerHandler extends SimpleChannelInboundHandler<Ful
         String uri = request.uri();
         
         String queryString = null;
-        if(uri.contains(".fn"))
-          queryString = uri.split(".fn\\?")[1];
-        if(uri.contains(".m3u8"))
-          queryString = uri.split(".m3u8\\?")[1];
-        
-        
-        String[] tokens = queryString.split("&");  
-        Map<String, String> map = new HashMap<String, String>();  
-        for (String param : tokens)  
-        {  
-            String name = param.split("=")[0];  
-            String value = param.split("=")[1];  
-            map.put(name, value);  
+        if(uri.contains(".fn") && uri.contains("?")) {
+            String[] parts = uri.split(".fn\\?", 2);
+            if (parts.length == 2) queryString = parts[1];
+        }
+        if(uri.contains(".m3u8") && uri.contains("?")) {
+            String[] parts = uri.split(".m3u8\\?", 2);
+            if (parts.length == 2) queryString = parts[1];
+        }
+
+        if (queryString == null || queryString.isEmpty()) {
+            sendError(ctx, BAD_REQUEST);
+            return;
+        }
+
+        String[] tokens = queryString.split("&");
+        Map<String, String> map = new HashMap<String, String>();
+        for (String param : tokens)
+        {
+            String[] kv = param.split("=", 2);
+            if (kv.length == 2) {
+                map.put(kv[0], kv[1]);
+            }
         }
         
         String uuid = map.get("uuid");
@@ -202,22 +211,34 @@ public class HttpStaticFileServerHandler extends SimpleChannelInboundHandler<Ful
         boolean m3u8 = false;
         if(uri.contains("getvideo.fn")){
             String md5requested = map.get("md5");
+            if (md5requested == null || !md5requested.matches("[a-fA-F0-9]+")) {
+                sendError(ctx, BAD_REQUEST);
+                return;
+            }
             uri = "/streaming/" + md5requested + "/OUTPUT.m3u8";
             m3u8 = true;
         }
-        
-        
+
+
         if(uri.contains("getvideo.m3u8")){
             String md5requested = map.get("md5");
+            if (md5requested == null || !md5requested.matches("[a-fA-F0-9]+")) {
+                sendError(ctx, BAD_REQUEST);
+                return;
+            }
             uri = "../rtserver/streaming/" + md5requested + "/OUTPUT.m3u8";
             m3u8 = true;
         }
 
         boolean is_ts = false;
-        if(uri.contains("getts.fn")){         
+        if(uri.contains("getts.fn")){
             String md5requested = map.get("md5");
             String tsrequested = map.get("ts");
-            
+            if (md5requested == null || !md5requested.matches("[a-fA-F0-9]+") ||
+                tsrequested == null || !tsrequested.matches("[a-zA-Z0-9._-]+")) {
+                sendError(ctx, BAD_REQUEST);
+                return;
+            }
             uri = "../rtserver/streaming/" + md5requested + "/" + tsrequested;
             is_ts = true;
         }
@@ -226,14 +247,25 @@ public class HttpStaticFileServerHandler extends SimpleChannelInboundHandler<Ful
         String path = "";
         if (m3u8 || is_ts) {
             path = SystemPropertyUtil.get("user.dir") + File.separator + uri;
+            // Defense-in-depth: verify canonical path stays within streaming directory
+            String allowedBase = new File(SystemPropertyUtil.get("user.dir")).getCanonicalPath();
+            String canonicalPath = new File(path).getCanonicalPath();
+            if (!canonicalPath.startsWith(allowedBase)) {
+                pw("Path traversal blocked: " + canonicalPath);
+                sendError(ctx, FORBIDDEN);
+                return;
+            }
         } else {
             path = sanitizeUri(uri);
         }
 
         
-        if(uri.contains("getaudio.fn")){         
+        if(uri.contains("getaudio.fn")){
             String md5requested = map.get("md5");
-            
+            if (md5requested == null || !md5requested.matches("[a-fA-F0-9]+")) {
+                sendError(ctx, BAD_REQUEST);
+                return;
+            }
             String sFileName = null;
             String sMD5 = null;
             String hostNPort = request.headers().get(HOST);

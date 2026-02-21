@@ -73,6 +73,9 @@ public class TransferService implements Runnable {
     static boolean bHostFound = false;
     static int mLogLevel = 0;
 
+    /** Set to true by Main when ProcessorService runs in the same JVM process */
+    public static boolean bLocalProcess = false;
+
     static boolean bConsole = true;
 
     static String appendage = "";
@@ -258,56 +261,39 @@ public class TransferService implements Runnable {
         }                   
     }
         
+    /**
+     * Check if this node is operating in local mode (ProcessorService running in the same process).
+     * When bLocalProcess is true, files can be copied directly without ZIP packaging.
+     * Falls back to IP comparison if bLocalProcess was not set.
+     */
+    private boolean isLocalMode(String sClient) {
+        if (bLocalProcess) {
+            return true;
+        }
+        if (sClient != null && !sClient.isEmpty() && sClient.equals(mHostName)) {
+            return true;
+        }
+        return false;
+    }
+
     private void ScanProcessingDir() {
         int process_files = 0;
         String sUUIDprocess = "";
 
-        try { 
+        try {
             loadProps();
             printProps();
         } catch (Exception IOException) {
-            
+
         }
-        
+
         log("Scanning directory: " + appendage + mScanDirectory, 2);
         p("Scanning dir transfer: " + appendage + mScanDirectory);
         File processing_dir = new File(appendage + mScanDirectory);
         if (processing_dir.exists()) {
-            
-            SimpleDateFormat DateFormat = new SimpleDateFormat("yyyyMMddHHmmssSSS");
-            String destZipDate = DateFormat.format(Calendar.getInstance().getTime());
-            
-            String destZipFile = "";
-            
-            long lBytesZipped = 0;
-            Integer nFilesZipped = 0; 
-            
-            try {
-                File ppp = new File(mScanDirectory);
-                p("CanonicalPath: '" + ppp.getCanonicalPath() + "'");
-                //destZipFile = ppp.getCanonicalPath() + File.separator + destZipDate + ".ppp";
-                //destZipFile = destZipDate + ".zap";
-                destZipFile = "temp_" + mUUID + ".zap";
-            } catch (Exception e) {
-                
-            }         
 
-            p("ZIP NAME-@: " + destZipFile); 
-            
-            ZipOutputStream zip = null;
-            FileOutputStream fileWriter = null;
-            try {
-                fileWriter = new FileOutputStream(appendage + destZipFile);
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-            zip = new ZipOutputStream(fileWriter);                   
-            ZipFolder zipper = new ZipFolder();
-
-            
-                    
             File[] files = processing_dir.listFiles();
-            
+
             String sClient = "";
             try {
                 InetAddress clientIP = NetUtils.getLocalAddressNonLoopback2();
@@ -315,143 +301,230 @@ public class TransferService implements Runnable {
                     clientIP = InetAddress.getLocalHost();
                 }
                 if (clientIP != null) {
-                    sClient = clientIP.getHostAddress();                                
-                }
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-                    
-            for (File file: files){
-                if (file.isDirectory())
-                    continue;
-                
-                log("Server IP = " + mHostName + " Client IP = " + sClient, 2);
-                log("Processing file " + file.getAbsolutePath(), 2);                               
-                
-                if (file.getName().contains(".zip")) {                    
-                    //transmit ZIP file to Server
-                    try {                                                                                             
-                        if (bHostFound) {  
-                            boolean bres = false;
-                            if (sClient.equals(mHostName)) {
-                                log("Copying ZIP file locally: " + file.getCanonicalPath(), 2);
-                                int n = copyfile(file, appendage + "../rtserver/incoming/");
-                                if (n == 0) bres = true;
-                            } else {
-                                //transfer via HTTP
-                                //p("*** override hardcoding netty port mHostPort = " + mHostPort);
-                                //mHostPort = "8085";
-                                String sHostFile = "http://" + mHostName + ":" + mHostPort + "/" + file.getName();
-                                log("Sending HTTP POST '" + sHostFile + "'", 2);                            
-                                HTTPRequestPoster htrp = new HTTPRequestPoster();
-                                Writer writer = new FileWriter("file-output.txt");
-                                //Reader reader = new FileReader(file.getAbsolutePath());
-                                File fh = new File(file.getAbsolutePath());
-                                InputStream fis = new FileInputStream(fh); 
-                                URL oracle = new URL(sHostFile);
-                                //bres = htrp.postData(fis,oracle,writer);
-                                //int res = htrp.postData_new(fis,sHostFile,writer);
-                                int res = htrp.postData_new2(file,sHostFile,writer);
-                                p("res postdata new = " + res);
-                                if (res > 0) bres = true;
-                                fis.close();                                   
-                            }
-                            if (bres) {
-                                log("ZIP post/copy OK. deleting ZIP file '"  + file.getAbsolutePath() + "'", 2);
-                                try {
-                                    bres = file.delete();
-                                    p("bres delete" + bres);
-                                    if (!bres) log("WARNING: there was an error deleting ZIP file:" + file.getAbsolutePath(),2);
-                                } catch (Exception e) {
-                                    e.printStackTrace();
-                                }
-                            } else {
-                                log("WARNING: there was an error in the POST.", 0);
-                            }                                    
-                                                            
-                        } else {
-                            p("Server is not available. Will try to send ZIP later...");
-                        }                                             
-                    
-                    } catch (Exception e) {
-                        e.printStackTrace();
-                        log("WARNING: There was an error processing the ZIP file.", 0);
-                    } 
-                } else {
-                    //add files to zip                    
-                    try {                                                                      
-                          if (!file.getName().contains(".zap")) {
-                              
-                            //1. copy file locally
-                            log("copying record file to local incoming: " + file.getCanonicalPath(),2);
-                            p("copying record file to local incoming: " + file.getCanonicalPath());
-                            int n = copyfile(file,appendage + "../rtserver/incoming/");
-                                 
-                            //2. add file to ZIP if we need to send it to server.
-                            if (bHostFound && !sClient.equals(mHostName) || !bHostFound) {
-                                if ((lBytesZipped + file.length()) < mZipMax) {  //unpacked not to exceed x MB
-                                    lBytesZipped += file.length();
-                                    nFilesZipped++;
-   
-                                    log("adding file to ZIP: " + file.getCanonicalPath(), 2);                                
-                                    int nres = zipper.addFileToZip("", file.getCanonicalPath(), zip);  
-                                    log("nres addzip = " + nres, 2);
-                                    zip.flush();                               
-                                  } else {
-                                    //p("leaving file for next round...");
-                                  }    
-                            } else {
-                                log("Skipped ZIP creation. Client==SERVER",2);
-                                p("skipped ZIP creation. Client==SERVER");
-                            }                            
-                            
-                            //3. finally, delete the file.
-                            File filer = new File(appendage + mScanDirectory + file.getName());
-                            if (filer.exists()) {
-                                if (filer.delete()) {
-                                    p("Delete OK");
-                                } else {                                  
-                                    log("WARNING: Delete FAIL: " + filer.getCanonicalPath(), 0);
-                                    pw("WARNING: Delete FAIL: " + filer.getCanonicalPath());
-                                }
-                            } else {
-                                log("WARNING: record file does not exist: " + filer.getCanonicalPath(), 0);
-                            }                                
-
-                        } else {
-                            p("deleting an old .zap file...: " + file.getName());
-                            //delete old zap files
-                            file.delete();     
-                        }                          
-                    } catch (Exception e) {
-                        e.printStackTrace();
-                    }                                       
-                } //end add file to ZIP
-            }
-            
-            log("zipped #files: " + nFilesZipped + " bytes " + lBytesZipped, 2);
-
-        
-            try {
-                p("destZipFile: " + destZipFile);                
-                File zap = new File(appendage + destZipFile);
-                if (zap.length() > 0) {
-                    zip.close();
-                    p("Time to rename the file at " + zap.getCanonicalPath());
-                    File zapn = new File(appendage + mScanDirectory + mUUID + "_" + destZipDate + ".zip");
-                    zap.renameTo(zapn);
-                } else {
-                    p("skip len = 0");                    
+                    sClient = clientIP.getHostAddress();
                 }
             } catch (Exception e) {
                 e.printStackTrace();
             }
 
-            
+            boolean bLocalMode = isLocalMode(sClient);
+            p("Server IP = " + mHostName + " Client IP = " + sClient + " localProcess = " + bLocalProcess + " localMode = " + bLocalMode);
+
+            if (bLocalMode) {
+                // LOCAL MODE: copy files directly from outgoing to incoming, no ZIP needed
+                ScanProcessingDirLocal(files);
+            } else {
+                // REMOTE MODE: pack files into ZIP for transfer to remote server
+                ScanProcessingDirRemote(files, sClient);
+            }
+
         } else {
             pw("[WARNING] scan directory does not exist: " + processing_dir.getAbsolutePath());
         }
-        
+
+    }
+
+    /**
+     * Local mode: copy files directly from outgoing/ to incoming/ and delete.
+     * No ZIP creation needed since server and client are on the same machine.
+     */
+    private void ScanProcessingDirLocal(File[] files) {
+        for (File file : files) {
+            if (file.isDirectory())
+                continue;
+
+            try {
+                String fname = file.getName();
+
+                // Clean up stale .zap temp files from previous remote-mode runs
+                if (fname.contains(".zap")) {
+                    p("local mode: deleting stale .zap file: " + fname);
+                    file.delete();
+                    continue;
+                }
+
+                // Clean up stale .zip files from previous remote-mode runs — copy locally and delete
+                if (fname.contains(".zip")) {
+                    p("local mode: copying stale .zip locally and deleting: " + fname);
+                    int n = copyfile(file, appendage + "../rtserver/incoming/");
+                    if (n == 0) {
+                        file.delete();
+                    } else {
+                        pw("WARNING: failed to copy .zip locally: " + fname);
+                    }
+                    continue;
+                }
+
+                // Normal record files: copy to incoming/ and delete from outgoing/
+                log("local mode: copying record file to incoming: " + file.getCanonicalPath(), 2);
+                p("local mode: copying record file to incoming: " + file.getCanonicalPath());
+                int n = copyfile(file, appendage + "../rtserver/incoming/");
+
+                File filer = new File(appendage + mScanDirectory + fname);
+                if (filer.exists()) {
+                    if (filer.delete()) {
+                        p("Delete OK");
+                    } else {
+                        log("WARNING: Delete FAIL: " + filer.getCanonicalPath(), 0);
+                        pw("WARNING: Delete FAIL: " + filer.getCanonicalPath());
+                    }
+                } else {
+                    log("WARNING: record file does not exist: " + filer.getCanonicalPath(), 0);
+                }
+
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
+    /**
+     * Remote mode: pack non-ZIP files into a ZIP for transfer to the remote server.
+     * Existing ZIP files are transmitted via HTTP POST.
+     */
+    private void ScanProcessingDirRemote(File[] files, String sClient) {
+        SimpleDateFormat DateFormat = new SimpleDateFormat("yyyyMMddHHmmssSSS");
+        String destZipDate = DateFormat.format(Calendar.getInstance().getTime());
+
+        String destZipFile = "";
+
+        long lBytesZipped = 0;
+        Integer nFilesZipped = 0;
+
+        try {
+            File ppp = new File(mScanDirectory);
+            p("CanonicalPath: '" + ppp.getCanonicalPath() + "'");
+            destZipFile = "temp_" + mUUID + ".zap";
+        } catch (Exception e) {
+
+        }
+
+        p("ZIP NAME-@: " + destZipFile);
+
+        ZipOutputStream zip = null;
+        FileOutputStream fileWriter = null;
+        try {
+            fileWriter = new FileOutputStream(appendage + destZipFile);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        zip = new ZipOutputStream(fileWriter);
+        ZipFolder zipper = new ZipFolder();
+
+        for (File file: files){
+            if (file.isDirectory())
+                continue;
+
+            log("Server IP = " + mHostName + " Client IP = " + sClient, 2);
+            log("Processing file " + file.getAbsolutePath(), 2);
+
+            if (file.getName().contains(".zip")) {
+                //transmit ZIP file to Server
+                try {
+                    if (bHostFound) {
+                        boolean bres = false;
+                        //transfer via HTTP
+                        String sHostFile = "http://" + mHostName + ":" + mHostPort + "/" + file.getName();
+                        log("Sending HTTP POST '" + sHostFile + "'", 2);
+                        HTTPRequestPoster htrp = new HTTPRequestPoster();
+                        Writer writer = new FileWriter("file-output.txt");
+                        File fh = new File(file.getAbsolutePath());
+                        InputStream fis = new FileInputStream(fh);
+                        URL oracle = new URL(sHostFile);
+                        int res = htrp.postData_new2(file,sHostFile,writer);
+                        p("res postdata new = " + res);
+                        if (res > 0) bres = true;
+                        fis.close();
+                        if (bres) {
+                            log("ZIP post OK. deleting ZIP file '"  + file.getAbsolutePath() + "'", 2);
+                            try {
+                                bres = file.delete();
+                                p("bres delete" + bres);
+                                if (!bres) log("WARNING: there was an error deleting ZIP file:" + file.getAbsolutePath(),2);
+                            } catch (Exception e) {
+                                e.printStackTrace();
+                            }
+                        } else {
+                            log("WARNING: there was an error in the POST.", 0);
+                        }
+
+                    } else {
+                        p("Server is not available. Will try to send ZIP later...");
+                    }
+
+                } catch (Exception e) {
+                    e.printStackTrace();
+                    log("WARNING: There was an error processing the ZIP file.", 0);
+                }
+            } else {
+                //add files to zip
+                try {
+                      if (!file.getName().contains(".zap")) {
+
+                        //1. copy file locally
+                        log("copying record file to local incoming: " + file.getCanonicalPath(),2);
+                        p("copying record file to local incoming: " + file.getCanonicalPath());
+                        int n = copyfile(file,appendage + "../rtserver/incoming/");
+
+                        //2. add file to ZIP for remote server
+                        if (bHostFound) {
+                            if ((lBytesZipped + file.length()) < mZipMax) {  //unpacked not to exceed x MB
+                                lBytesZipped += file.length();
+                                nFilesZipped++;
+
+                                log("adding file to ZIP: " + file.getCanonicalPath(), 2);
+                                int nres = zipper.addFileToZip("", file.getCanonicalPath(), zip);
+                                log("nres addzip = " + nres, 2);
+                                zip.flush();
+                              } else {
+                                //p("leaving file for next round...");
+                              }
+                        } else {
+                            p("Server not found. Skipping ZIP, file copied locally only.");
+                        }
+
+                        //3. finally, delete the file.
+                        File filer = new File(appendage + mScanDirectory + file.getName());
+                        if (filer.exists()) {
+                            if (filer.delete()) {
+                                p("Delete OK");
+                            } else {
+                                log("WARNING: Delete FAIL: " + filer.getCanonicalPath(), 0);
+                                pw("WARNING: Delete FAIL: " + filer.getCanonicalPath());
+                            }
+                        } else {
+                            log("WARNING: record file does not exist: " + filer.getCanonicalPath(), 0);
+                        }
+
+                    } else {
+                        p("deleting an old .zap file...: " + file.getName());
+                        //delete old zap files
+                        file.delete();
+                    }
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            } //end add file to ZIP
+        }
+
+        log("zipped #files: " + nFilesZipped + " bytes " + lBytesZipped, 2);
+
+        try {
+            p("destZipFile: " + destZipFile);
+            File zap = new File(appendage + destZipFile);
+            if (zap.length() > 0) {
+                zip.close();
+                p("Time to rename the file at " + zap.getCanonicalPath());
+                File zapn = new File(appendage + mScanDirectory + mUUID + "_" + destZipDate + ".zip");
+                zap.renameTo(zapn);
+            } else {
+                p("skip len = 0");
+                try { zip.close(); } catch (Exception ignore) {}
+                zap.delete();
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
     
     void loadServerProps() throws IOException {

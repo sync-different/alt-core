@@ -335,7 +335,7 @@ Thread.UncaughtExceptionHandler h = new Thread.UncaughtExceptionHandler() {
                         Thread.sleep(2000);
                         for (int i=1;i<=lastbatch;i++) {
                             String _batchid = String.valueOf(i);
-                            File fh = new File("../rtserver/batch_" + _batchid + ".idx");
+                            File fh = new File(appendage + "../rtserver/batch_" + _batchid + ".idx");
                             FileWriter fw = new FileWriter(fh, true);
                             fw.write("done");
                             fw.close();
@@ -388,7 +388,7 @@ Thread.UncaughtExceptionHandler h = new Thread.UncaughtExceptionHandler() {
   }
   void CheckforIDX() {
       try {
-          File tf = new File("../rtserver/");
+          File tf = new File(appendage + "../rtserver/");
 
             if (tf.exists()) {
                 File[] files = tf.listFiles();
@@ -419,7 +419,7 @@ Thread.UncaughtExceptionHandler h = new Thread.UncaughtExceptionHandler() {
                                 String sNewFileName = f.getName();
                                 sNewFileName = sNewFileName.replace(".idx", ".bad");
                                 p("Renaming to : " + sNewFileName);
-                                boolean bres = f.renameTo(new File(sNewFileName));
+                                boolean bres = f.renameTo(new File(f.getParentFile(), sNewFileName));
                                 p("Rename res = " + bres);
                                 nErrors++;
                                 if (nErrors > 5) {

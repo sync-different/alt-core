@@ -638,7 +638,7 @@ public boolean setnode(String _serverIP, String _portRT, String _uuid, String _i
         URLConnection conn = url.openConnection ();
         p("done");
         InputStream rd = conn.getInputStream();
-        String outfileName = "inputstream.txt";
+        String outfileName = appendage + "../rtserver/inputstream.txt";
         p("source file exists, dest file = '" + outfileName + "'");
         FileOutputStream outFile = new FileOutputStream(outfileName);
 

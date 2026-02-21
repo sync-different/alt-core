@@ -140,6 +140,47 @@ public class WebServer extends AbstractService {
 
     static HashMap<String,String> probes = new HashMap<String, String>();
 
+    // Login rate limiting: tracks failed attempts per IP
+    private static final int MAX_LOGIN_ATTEMPTS = 5;
+    private static final long LOGIN_LOCKOUT_MS = 5 * 60 * 1000; // 5 minutes
+    private static final Hashtable<String, long[]> loginAttempts = new Hashtable<>();
+
+    static boolean isLoginRateLimited(String clientIP) {
+        long[] attempts = loginAttempts.get(clientIP);
+        if (attempts == null) return false;
+        int count = 0;
+        long now = System.currentTimeMillis();
+        for (long t : attempts) {
+            if (t > 0 && (now - t) < LOGIN_LOCKOUT_MS) count++;
+        }
+        return count >= MAX_LOGIN_ATTEMPTS;
+    }
+
+    static void recordFailedLogin(String clientIP) {
+        long[] attempts = loginAttempts.get(clientIP);
+        if (attempts == null) {
+            attempts = new long[MAX_LOGIN_ATTEMPTS];
+            loginAttempts.put(clientIP, attempts);
+        }
+        // Shift and add new timestamp at end
+        System.arraycopy(attempts, 1, attempts, 0, attempts.length - 1);
+        attempts[attempts.length - 1] = System.currentTimeMillis();
+    }
+
+    static void clearFailedLogins(String clientIP) {
+        loginAttempts.remove(clientIP);
+    }
+
+    // HTML escaping for safe embedding in HTML attributes and content
+    static String escapeHtml(String input) {
+        if (input == null) return "";
+        return input.replace("&", "&amp;")
+                    .replace("<", "&lt;")
+                    .replace(">", "&gt;")
+                    .replace("\"", "&quot;")
+                    .replace("'", "&#39;");
+    }
+
     boolean remote = true;
 
     static UserMessageCollection chats = UserMessageCollection.getInstance();
@@ -1035,8 +1076,8 @@ public class WebServer extends AbstractService {
             port = Integer.parseInt(a[0]);
         }
 
-        File pubkey = new File(RSACrypto.PUBIC_KEY_PATH);
-        File privkey = new File(RSACrypto.PRIVATE_KEY_PATH);
+        File pubkey = new File(appendage + "../rtserver/" + RSACrypto.PUBIC_KEY_FILE);
+        File privkey = new File(appendage + "../rtserver/" + RSACrypto.PRIVATE_KEY_FILE);
 
         if(!pubkey.exists()||!privkey.exists()){
             RSACrypto rc = new RSACrypto();
@@ -1774,7 +1815,7 @@ class Worker extends WebServer implements HttpConstants, Runnable {
 
                     String w = st.nextToken();
                     //p("token: " + w);
-                    if (w.contains("foo")) {
+                    if (w.startsWith("foo=")) {
                         String sFoo2tmp = w.substring(4,w.length());
                         p("foo: " + sFoo2tmp);
                         sFoo2 = sFoo2tmp;
@@ -1793,110 +1834,110 @@ class Worker extends WebServer implements HttpConstants, Runnable {
                         sFoo2 = sFoo2.replace("%AA", "Ú"); //0218
                         p("foo2: " + sFoo2);
                     }
-                    if (w.contains("hash")) {
+                    if (w.startsWith("hash=")) {
                         sHash2 = w.substring(5,w.length());
                         p("hash: " + sHash2);
                     }
-                    if (w.contains("uuid")) {
+                    if (w.startsWith("uuid=")) {
                         sUUID = w.substring(5,w.length());
                         p("uuid: " + sUUID);
                         if(sAuthUUID==null || sAuthUUID.trim().length()==0){
                             sAuthUUID=sUUID;
                         }
                     }
-                    if (w.contains("port")) {
+                    if (w.startsWith("port=")) {
                         sPort = w.substring(5,w.length());
                         p("port: " + sPort);
                     }
-                    if (w.contains("ipaddress")) {
+                    if (w.startsWith("ipaddress=")) {
                         sIPAddress = w.substring(10,w.length());
                         p("ipaddress: " + sIPAddress);
                     }
-                    if (w.contains("backup")) {
+                    if (w.startsWith("backup=")) {
                         sBackup = w.substring(7,w.length());
                         //p("backup: " + sBackup);
                     }
-                    if (w.contains("free")) {
+                    if (w.startsWith("free=")) {
                         sFree = w.substring(5,w.length());
                         p("free: " + sFree);
                     }
-                    if (w.contains("view")) {
+                    if (w.startsWith("view=")) {
                         sView = w.substring(5,w.length());
                         p("view: " + sView);
                     }
-                    if (w.contains("numobj")) {
+                    if (w.startsWith("numobj=")) {
                         sNumObj = w.substring(7,w.length());
                         p("numobj: " + sNumObj);
                     }
-                    if (w.contains("ftype")) {
+                    if (w.startsWith("ftype=")) {
                         sFileType = w.substring(6,w.length());
                         p("ftype: " + sFileType);
                     }
-                    if (w.contains("screenSize")) {
+                    if (w.startsWith("screenSize=")) {
                         sScreenSize = w.substring(11,w.length());
                         p("screenSize: " + sScreenSize);
                     }
-                    if (w.contains("page")) {
+                    if (w.startsWith("page=")) {
                         sPage = w.substring(5,w.length());
                         p("sPage: " + sPage);
                     }
-                    if (w.contains("previousDate")) {
+                    if (w.startsWith("previousDate=")) {
                         previousDate = w.substring(13,w.length());
                         p("previousDate: " + previousDate);
                     }
-                    if (w.contains("numcol")) {
+                    if (w.startsWith("numcol=")) {
                         sNumCol = w.substring(7,w.length());
                         p("sNumCol: " + sFileType);
                     }
-                    if (w.contains("pw")) {
+                    if (w.startsWith("pw=")) {
                         sPassword = w.substring(3,w.length());
                         p("pw: " + sPassword);
                     }
-                    if (w.contains("pid")) {
+                    if (w.startsWith("pid=")) {
                         sPID = w.substring(4,w.length());
                         p("pid: " + sPID);
                     }
-                    if (w.contains("rem")) {
+                    if (w.startsWith("rem=")) {
                         sRemote = w.substring(4,w.length());
                         p("rem: " + sRemote);
                     }
-                    if (w.contains("days")) {
+                    if (w.startsWith("days=")) {
                         sDaysBack = w.substring(5,w.length());
                         p("days: " + sDaysBack);
                     }
-                    if (w.contains("date")) {
+                    if (w.startsWith("date=")) {
                         //if the postback is from the sidebar (it contains submit), the start date should be reset
                         if (!fname.contains("submit")) {
                             sDateStart = w.substring(5,w.length());
                         }
                         p("date: " + sDateStart);
                     }
-                    if (w.contains("sendtoemails")) {
+                    if (w.startsWith("sendtoemails=")) {
                         sMailTo = w.substring(13,w.length());
                         p("mailto: " + sMailTo);
                     }
-                    if (w.contains("mailfrom")) {
+                    if (w.startsWith("mailfrom=")) {
                         sMailFromURL = w.substring(9,w.length());
                         p("mailfrom: " + sMailFrom);
                     }
-                    if (w.contains("mailpass")) {
+                    if (w.startsWith("mailpass=")) {
                         sMailFromPasswordURL = w.substring(9,w.length());
                         p("mailpass: " + sMailFromPassword);
                     }
-                    if (w.contains("msubject")) {
+                    if (w.startsWith("msubject=")) {
                         sMailSubject = w.substring(9,w.length());
                         p("msubject: " + sMailSubject);
                     }
-                    if (w.contains("mmsg")) {
+                    if (w.startsWith("mmsg=")) {
                         sMailMessage = w.substring(5,w.length());
                         p("mmsg: " + sMailMessage);
                     }
-                    if (w.contains("mfile")) {
+                    if (w.startsWith("mfile=")) {
                         sMailFile = w.substring(6,w.length());
                         p("mfile: " + sMailFile);
                     }
 
-                    if (w.contains("encdata")) {
+                    if (w.startsWith("encdata=")) {
                         sEncData = w.substring(8,w.length());
                         p("encdata: " + sEncData);
                         //sEncData = URLDecoder.decode(sEncData,"UTF-8");
@@ -1921,92 +1962,92 @@ class Worker extends WebServer implements HttpConstants, Runnable {
                         p("encdata(decoded): " + sEncData);
                         p("length encdata: " + sEncData.length());
                     }
-                    if (w.contains("boxuser")) {
+                    if (w.startsWith("boxuser=")) {
                         sBoxUser = w.substring(8,w.length());
                         p("boxuser: " + sBoxUser);
                         sBoxUser = URLDecoder.decode(sBoxUser,"UTF-8");
                     }
-                    if (w.contains("sFileExt")) {
+                    if (w.startsWith("sFileExt=")) {
                         sFileExt = w.substring(9,w.length());
                         p("sExt: " + sFileExt);
                         sFileExt = URLDecoder.decode(sFileExt,"UTF-8");
                     }
 
-                    if (w.contains("boxpass")) {
+                    if (w.startsWith("boxpass=")) {
                         sBoxPassword = w.substring(8,w.length());
                         p("boxpass: " + sBoxPassword);
                         sBoxPassword = URLDecoder.decode(sBoxPassword,"UTF-8");
                     }
 
-                    if (w.contains("passwordkey")) {
+                    if (w.startsWith("passwordkey=")) {
                         sKeyPassword = w.substring(12,w.length());
                         p("sKeyPassword: " + sKeyPassword);
                         sKeyPassword = URLDecoder.decode(sKeyPassword,"UTF-8");
                     }
 
-                    if (w.contains("iv=")) {
+                    if (w.startsWith("iv=")) {
                         sIV = w.substring(3,w.length());
                         p("sIV: " + sIV);
                         sIV = URLDecoder.decode(sIV,"UTF-8");
                     }
 
-                    if (w.contains("mfile")) {
+                    if (w.startsWith("mfile=")) {
                         sMailFile = w.substring(6,w.length());
                         p("mfile: " + sMailFile);
                     }
 
-                    if (w.contains("spage")) {
+                    if (w.startsWith("spage=")) {
                         sSetupPage = w.substring(6,w.length());
                         p("spage: " + sSetupPage);
 
                     }
-                    if (w.contains("cpage")) {
+                    if (w.startsWith("cpage=")) {
                         cSetupPage = w.substring(6,w.length());
                         p("spage: " + cSetupPage);
 
                     }
-                    if (w.contains("sync")) {
+                    if (w.startsWith("sync=")) {
                         sSync = w.substring(5,w.length());
                         p("sync: " + sSync);
                     }
-                    if (w.contains("lastbat")) {
+                    if (w.startsWith("lastbat=")) {
                         sLastBatch = w.substring(8,w.length());
                         p("lastbat: " + sLastBatch);
                     }
-                    if (w.contains("lastseq")) {
+                    if (w.startsWith("lastseq=")) {
                         sLastSeq = w.substring(8,w.length());
                         p("lastseq: " + sLastSeq);
                     }
 
-                    if (w.contains("mode1")) {
+                    if (w.startsWith("mode1=")) {
                         sMode = w.substring(6,w.length());
                         p("mode: " + sMode);
                     }
 
-                    if (w.contains("sFolder")) {
+                    if (w.startsWith("sFolder=")) {
                         String sTmp = w.substring(8,w.length());
                         sFolder = URLDecoder.decode(sTmp, "UTF-8");
                         p("sFolder: " + sFolder);
                     }
-                    if (w.contains("bFolderSel")) {
+                    if (w.startsWith("bFolderSel=")) {
                         String sTmp = w.substring(11,w.length());
                         sFolderSel = URLDecoder.decode(sTmp, "UTF-8");
                         p("sFolderSel: " + sFolderSel);
                     }
 
-                    if (w.contains("blacklist")) {
+                    if (w.startsWith("blacklist=")) {
                         String sTmp = w.substring(10,w.length());
                         sBlacklist = URLDecoder.decode(sTmp, "UTF-8");
                         p("sBlacklist: " + sBlacklist);
                     }
 
-                    if (w.contains("permissions=")) {
+                    if (w.startsWith("permissions=")) {
                         String sTmp = w.substring(12,w.length());
                         sPermissions = URLDecoder.decode(sTmp, "UTF-8");
                         p("sPermissions: " + sPermissions);
                     }
 
-                    if (w.contains("scan1")) {
+                    if (w.startsWith("scan1=")) {
                         String sTmp = w.substring(6,w.length());
                         sScanDirectory11 = URLDecoder.decode(sTmp, "UTF-8");
                         p("scan1: " + sScanDirectory11);
@@ -2014,14 +2055,14 @@ class Worker extends WebServer implements HttpConstants, Runnable {
 
 
 
-                    if (w.contains("scan2")) {
+                    if (w.startsWith("scan2=")) {
                         String sTmp = w.substring(6,w.length());
                         sScanDirectory21 = URLDecoder.decode(sTmp, "UTF-8");
                         p("scan1: " + sScanDirectory21);
 
                     }
 
-                    if (w.contains("scan3")) {
+                    if (w.startsWith("scan3=")) {
                         String sTmp = w.substring(6,w.length());
                         sScanDirectory31 = URLDecoder.decode(sTmp, "UTF-8");
                         p("scan3: " + sScanDirectory31);
@@ -2029,7 +2070,7 @@ class Worker extends WebServer implements HttpConstants, Runnable {
                     }
 
 
-                    if (w.contains("scan4")) {
+                    if (w.startsWith("scan4=")) {
                         String sTmp = w.substring(6,w.length());
                         sScanDirectory41 = URLDecoder.decode(sTmp, "UTF-8");
                         p("scan4: " + sScanDirectory41);
@@ -2037,28 +2078,28 @@ class Worker extends WebServer implements HttpConstants, Runnable {
                     }
 
 
-                    if (w.contains("backuppath1")) {
+                    if (w.startsWith("backuppath1=")) {
                         String sTmp = w.substring(12,w.length());
                         sBackupDirectory = URLDecoder.decode(sTmp, "UTF-8");
 
                         p("backuppath1: " + sBackupDirectory);
                     }
 
-                    if (w.contains("backuppath2")) {
+                    if (w.startsWith("backuppath2=")) {
                         String sTmp = w.substring(12,w.length());
                         sBackupDirectory2 = URLDecoder.decode(sTmp, "UTF-8");
 
                         p("backuppath2: " + sBackupDirectory2);
                     }
 
-                    if (w.contains("backuppath3")) {
+                    if (w.startsWith("backuppath3=")) {
                         String sTmp = w.substring(12,w.length());
                         sBackupDirectory3 = URLDecoder.decode(sTmp, "UTF-8");
 
                         p("backuppath3: " + sBackupDirectory3);
                     }
 
-                    if (w.contains("backuppath4")) {
+                    if (w.startsWith("backuppath4=")) {
                         String sTmp = w.substring(12,w.length());
                         sBackupDirectory4 = URLDecoder.decode(sTmp, "UTF-8");
 
@@ -2066,28 +2107,28 @@ class Worker extends WebServer implements HttpConstants, Runnable {
                     }
 
                     //
-                    if (w.contains("sncpath1")) {
+                    if (w.startsWith("sncpath1=")) {
                         String sTmp = w.substring(9,w.length());
                         sSyncDirectory1 = URLDecoder.decode(sTmp, "UTF-8");
 
                         p("sncpath1: " + sSyncDirectory1);
                     }
 
-                    if (w.contains("sncpath2")) {
+                    if (w.startsWith("sncpath2=")) {
                         String sTmp = w.substring(9,w.length());
                         sSyncDirectory2 = URLDecoder.decode(sTmp, "UTF-8");
 
                         p("sncpath2: " + sSyncDirectory2);
                     }
 
-                    if (w.contains("sncpath3")) {
+                    if (w.startsWith("sncpath3=")) {
                         String sTmp = w.substring(9,w.length());
                         sSyncDirectory3 = URLDecoder.decode(sTmp, "UTF-8");
 
                         p("sncpath3: " + sSyncDirectory3);
                     }
 
-                    if (w.contains("sncpath4")) {
+                    if (w.startsWith("sncpath4=")) {
                         String sTmp = w.substring(9,w.length());
                         sSyncDirectory4 = URLDecoder.decode(sTmp, "UTF-8");
 
@@ -2097,73 +2138,73 @@ class Worker extends WebServer implements HttpConstants, Runnable {
                     //
 
 
-                    if (w.contains("backupnode1")) {
+                    if (w.startsWith("backupnode1=")) {
                         String sTmp = w.substring(12,w.length());
                         sBackupMode1 = URLDecoder.decode(sTmp, "UTF-8");
                         p("backupnode1: " + sBackupMode1);
                     }
 
-                    if (w.contains("backupnode2")) {
+                    if (w.startsWith("backupnode2=")) {
                         String sTmp = w.substring(12,w.length());
                         sBackupMode2 = URLDecoder.decode(sTmp, "UTF-8");
                         p("backupnode2: " + sBackupMode2);
                     }
 
-                    if (w.contains("backupnode3")) {
+                    if (w.startsWith("backupnode3=")) {
                         String sTmp = w.substring(12,w.length());
                         sBackupMode3 = URLDecoder.decode(sTmp, "UTF-8");
                         p("backupmode3: " + sBackupMode3);
                     }
 
-                    if (w.contains("backupnode4")) {
+                    if (w.startsWith("backupnode4=")) {
                         String sTmp = w.substring(12,w.length());
                         sBackupMode4 = URLDecoder.decode(sTmp, "UTF-8");
                         p("backupmode4: " + sBackupMode4);
                     }
 
-                    if (w.contains("sncnode1")) {
+                    if (w.startsWith("sncnode1=")) {
                         String sTmp = w.substring(9,w.length());
                         sSyncMode1 = URLDecoder.decode(sTmp, "UTF-8");
                         p("syncnode1: " + sSyncMode1);
                     }
 
-                    if (w.contains("sncnode2")) {
+                    if (w.startsWith("sncnode2=")) {
                         String sTmp = w.substring(9,w.length());
                         sSyncMode2 = URLDecoder.decode(sTmp, "UTF-8");
                         p("syncnode2: " + sSyncMode2);
                     }
 
-                    if (w.contains("sncnode3")) {
+                    if (w.startsWith("sncnode3=")) {
                         String sTmp = w.substring(9,w.length());
                         sSyncMode3 = URLDecoder.decode(sTmp, "UTF-8");
                         p("syncnode3: " + sSyncMode3);
                     }
 
-                    if (w.contains("sncnode4")) {
+                    if (w.startsWith("sncnode4=")) {
                         String sTmp = w.substring(9,w.length());
                         sSyncMode4 = URLDecoder.decode(sTmp, "UTF-8");
                         p("syncnode4: " + sSyncMode4);
                     }
 
-                    if (w.contains("scannode1")) {
+                    if (w.startsWith("scannode1=")) {
                         String sTmp = w.substring(10,w.length());
                         sScanMode = URLDecoder.decode(sTmp, "UTF-8");
                         p("scannode1: " + sScanMode);
                     }
 
-                    if (w.contains("scannode2")) {
+                    if (w.startsWith("scannode2=")) {
                         String sTmp = w.substring(10,w.length());
                         sScanMode2 = URLDecoder.decode(sTmp, "UTF-8");
                         p("scannode2: " + sScanMode2);
                     }
 
-                    if (w.contains("scannode3")) {
+                    if (w.startsWith("scannode3=")) {
                         String sTmp = w.substring(10,w.length());
                         sScanMode3 = URLDecoder.decode(sTmp, "UTF-8");
                         p("scannode3: " + sScanMode3);
                     }
 
-                    if (w.contains("scannode4")) {
+                    if (w.startsWith("scannode4=")) {
                         String sTmp = w.substring(10,w.length());
                         sScanMode4 = URLDecoder.decode(sTmp, "UTF-8");
                         p("scannode4: " + sScanMode4);
@@ -2171,25 +2212,25 @@ class Worker extends WebServer implements HttpConstants, Runnable {
 
 
 
-                    if (w.contains("smtphost")) {
+                    if (w.startsWith("smtphost=")) {
                         String sTmp = w.substring(9,w.length());
                         sMailHost = URLDecoder.decode(sTmp, "UTF-8");
                         p("smtphost: " + sMailHost);
                     }
 
-                    if (w.contains("smtpprt")) {
+                    if (w.startsWith("smtpprt=")) {
                         String sTmp = w.substring(8,w.length());
                         sMailPort = URLDecoder.decode(sTmp, "UTF-8");
                         p("smtpport: " + sMailPort);
                     }
 
-                    if (w.contains("pop3user")) {
+                    if (w.startsWith("pop3user=")) {
                         String sTmp = w.substring(9,w.length());
                         sMailFrom = URLDecoder.decode(sTmp, "UTF-8");
                         p("pop3user: " + sMailFrom);
                     }
 
-                    if (w.contains("pop3pass")) {
+                    if (w.startsWith("pop3pass=")) {
                         String sTmp = w.substring(9,w.length());
                         if(!sTmp.isEmpty()){
                             sMailFromPassword = URLDecoder.decode(sTmp, "UTF-8");
@@ -2197,44 +2238,44 @@ class Worker extends WebServer implements HttpConstants, Runnable {
                         }
                     }
 
-                    if (w.contains("pop3host")) {
+                    if (w.startsWith("pop3host=")) {
                         String sTmp = w.substring(9,w.length());
                         sMailHostPOP = URLDecoder.decode(sTmp, "UTF-8");
                         p("pop3host: " + sMailHostPOP);
                     }
 
-                    if (w.contains("pop3prt")) {
+                    if (w.startsWith("pop3prt=")) {
                         String sTmp = w.substring(8,w.length());
                         sMailPortPOP = URLDecoder.decode(sTmp, "UTF-8");
                         p("pop3port: " + sMailPortPOP);
                     }
 
-                    if (w.contains("allowmail")) {
+                    if (w.startsWith("allowmail=")) {
                         String sTmp = w.substring(10,w.length());
                         sMailAllowMail = URLDecoder.decode(sTmp, "UTF-8");
                         p("allowmail: " + sMailAllowMail);
                     }
-                    if (w.contains("sendmail")) {
+                    if (w.startsWith("sendmail=")) {
                         String sTmp = w.substring(9,w.length());
                         sMailSendMail = URLDecoder.decode(sTmp, "UTF-8");
                         p("sendmail: " + sMailSendMail);
                     }
-                    if (w.contains("scanmail")) {
+                    if (w.startsWith("scanmail=")) {
                         String sTmp = w.substring(9,w.length());
                         sMailScanMail = URLDecoder.decode(sTmp, "UTF-8");
                         p("scanmail: " + sMailScanMail);
                     }
-                    if (w.contains("notifymail")) {
+                    if (w.startsWith("notifymail=")) {
                         String sTmp = w.substring(11,w.length());
                         sMailNotify = URLDecoder.decode(sTmp, "UTF-8");
                         p("notifymail: " + sMailNotify);
                     }
-                    if (w.contains("sNamer")) {
+                    if (w.startsWith("sNamer=")) {
                         String sTmp = w.substring(7,w.length());
                         sNamer = URLDecoder.decode(sTmp, "UTF-8");
                         p("sNamer: " + sNamer);
                     }
-                    if (w.contains("sFileName")) {
+                    if (w.startsWith("sFileName=")) {
                         String sTmp = w.substring(10,w.length());
                         try {
                             sFileName = URLDecoder.decode(sTmp, "UTF-8");
@@ -2245,19 +2286,19 @@ class Worker extends WebServer implements HttpConstants, Runnable {
                         p("sFileName: " + sFileName);
                     }
 
-                    if (w.contains("sfileexist")) {
+                    if (w.startsWith("sfileexist=")) {
                         String sTmp = w.substring(11,w.length());
                         sFile = URLDecoder.decode(sTmp, "UTF-8");
                         p("sFile: " + sFile);
                     }
 
-                    if (w.contains("rfactor")) {
+                    if (w.startsWith("rfactor=")) {
                         String sTmp = w.substring(8,w.length());
                         sRepFactor = URLDecoder.decode(sTmp, "UTF-8");
                         p("rfactor: " + sRepFactor);
                     }
 
-                    if (w.contains("isprev")) {
+                    if (w.startsWith("isprev=")) {
                         String sTmp = w.substring(7,w.length());
                         bIsPrevious = Boolean.parseBoolean(sTmp);
                         p("isprev: " + bIsPrevious);
@@ -2265,7 +2306,7 @@ class Worker extends WebServer implements HttpConstants, Runnable {
                         bIsPrevious = false;
                     }
 
-                    if (w.contains("expresssetup")) {
+                    if (w.startsWith("expresssetup=")) {
                         String sTmp = w.substring(13,w.length());
                         bIsExpressSetup = Boolean.parseBoolean(sTmp);
                         p("expresssetup: " + bIsExpressSetup);
@@ -2273,99 +2314,99 @@ class Worker extends WebServer implements HttpConstants, Runnable {
                         bIsExpressSetup = false;
                     }
 
-                    if (w.contains("qaccounts")) {
+                    if (w.startsWith("qaccounts=")) {
                         String sTmp = w.substring(10,w.length());
                         qAccounts = URLDecoder.decode(sTmp, "UTF-8");
                         p("qAccounts: " + qAccounts);
                     }
 
-                    if (w.contains("sdaccounts")) {
+                    if (w.startsWith("sdaccounts=")) {
                         String sTmp = w.substring(11,w.length());
                         sendAccounts = URLDecoder.decode(sTmp, "UTF-8");
                         p("sendAccounts: " + sendAccounts);
                     }
-                    if (w.contains("mailgroups")) {
+                    if (w.startsWith("mailgroups=")) {
                         String sTmp = w.substring(11,w.length());
                         mailGroups = URLDecoder.decode(sTmp, "UTF-8");
                         p("mailGroups: " + mailGroups);
                     }
-                    if (w.contains("allowpeer")) {
+                    if (w.startsWith("allowpeer=")) {
                         String sTmp = w.substring(10,w.length());
                         sAllowPeer = URLDecoder.decode(sTmp, "UTF-8");
                         p("allowpeer: " + sAllowPeer);
                     }
-                    if (w.contains("allowotherusers")) {
+                    if (w.startsWith("allowotherusers=")) {
                         String sTmp = w.substring(16,w.length());
                         sAllowOtherUsers = URLDecoder.decode(sTmp, "UTF-8");
                         p("allowotherusers: " + sAllowOtherUsers);
                     }
 
-                    if (w.contains("allowremote")) {
+                    if (w.startsWith("allowremote=")) {
                         String sTmp = w.substring(12,w.length());
                         sAllowRemote = URLDecoder.decode(sTmp, "UTF-8");
                         p("allowremote: " + sAllowRemote);
                     }
 
-                    if (w.contains("signature")) {
+                    if (w.startsWith("signature=")) {
                         String sTmp = w.substring(10,w.length());
                         sSignature = URLDecoder.decode(sTmp, "UTF-8");
                         p("signature: " + sSignature);
                     }
 
-                    if (w.contains("adminuser")) {
+                    if (w.startsWith("adminuser=")) {
                         String sTmp = w.substring(10,w.length());
                         adminuser = URLDecoder.decode(sTmp, "UTF-8");
                         p("adminuser: " + adminuser);
                     }
 
-                    if (w.contains("adminpw1")) {
+                    if (w.startsWith("adminpw1=")) {
                         String sTmp = w.substring(9,w.length());
                         adminpw1 = URLDecoder.decode(sTmp, "UTF-8");
                         p("adminpw1: " + adminpw1);
                     }
 
 
-                    if (w.contains("useraccounts")) {
+                    if (w.startsWith("useraccounts=")) {
                         String sTmp = w.substring(13,w.length());
                         useraccounts = URLDecoder.decode(sTmp, "UTF-8");
                         p("useraccounts: " + useraccounts);
                     }
 
 
-                    if (w.contains("syncrules1")) {
+                    if (w.startsWith("syncrules1=")) {
                         String sTmp = w.substring(11,w.length());
                         syncrules1 = URLDecoder.decode(sTmp, "UTF-8");
                         p("syncrules1: " + syncrules1);
                     }
 
 
-                    if (w.contains("syncrules2")) {
+                    if (w.startsWith("syncrules2=")) {
                         String sTmp = w.substring(11,w.length());
                         syncrules2 = URLDecoder.decode(sTmp, "UTF-8");
                         p("syncrules2: " + syncrules2);
                     }
 
 
-                    if (w.contains("syncrules3")) {
+                    if (w.startsWith("syncrules3=")) {
                         String sTmp = w.substring(11,w.length());
                         syncrules3 = URLDecoder.decode(sTmp, "UTF-8");
                         p("syncrules3: " + syncrules3);
                     }
 
 
-                    if (w.contains("syncrules4")) {
+                    if (w.startsWith("syncrules4=")) {
                         String sTmp = w.substring(11,w.length());
                         syncrules4 = URLDecoder.decode(sTmp, "UTF-8");
                         p("syncrules4: " + syncrules4);
                     }
 
-                    if (w.contains("filename")) {
+                    if (w.startsWith("filename=")) {
                         String sTmp = w.substring(9,w.length());
                         sFileNameFolder = URLDecoder.decode(sTmp, "UTF-8");
                         p("filename: " + sFileNameFolder);
                     }
 
-                    if (w.contains("sscantreemode")) {
+                    if (w.startsWith("sscantreemode=")) {
                         String sTmp = w.substring("sscantreemode".length()+1,w.length());
                         int scanTreeModeNew=Integer.valueOf(sTmp);
                         if(scanTreeMode==2 && scanTreeModeNew==0){
@@ -2377,7 +2418,7 @@ class Worker extends WebServer implements HttpConstants, Runnable {
 
                     }
 
-                    if (w.contains("md5")) {
+                    if (w.startsWith("md5=")) {
                         String sTmp = w.substring(4,w.length());
                         sMD5 = URLDecoder.decode(sTmp, "UTF-8");
                         p("MD5: " + sMD5);
@@ -2389,74 +2430,74 @@ class Worker extends WebServer implements HttpConstants, Runnable {
                         p("TS: " + sTS);
                     }
 
-                    if (w.contains("batchid")) {
+                    if (w.startsWith("batchid=")) {
                         String sTmp = w.substring(8,w.length());
                         sBatchID = URLDecoder.decode(sTmp, "UTF-8");
                         p("batchid: " + sBatchID);
                     }
 
-                    if (w.contains("retries")) {
+                    if (w.startsWith("retries=")) {
                         String sTmp = w.substring(8,w.length());
                         retries = URLDecoder.decode(sTmp, "UTF-8");
                         p("retries: " + retries);
                     }
 
-                    if (w.contains("machine")) {
+                    if (w.startsWith("machine=")) {
                         String sTmp = w.substring(8,w.length());
                         sMachine = URLDecoder.decode(sTmp, "UTF-8");
                         p("machine: " + sMachine);
                     }
 
-                    if (w.contains("netty")) {
+                    if (w.startsWith("netty=")) {
                         String sTmp = w.substring(6,w.length());
                         clientNettyPort = URLDecoder.decode(sTmp, "UTF-8");
                         p("clientNettyPort: " + clientNettyPort);
                     }
 
-                    if (w.contains("property")) {
+                    if (w.startsWith("property=")) {
                         String sTmp = w.substring(9,w.length());
                         sProperty = URLDecoder.decode(sTmp, "UTF-8");
                         p("sProperty: " + sProperty);
                     }
 
-                    if (w.contains("pvalue")) {
+                    if (w.startsWith("pvalue=")) {
                         String sTmp = w.substring(7,w.length());
                         sPropertyValue = URLDecoder.decode(sTmp, "UTF-8");
                         p("sPropertyValue: " + sPropertyValue);
                     }
 
-                    if (w.contains("fbtoken")) {
+                    if (w.startsWith("fbtoken=")) {
                         String sTmp = w.substring(8,w.length());
                         sFBToken = URLDecoder.decode(sTmp, "UTF-8");
                         p("sFBToken: " + sFBToken);
                     }
 
 
-                    if (w.contains("access_token")) {
+                    if (w.startsWith("access_token=")) {
                         String sTmp = w.substring(13,w.length());
                         sFBToken = URLDecoder.decode(sTmp, "UTF-8");
                         p("sFBToken: " + sFBToken);
                     }
 
-                    if (w.contains("multiclusteruser")) {
+                    if (w.startsWith("multiclusteruser=")) {
                         String sTmp = w.substring("multiclusteruser".length()+1,w.length());
                         sMultiClusterUser = URLDecoder.decode(sTmp, "UTF-8");
                         p("sMultiClusterUser: " + sMultiClusterUser);
                     }
 
-                    if (w.contains("multiclusterpassword")) {
+                    if (w.startsWith("multiclusterpassword=")) {
                         String sTmp = w.substring("multiclusterpassword".length()+1,w.length());
                         sMultiClusterPassword = URLDecoder.decode(sTmp, "UTF-8");
                         p("sMultiClusterPassword length: " + sMultiClusterPassword.length());
                     }
 
-                    if (w.contains("multiclusterid")) {
+                    if (w.startsWith("multiclusterid=")) {
                         String sTmp = w.substring("multiclusterid".length()+1,w.length());
                         sMultiClusterID = URLDecoder.decode(sTmp, "UTF-8");
                         p("sMultiClusterID: " + sMultiClusterID);
                     }
 
-                    if (w.contains("multiclustername")) {
+                    if (w.startsWith("multiclustername=")) {
                         String sTmp = w.substring("multiclustername".length()+1,w.length());
                         sMultiClusterName= URLDecoder.decode(sTmp, "UTF-8");
                         p("sMultiClusterName: " + sMultiClusterName);
@@ -2464,68 +2505,68 @@ class Worker extends WebServer implements HttpConstants, Runnable {
 
 
 
-                    if (w.contains("fbtext")) {
+                    if (w.startsWith("fbtext=")) {
                         String sTmp = w.substring(7,w.length());
                         sFBText = URLDecoder.decode(sTmp, "UTF-8");
                         p("sFBText: " + sFBText);
                     }
 
-                    if (w.contains("sharetype")) {
+                    if (w.startsWith("sharetype=")) {
                         String sTmp = w.substring(10,w.length());
                         shareType = URLDecoder.decode(sTmp, "UTF-8");
                         p("shareType: " + shareType);
                     }
-                    if (w.contains("sharekey")) {
+                    if (w.startsWith("sharekey=")) {
                         String sTmp = w.substring(9,w.length());
                         shareKey = URLDecoder.decode(sTmp, "UTF-8");
                         p("shareKey: " + shareKey);
                     }
-                    if (w.contains("shareusers")) {
+                    if (w.startsWith("shareusers=")) {
                         String sTmp = w.substring(11,w.length());
                         shareUsers = URLDecoder.decode(sTmp, "UTF-8");
                         p("shareUsers: " + shareUsers);
                     }
-                    if (w.contains("shareopenmodal")) {
+                    if (w.startsWith("shareopenmodal=")) {
                         String sTmp = w.substring(15,w.length());
                         shareOpenmodal = URLDecoder.decode(sTmp, "UTF-8");
                         p("shareOpenmodal: " + shareOpenmodal);
                     }
-                    if (w.contains("sharehtml")) {
+                    if (w.startsWith("sharehtml=")) {
                         String sTmp = w.substring(10,w.length());
                         shareHtml = Boolean.valueOf(URLDecoder.decode(sTmp, "UTF-8"));
                         p("shareHtml: " + shareHtml);
                     }
-                    if (w.contains("debug")) {
+                    if (w.startsWith("debug=")) {
                         String sTmp = w.substring(6,w.length());
                         debug = Boolean.valueOf(URLDecoder.decode(sTmp, "UTF-8"));
                         p("debug: " + debug);
                     }
-                    if (w.contains("useremail")) {
+                    if (w.startsWith("useremail=")) {
                         String sTmp = w.substring(10,w.length());
                         useremail = URLDecoder.decode(sTmp, "UTF-8");
                         p("useremail: " + useremail);
                     }
 
-                    if (w.contains("analytics")) {
+                    if (w.startsWith("analytics=")) {
                         String sTmp = w.substring(10,w.length());
                         analytics = URLDecoder.decode(sTmp, "UTF-8");
                         p("analytics: " + analytics);
                     }
 
-                    if (w.contains("cluster")) {
+                    if (w.startsWith("cluster=")) {
                         String sTmp = w.substring(8,w.length());
                         cluster = URLDecoder.decode(sTmp, "UTF-8");
                         p("cluster: " + cluster);
                     }
 
                     //amazon cloud drive code
-                    if (w.contains("code")) {
+                    if (w.startsWith("code=")) {
                         String sTmp = w.substring(5,w.length());
                         code = URLDecoder.decode(sTmp, "UTF-8");
                         p("code: " + code);
                     }
 
-                    if (w.contains("drive_amazon")) {
+                    if (w.startsWith("drive_amazon=")) {
                         String sTmp = w.substring(13,w.length());
                         drive_amazon = URLDecoder.decode(sTmp, "UTF-8");
                         p("drive_amazon: " + drive_amazon);
@@ -2534,13 +2575,13 @@ class Worker extends WebServer implements HttpConstants, Runnable {
                         bDriveAmazonURL = false;
                     }
 
-                    if (w.contains("order")) {
+                    if (w.startsWith("order=")) {
                         String sTmp = w.substring(6,w.length());
                         sSortOrder = URLDecoder.decode(sTmp, "UTF-8");
                         p("Sort Order[1]: " + sSortOrder);
                     }
 
-                    if (w.contains("uiver")) {
+                    if (w.startsWith("uiver=")) {
                         String sTmp = w.substring(6,w.length());
                         if (sTmp.equals("1")) {
                             bLegacyUI = true;
@@ -2550,37 +2591,37 @@ class Worker extends WebServer implements HttpConstants, Runnable {
                         p("bLegacyUI = " + bLegacyUI);
                     }
 
-                    if (w.contains("msg_user")) {
+                    if (w.startsWith("msg_user=")) {
                         String sTmp = w.substring(9,w.length());
                         msg_user = URLDecoder.decode(sTmp, "UTF-8");
                         p("msg_user: " + msg_user);
                     }
 
-                    if (w.contains("msg_from")) {
+                    if (w.startsWith("msg_from=")) {
                         String sTmp = w.substring(9,w.length());
                         msg_date = URLDecoder.decode(sTmp, "UTF-8");
                         p("msg_date: " + msg_date);
                     }
 
-                    if (w.contains("msg_type")) {
+                    if (w.startsWith("msg_type=")) {
                         String sTmp = w.substring(9,w.length());
                         msg_type = URLDecoder.decode(sTmp, "UTF-8");
                         p("msg_type: " + msg_type);
                     }
 
-                    if (w.contains("msg_body")) {
+                    if (w.startsWith("msg_body=")) {
                         String sTmp = w.substring(9,w.length());
                         msg_body = URLDecoder.decode(sTmp, "UTF-8");
                         p("msg_body: " + msg_body);
                     }
 
-                    if (w.contains("filechunk_offset")) {
+                    if (w.startsWith("filechunk_offset=")) {
                         String sTmp = w.substring(w.indexOf("=")+1,w.length());
                         filechunk_offset = Long.parseLong(URLDecoder.decode(sTmp, "UTF-8"));
                         p("filechunk_offset = " + filechunk_offset);
                     }
 
-                    if (w.contains("filechunk_size")) {
+                    if (w.startsWith("filechunk_size=")) {
                         String sTmp = w.substring(w.indexOf("=")+1,w.length());
                         filechunk_size = Long.parseLong(URLDecoder.decode(sTmp, "UTF-8"));
                         p("filechunk_size = " + filechunk_size);
@@ -2848,9 +2889,22 @@ class Worker extends WebServer implements HttpConstants, Runnable {
 // *******
 
                     if (fname.contains("shutdown.fn")) {
-                        wf.closeDB();
+                        if (bUserAuthenticated) {
+                            UserSession us = uuidmap.get(sAuthUUID);
+                            boolean isAdmin = false;
+                            if (us != null) {
+                                User user = UserCollection.getInstance().getUsersByName(us.getUsername());
+                                if (user != null && user.getRole().equals("admin")) {
+                                    isAdmin = true;
+                                }
+                            }
+                            if (isAdmin) {
+                                wf.closeDB();
+                                outFile.close();
+                                System.exit(0);
+                            }
+                        }
                         outFile.close();
-                        System.exit(0);
                     }
 
 
@@ -2872,7 +2926,13 @@ class Worker extends WebServer implements HttpConstants, Runnable {
 // un nodo determinado.
 // ***************************************************
                     if (fname.contains("fileexist.fn")) {
-
+                        // Allow authenticated users OR internal server-to-server calls
+                        // Internal calls use sfileexist= param and come from own IP/localhost
+                        String feClientIP = s.getInetAddress().getHostAddress();
+                        boolean bLocalIP = feClientIP.equals(LocalIP) || feClientIP.equals("127.0.0.1") || feClientIP.equals("0:0:0:0:0:0:0:1");
+                        boolean bLocalCall = bLocalIP && !sFile.isEmpty();
+                        p("[fileexist.fn] clientIP=" + feClientIP + " LocalIP=" + LocalIP + " auth=" + bUserAuthenticated + " local=" + bLocalCall + " sFile=" + sFile);
+                        if (bUserAuthenticated || bLocalCall) {
                         p("INICIO FN FILEEXIST, file="+sFile);
                         String resFileExist="E,0";
                         if(!bWindowsServer && !sFile.startsWith("/")){
@@ -2896,6 +2956,7 @@ class Worker extends WebServer implements HttpConstants, Runnable {
                         outFile.write(kk);
                         outFile.close();
                         p("FIN FN FILEEXIST: "+resFileExist);
+                        } // end bUserAuthenticated fileexist
                     }
 
 
@@ -2928,7 +2989,7 @@ class Worker extends WebServer implements HttpConstants, Runnable {
                     if (fname.contains("serverproperty.fn")) {
                         if (bUserAuthenticated){
 
-                            String result = GetConfig(sProperty, "config/www-server.properties");
+                            String result = GetConfig(sProperty, appendage + "config/www-server.properties");
 
                             outFile.write(result.getBytes());
                             outFile.close();
@@ -2942,10 +3003,21 @@ class Worker extends WebServer implements HttpConstants, Runnable {
 
                     if (fname.contains("serverupdateproperty.fn")) {
                         if (bUserAuthenticated){
-
-                            Integer result = UpdateConfig(sProperty,sPropertyValue, "config/www-server.properties");
-
-                            outFile.write(result.toString().getBytes());
+                            // Admin-only: writing server config is an admin operation
+                            UserSession us = uuidmap.get(sAuthUUID);
+                            boolean isAdmin = false;
+                            if (us != null) {
+                                User user = UserCollection.getInstance().getUsersByName(us.getUsername());
+                                if (user != null && user.getRole().equals("admin")) {
+                                    isAdmin = true;
+                                }
+                            }
+                            if (isAdmin) {
+                                Integer result = UpdateConfig(sProperty,sPropertyValue, appendage + "config/www-server.properties");
+                                outFile.write(result.toString().getBytes());
+                            } else {
+                                outFile.write("-1".getBytes());
+                            }
                             outFile.close();
                         }
 
@@ -3115,7 +3187,7 @@ class Worker extends WebServer implements HttpConstants, Runnable {
                         if (bUserAuthenticated){
                             String result = "";
                             UserSession us = uuidmap.get(sAuthUUID);
-                            if (us.isRemote() || (isValidMultiClusterID(sMultiClusterID))) {
+                            if (us != null && (us.isRemote() || (isValidMultiClusterID(sMultiClusterID)))) {
                                 p("REMOTE GETTAGS");
                                 RemoteAccess ra =null;
                                 if(isValidMultiClusterID(sMultiClusterID)){
@@ -3166,7 +3238,7 @@ class Worker extends WebServer implements HttpConstants, Runnable {
                             }else{
                                 sUser = null;
                             }
-                            if(!us.isRemote()){
+                            if(us == null || !us.isRemote()){
 
                                 result += wf.getTagsLeftNavBar(sUser, false, false,false);
                                 if (result.trim().equals("")){
@@ -3194,6 +3266,7 @@ class Worker extends WebServer implements HttpConstants, Runnable {
 // wizard web
 // ***************************************************
                     if (fname.contains("getfolders-json.fn") || fname.contains("getfolders_json.fn")) {
+                        if (bUserAuthenticated) {
                         p("   ***   -----getfolders-json.fn - sFolder: '" + sFolder+ "'");
                         p("   ***   bUserAuthenticated          : " + bUserAuthenticated);
                         p("   ***   bMobile                     : " + bMobile);
@@ -3305,6 +3378,46 @@ class Worker extends WebServer implements HttpConstants, Runnable {
 
                         //case 3- specific path
                         if(sFolder!=null && !sFolder.equals("units") && !sFolder.equals("scanfolders")){
+                            // Validate folder is within configured scan roots
+                            boolean isWithinScanRoot = false;
+                            try {
+                                String canonicalRequested = new File(sFolder).getCanonicalPath();
+                                File scanConfigFile = new File(appendage + "../scrubber/config/www-rtbackup.properties");
+                                if (scanConfigFile.exists()) {
+                                    Properties scanProps = new Properties();
+                                    InputStream scanStream = new BufferedInputStream(new FileInputStream(scanConfigFile));
+                                    scanProps.load(scanStream);
+                                    scanStream.close();
+                                    String scanDirPath = scanProps.getProperty("scandir");
+                                    if (scanDirPath != null) {
+                                        File scanFile = new File(appendage + scanDirPath);
+                                        if (scanFile.exists()) {
+                                            Properties scanDirProps = new Properties();
+                                            InputStream scanDirStream = new BufferedInputStream(new FileInputStream(scanFile));
+                                            scanDirProps.load(scanDirStream);
+                                            scanDirStream.close();
+                                            String scanDirs = scanDirProps.getProperty("scandir", "");
+                                            for (String dir : scanDirs.split(";")) {
+                                                if (!dir.isEmpty()) {
+                                                    String decodedDir = URLDecoder.decode(dir.trim(), "UTF-8");
+                                                    String canonicalScanRoot = new File(decodedDir).getCanonicalPath();
+                                                    if (canonicalRequested.startsWith(canonicalScanRoot)) {
+                                                        isWithinScanRoot = true;
+                                                        break;
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            } catch (Exception e) {
+                                p("Error validating folder path: " + e.getMessage());
+                            }
+
+                            if (!isWithinScanRoot) {
+                                p("SECURITY: folder path rejected (not within scan roots): " + sFolder);
+                                outFile.write("[]".getBytes());
+                            } else {
                             //folder case
                             File folder = new File(sFolder);
                             p("folder          : '" + sFolder + "'");
@@ -3356,16 +3469,24 @@ class Worker extends WebServer implements HttpConstants, Runnable {
                                 String result="[]";
                                 outFile.write(result.getBytes());
                             }
+                            } // end isWithinScanRoot else
                         }  // end case scanfolders
 
+                        } // end bUserAuthenticated getfolders-json
                     } // end getfolders json
                     if(fname.contains("gettranslate_json.fn")){
-                        sMD5=fname.split("=")[1];
+                        if (bUserAuthenticated) {
+                        // Safe extraction of md5 parameter
+                        String[] urlParts = fname.split("=");
+                        if (urlParts.length >= 2) {
+                            sMD5 = urlParts[1];
+                        } else {
+                            sMD5 = "";
+                        }
+
+                        // Validate MD5 is hex-only (prevents path traversal)
+                        if (sMD5 != null && sMD5.matches("[a-fA-F0-9]+")) {
                         p("   ***   -----gettranslate_json.fn - sMD5: '" + sMD5+ "'");
-                        p("   ***   bUserAuthenticated          : " + bUserAuthenticated);
-                        p("   ***   bMobile                     : " + bMobile);
-                        p("   ***   scanTreeVariant             : " + scanTreeVariant);
-                        p("   ***   scanTreeMode                : " + scanTreeMode);
 
                         String projectsFolderPath;
                         String OS = System.getProperty("os.name").toLowerCase();
@@ -3375,7 +3496,6 @@ class Worker extends WebServer implements HttpConstants, Runnable {
                         } else {
                             projectsFolderPath = "../";
                         }
-
 
                         String outputfolderPath;
                         if (isWin) {
@@ -3388,8 +3508,12 @@ class Worker extends WebServer implements HttpConstants, Runnable {
                             String result = loadFileStr(audioJsonFile);
                             outFile.write(result.getBytes());
                         } else {
-                            outFile.write("{segments:[]}".getBytes());
+                            outFile.write("{\"segments\":[]}".getBytes());
                         }
+                        } else {
+                            outFile.write("{\"error\": \"Invalid md5 parameter\"}".getBytes());
+                        }
+                        } // end bUserAuthenticated
                     }
 
 // ***************************************************
@@ -3398,6 +3522,7 @@ class Worker extends WebServer implements HttpConstants, Runnable {
 // Supports recursive parent lookup for inherited permissions with depth='*'
 // ***************************************************
                     if (fname.contains("getfolderperm.fn")) {
+                        if (bUserAuthenticated) {
                         p("   ***   -----getfolderperm.fn - sFolder: '" + sFolder + "'");
 
                         String decodedFolder = URLDecoder.decode(sFolder, "UTF-8");
@@ -3575,6 +3700,7 @@ class Worker extends WebServer implements HttpConstants, Runnable {
                         p("getfolderperm.fn result: " + result);
                         outFile.write(result.getBytes("UTF-8"));
                         outFile.close();
+                        } // end bUserAuthenticated getfolderperm
                     }
 
 // ***************************************************
@@ -3696,7 +3822,7 @@ class Worker extends WebServer implements HttpConstants, Runnable {
                     }
 
                     if (fname.contains("getfolders.fn")) {
-
+                        if (bUserAuthenticated) {
                         p("   ***   -----getfolders.fn - sFolder: '" + sFolder+ "'");
                         p("   ***   bUserAuthenticated          : " + bUserAuthenticated);
                         p("   ***   bMobile                     : " + bMobile);
@@ -4057,6 +4183,7 @@ class Worker extends WebServer implements HttpConstants, Runnable {
                             p("FIN getfolders.fn: "+result);
                         }
                         outFile.close();
+                        } // end bUserAuthenticated getfolders
                     }
 
 
@@ -4064,6 +4191,7 @@ class Worker extends WebServer implements HttpConstants, Runnable {
 // openfolder.htm
 // ***************************************************
                     if (fname.contains("openfolder.htm") || fname.contains("openfolder.fn")) {
+                        if (bUserAuthenticated) {
                         if (sFoo2.equals("")) {
                             sFoo2 = sFileType;
                             p("Foo blank. Replacing with filetype...: '" + sFoo2 + "'");
@@ -4095,7 +4223,7 @@ class Worker extends WebServer implements HttpConstants, Runnable {
                             e.printStackTrace();
                         }
                         //get server IP address
-
+                        } // end bUserAuthenticated openfolder
                     }
 
 
@@ -4227,7 +4355,7 @@ class Worker extends WebServer implements HttpConstants, Runnable {
 // ***************************************************
                     if (fname.contains("viewimg2.htm") || fname.contains("sendimg2.htm")) {
                         UserSession us = uuidmap.get(sAuthUUID);
-                        if(us.isRemote()){
+                        if(us != null && us.isRemote()){
                             sRedirectBulkerURL = "viewimg.htm?md5=" + sNamer;
                             bRedirectBulker = true;
                         }else{
@@ -4278,6 +4406,7 @@ class Worker extends WebServer implements HttpConstants, Runnable {
 // getemailandgroups.fn
 // ***************************************************
                     if (fname.contains("getemailandgroups.fn")) {
+                        if (bUserAuthenticated) {
                         String res = "";
 
                         String sendMailProp = GetConfig("sendmail", "config/www-mailer.properties");  //props.getProperty("sendmail");
@@ -4289,6 +4418,7 @@ class Worker extends WebServer implements HttpConstants, Runnable {
                         byte[] kk = res.getBytes();
                         outFile.write(kk);
                         outFile.close();
+                        } // end bUserAuthenticated getemailandgroups
                     }
 // ***************************************************
 // about.htm
@@ -4341,7 +4471,7 @@ class Worker extends WebServer implements HttpConstants, Runnable {
                             res2 += "</div>";
 
 
-                            if(!us.isRemote()){
+                            if(us == null || !us.isRemote()){
 
                                 String result = wf.getTagsLeftNavBar(sUser, false, false,false);
 
@@ -4604,6 +4734,16 @@ class Worker extends WebServer implements HttpConstants, Runnable {
 
                     if (fname.contains("login.fn")) {
 
+                        // Rate limiting check
+                        String loginClientIP = s.getInetAddress().getHostAddress();
+                        if (isLoginRateLimited(loginClientIP)) {
+                            log("Login rate limited for IP: " + loginClientIP, 0);
+                            String rateLimitMsg = getNavbarMenu(false, "", "", true, false);
+                            rateLimitMsg += "<!-- rate_limited -->";
+                            outFile.write(rateLimitMsg.getBytes());
+                            outFile.close();
+                        } else {
+
                         String aesencrypt = GetConfig("aesencrypt", "config/www-server.properties");
                         boolean AES = (aesencrypt != null && aesencrypt.equals("true"));
                         boolean RSA = (sEncData != null && !sEncData.isEmpty());
@@ -4652,7 +4792,7 @@ class Worker extends WebServer implements HttpConstants, Runnable {
                             UserCollection userCollection = UserCollection.getInstance();
                             String res = "";
 
-                            if (bLogUserPw) log("Username/password:  '" + sBoxUser + "' password: '" + sBoxPassword + "'", 0);
+                            if (bLogUserPw) log("Login attempt for user: '" + sBoxUser + "'", 0);
 
 
                             boolean loggedIn;
@@ -4730,6 +4870,7 @@ class Worker extends WebServer implements HttpConstants, Runnable {
                             }
 
                             if(loggedIn){
+                                clearFailedLogins(loginClientIP);
                                 p("login-fn: CASE AUTH OK");
                                 bAuth = true;
 
@@ -4764,6 +4905,7 @@ class Worker extends WebServer implements HttpConstants, Runnable {
                                     res+= "<script type='name/javascript'>startAjaxCallTags();</script>";
                                 }
                             } else{
+                                recordFailedLogin(loginClientIP);
                                 p("login-fn: CASE ELSE");
                                 res = getNavbarMenu(false, sBoxUser, sBoxPassword, true, !cluster.isEmpty());
                             }
@@ -4771,6 +4913,7 @@ class Worker extends WebServer implements HttpConstants, Runnable {
                             outFile.write(kk);
                             outFile.close();
                         }
+                        } // end rate limit else
                     } //end login.fn
 
 // ***************************************************
@@ -5830,18 +5973,24 @@ class Worker extends WebServer implements HttpConstants, Runnable {
 // ***************************************************
 
                     if (fname.contains("setconfig.htm")) {
-
-                        String res2 = "";
-                        res2 += write_config(fname);
-
-                        p(res2);
-
-                        //byte[] kk = res2.getBytes();
-
-                        String resp = "Settings have been updated.";
-                        byte[] kk = resp.getBytes();
-                        outFile.write(kk);
-
+                        if (bUserAuthenticated) {
+                            UserSession us = uuidmap.get(sAuthUUID);
+                            boolean isAdmin = false;
+                            if (us != null) {
+                                User user = UserCollection.getInstance().getUsersByName(us.getUsername());
+                                if (user != null && user.getRole().equals("admin")) {
+                                    isAdmin = true;
+                                }
+                            }
+                            if (isAdmin) {
+                                String res2 = "";
+                                res2 += write_config(fname);
+                                p(res2);
+                                String resp = "Settings have been updated.";
+                                byte[] kk = resp.getBytes();
+                                outFile.write(kk);
+                            }
+                        }
                     }
 
 // ***************************************************
@@ -5991,19 +6140,23 @@ class Worker extends WebServer implements HttpConstants, Runnable {
                     }
 
                     if (fname.contains("getnodes.fn")) {
+                        if (bUserAuthenticated) {
                         String res2 = getnodesfn();
                         byte[] kk = res2.getBytes();
                         outFile.write(kk);
+                        } // end bUserAuthenticated getnodes
                     }
 
                     if (fname.contains("getextensions.fn")) {
+                        if (bUserAuthenticated) {
                         String res2 = getExtensions();
                         byte[] kk = res2.getBytes();
                         outFile.write(kk);
+                        } // end bUserAuthenticated getextensions
                     }
 
                     if (fname.contains("getfileextensions.fn")) {
-
+                        if (bUserAuthenticated) {
                         FileInputStream fileExtensions = new FileInputStream(appendage + "../scrubber/config/FileExtensions_All.txt");
                         Scanner objScanner = new Scanner(fileExtensions);
                         String res = "";
@@ -6022,6 +6175,7 @@ class Worker extends WebServer implements HttpConstants, Runnable {
                         }
                         byte[] kk = res.getBytes();
                         outFile.write(kk);
+                        } // end bUserAuthenticated getfileextensions
                     }
 // ***************************************************
 // Batch stats (cass7.php)
@@ -6079,7 +6233,7 @@ class Worker extends WebServer implements HttpConstants, Runnable {
                     if (fname.contains("query.fn")) {
                         UserSession us = uuidmap.get(sAuthUUID);
 
-                        if (bUserAuthenticated && !us.isRemote()){
+                        if (bUserAuthenticated && (us == null || !us.isRemote())){
                             InetAddress clientIP = NetUtils.getLocalAddressNonLoopback2();
                             String LocalIP = "127.0.0.1";
                             if (clientIP != null) {
@@ -6126,7 +6280,7 @@ class Worker extends WebServer implements HttpConstants, Runnable {
                         }else{
 
                             //try to see if a remote session
-                            if (us.isRemote()) {
+                            if (us != null && us.isRemote()) {
                                 p("@@@@@******* REMOTE QUERY.FN!!!!");
                                 RemoteAccess ra = new RemoteAccess(us.getRemoteCluster());
                                 ra.setUuid(us.getUuid());
@@ -6163,7 +6317,7 @@ class Worker extends WebServer implements HttpConstants, Runnable {
                     if (fname.contains("sidebar.fn")) {
                         if (bUserAuthenticated){
                             UserSession us = uuidmap.get(sAuthUUID);
-                            if (us.isRemote()) {
+                            if (us != null && us.isRemote()) {
                                 p("REMOTE SIDEBAR");
                                 RemoteAccess ra = new RemoteAccess(us.getRemoteCluster());
                                 ra.setUuid(us.getUuid());
@@ -6208,12 +6362,14 @@ class Worker extends WebServer implements HttpConstants, Runnable {
                         }
                     }
                     if (fname.contains("checkuseruuid.fn")) {
+                        if (bUserAuthenticated) {
                         UserSession userSession = uuidmap.get(sUUID);
                         if(userSession != null){
                             byte[] kk = userSession.getUsername().getBytes();
                             outFile.write(kk);
                             outFile.close();
                         }
+                        } // end bUserAuthenticated checkuseruuid
                     }
 
                     // getfileinfo.fn - Returns JSON with file metadata for a given MD5
@@ -6229,7 +6385,13 @@ class Worker extends WebServer implements HttpConstants, Runnable {
                                 LocalIP = clientIP.getHostAddress();
                             }
 
-                            // sMD5 parameter contains the file hash
+                            // sMD5 parameter contains the file hash - validate format
+                            if (sMD5 == null || !sMD5.matches("[a-fA-F0-9]+")) {
+                                String res = "{\"error\": \"Invalid md5 parameter\"}";
+                                byte[] kk = res.getBytes();
+                                outFile.write(kk);
+                                outFile.close();
+                            } else {
                             // Load thumbnail dir if not loaded yet
                             if(THUMBNAIL_OUTPUT_DIR==null || THUMBNAIL_OUTPUT_DIR.trim().length()==0){
                                 loadPropsProcessor();
@@ -6238,6 +6400,7 @@ class Worker extends WebServer implements HttpConstants, Runnable {
                             byte[] kk = res.getBytes("UTF-8");
                             outFile.write(kk);
                             outFile.close();
+                            } // end md5 valid
                         } else {
                             String res = "{\"error\": \"Authentication required\"}";
                             byte[] kk = res.getBytes();
@@ -6258,7 +6421,7 @@ class Worker extends WebServer implements HttpConstants, Runnable {
                         if (bUserAuthenticated){
 
                             UserSession us = uuidmap.get(sAuthUUID);
-                            if(us.isRemote() || isValidMultiClusterID(sMultiClusterID)){
+                            if(us != null && (us.isRemote() || isValidMultiClusterID(sMultiClusterID))){
                                 p("@@@@!!!! REMOTE GET FILE");
                                 RemoteAccess ra =null;
                                 if(isValidMultiClusterID(sMultiClusterID)){
@@ -6527,7 +6690,7 @@ class Worker extends WebServer implements HttpConstants, Runnable {
                             String res = "";
                             UserSession us = uuidmap.get(sAuthUUID);
 
-                            if (us.isRemote()) {
+                            if (us != null && us.isRemote()) {
                                 p("REMOTE SUGGEST");
                                 RemoteAccess ra = new RemoteAccess(us.getRemoteCluster());
                                 ra.setUuid(us.getUuid());
@@ -6588,7 +6751,7 @@ class Worker extends WebServer implements HttpConstants, Runnable {
                         p("  sUUID: " + sUUID);
 
                         UserSession us = uuidmap.get(sAuthUUID);
-                        if(us.isRemote() || (isValidMultiClusterID(sMultiClusterID))){
+                        if(us != null && (us.isRemote() || (isValidMultiClusterID(sMultiClusterID)))){
                             //remote getts
 
                             String auxSAuthUUID=sAuthUUID;
@@ -6679,7 +6842,7 @@ class Worker extends WebServer implements HttpConstants, Runnable {
                         p("   uuid: " + uuid);
 
                         UserSession us = uuidmap.get(sAuthUUID);
-                        if(us.isRemote() || isValidMultiClusterID(sMultiClusterID)){
+                        if(us != null && (us.isRemote() || isValidMultiClusterID(sMultiClusterID))){
                             //remote getvideo
                             String auxSAuthUUID=sAuthUUID;
                             if(isValidMultiClusterID(sMultiClusterID)){
@@ -6851,14 +7014,16 @@ class Worker extends WebServer implements HttpConstants, Runnable {
                             }
 
                             String res;
-                            if(us.isRemote()){
+                            if(us != null && us.isRemote()){
                                 RemoteAccess ra = new RemoteAccess(us.getRemoteCluster());
                                 ra.setUuid(us.getUuid());
 
                                 String returned = ra.remoteQuery(sFileType, sDaysBack, sFoo2, "json", sNumObj, sDateStart);
 
                                 if(!returned.startsWith("ERROR")){
-                                    StringBuilder sb = HtmlFromJSON.getHTML(returned, sFoo2, sDateStart, sFileType, sDaysBack, sNumObj, sNumCol, password, sView, sScreenSize, us,  Integer.parseInt(sPage), previousDate);
+                                    int pageNum = 0;
+                                    try { pageNum = Integer.parseInt(sPage); } catch (NumberFormatException e) { /* default to 0 */ }
+                                    StringBuilder sb = HtmlFromJSON.getHTML(returned, sFoo2, sDateStart, sFileType, sDaysBack, sNumObj, sNumCol, password, sView, sScreenSize, us,  pageNum, previousDate);
                                     sb.append(HtmlFromJSON.getTagsRemote(ra.remoteGetTags()));
 
                                     res = sb.toString();
@@ -7192,14 +7357,14 @@ class Worker extends WebServer implements HttpConstants, Runnable {
                         SimpleDateFormat sdf = new SimpleDateFormat("yyyy/MM/dd hh:mm:ss");
                         res = sdf.format(ts_start) + "<br>";
 
-                        int n = GetNumberofFilesInDir("incoming", "");
+                        int n = GetNumberofFilesInDir(appendage + "incoming", "");
                         res += "<b>Server</b><br>";
                         res += "incoming files: " + String.valueOf(n) + "<br><br>";
 
-                        n = GetNumberofFilesInDir(".", ".idx");
+                        n = GetNumberofFilesInDir(appendage + "../rtserver", ".idx");
                         res += "IDX files: " + String.valueOf(n) + "<br><br>";
 
-                        n = GetNumberofFilesInDir(".", ".bad");
+                        n = GetNumberofFilesInDir(appendage + "../rtserver", ".bad");
                         res += "BAD IDX files: " + String.valueOf(n) + "<br><br>";
 
                         res += "<b>Local Drives</b><br>";
@@ -7242,7 +7407,7 @@ class Worker extends WebServer implements HttpConstants, Runnable {
                     if (fname.contains("systeminfoscan.fn")) {
                         String res = "";
 
-                        int idxfiles = GetNumberofFilesInDir(".", ".idx");
+                        int idxfiles = GetNumberofFilesInDir(appendage + "../rtserver", ".idx");
                         int batches = wf.getBatchId(sFoo2, dbmode);
                         ArrayList<Node> nodes = wf.getNodes(sFoo2, dbmode);
 
@@ -7453,7 +7618,7 @@ class Worker extends WebServer implements HttpConstants, Runnable {
                                 "&pw=" + password;
 
                         UserSession us = uuidmap.get(sAuthUUID);
-                        if(!us.isRemote()){
+                        if(us == null || !us.isRemote()){
                             applytag(fname, wf, sAuthUUID);
                         }else{
                             RemoteAccess ra = new RemoteAccess(us.getRemoteCluster());
@@ -7492,15 +7657,21 @@ class Worker extends WebServer implements HttpConstants, Runnable {
                     }
 
                     if (fname.contains("refreshsharetable.fn")) {
+                        if (bUserAuthenticated) {
                         String res = getSharesTableContent(false);
                         byte[] kk = res.getBytes();
                         outFile.write(kk);
+                        }
                     }
 
                     if (fname.contains("removeshare.fn")) {
-
+                        if (bUserAuthenticated) {
                         String key;
-                        ShareTypes shareTy =  ShareTypes.valueOf(shareType);
+                        ShareTypes shareTy;
+                        try { shareTy = ShareTypes.valueOf(shareType); } catch (IllegalArgumentException e) {
+                            outFile.write("error".getBytes()); outFile.close(); shareTy = null;
+                        }
+                        if (shareTy == null) { /* already wrote error */ } else {
                         if(shareTy.equals(ShareTypes.CLUSTER)){
                             key = getClusterID();
                         }else{
@@ -7517,17 +7688,23 @@ class Worker extends WebServer implements HttpConstants, Runnable {
                         String res = getSharesTableContent(false);
                         byte[] kk = res.getBytes();
                         outFile.write(kk);
+                        } // end shareTy != null
+                        } // end bUserAuthenticated removeshare
                     }
 
                     if (fname.contains("doshare.fn") || fname.contains("doshare_webapp.fn")) {
-
+                        if (bUserAuthenticated) {
                         boolean bWebApp=false;
                         if(fname.contains("doshare_webapp.fn")){
                             bWebApp=true;
                         }
 
                         String key;
-                        ShareTypes shareTy =  ShareTypes.valueOf(shareType);
+                        ShareTypes shareTy;
+                        try { shareTy = ShareTypes.valueOf(shareType); } catch (IllegalArgumentException e) {
+                            outFile.write("error".getBytes()); outFile.close(); shareTy = null;
+                        }
+                        if (shareTy != null) {
                         if(shareTy.equals(ShareTypes.CLUSTER)){
                             key = getClusterID();
                         }else{
@@ -7607,18 +7784,27 @@ class Worker extends WebServer implements HttpConstants, Runnable {
                         outFile.write(kk);
                         outFile.close();
 
+                        } // end shareTy != null
+                        } // end bUserAuthenticated doshare
                     }
                     if (fname.contains("getinvitationmodal.fn")) {
+                        if (bUserAuthenticated) {
                         ShareController shareCollection = ShareController.getInstance();
                         ShareToken share = shareCollection.getStoredShareToken(shareKey);
                         String outputString = createInvitationModal(share);
                         byte[] kk = outputString.getBytes();
                         outFile.write(kk);
                         outFile.close();
+                        } // end bUserAuthenticated getinvitationmodal
                     }
 
                     if (fname.contains("getsharesettingstag.fn")) {
-                        ShareTypes shareTy =  ShareTypes.valueOf(shareType);
+                        if (bUserAuthenticated) {
+                        ShareTypes shareTy;
+                        try { shareTy = ShareTypes.valueOf(shareType); } catch (IllegalArgumentException e) {
+                            outFile.write("{\"users\":[]}".getBytes()); outFile.close(); shareTy = null;
+                        }
+                        if (shareTy != null) {
                         String key;
                         String title = "Share ";
                         if(shareTy.equals(ShareTypes.CLUSTER)){
@@ -7665,10 +7851,17 @@ class Worker extends WebServer implements HttpConstants, Runnable {
                         byte[] kk = results.getBytes();
                         outFile.write(kk);
                         outFile.close();
+                        } // end shareTy != null getsharesettingstag
+                        } // end bUserAuthenticated getsharesettingstag
                     }
 
                     if (fname.contains("getsharesettingsmodal.fn")) {
-                        ShareTypes shareTy =  ShareTypes.valueOf(shareType);
+                        if (bUserAuthenticated) {
+                        ShareTypes shareTy;
+                        try { shareTy = ShareTypes.valueOf(shareType); } catch (IllegalArgumentException e) {
+                            outFile.write("error".getBytes()); outFile.close(); shareTy = null;
+                        }
+                        if (shareTy != null) {
                         String key;
                         String title = "Share ";
                         if(shareTy.equals(ShareTypes.CLUSTER)){
@@ -7692,7 +7885,7 @@ class Worker extends WebServer implements HttpConstants, Runnable {
 
                         String outputString =
                                 "<div class=\"modal-header\">\n" +
-                                        "<h3 id=\"myModalLabel\">" + title + "</h3>\n" +
+                                        "<h3 id=\"myModalLabel\">" + escapeHtml(title) + "</h3>\n" +
                                         "</div>\n" +
                                         "<div class=\"modal-body\">\n" +
                                         "<h5>Who has access</h3>" +
@@ -7740,8 +7933,8 @@ class Worker extends WebServer implements HttpConstants, Runnable {
 
                         outputString +="<div class=\"modal-footer\">\n" +
                                 "<input type='hidden' id='shareusers' name='shareusers'/>" +
-                                "<input type='hidden' id='typechosen' name='typechosen' value='" + shareType + "'/>" +
-                                "<input type='hidden' id='keychosen' name='keychosen' value='"+ shareKey + "'/>" +
+                                "<input type='hidden' id='typechosen' name='typechosen' value='" + escapeHtml(shareType) + "'/>" +
+                                "<input type='hidden' id='keychosen' name='keychosen' value='"+ escapeHtml(shareKey) + "'/>" +
                                 "                                <button class=\"btn\" data-dismiss=\"modal\" aria-hidden=\"true\">Cancel</button>\n" +
                                 "<button id=\"nextbutton\" type=\"button\" class=\"btn btn-primary\" onclick=\"share();\">"+ (share==null?"Share":"Update")  +"</button>" +
                                 "                        </div>";
@@ -7759,18 +7952,33 @@ class Worker extends WebServer implements HttpConstants, Runnable {
                         outFile.write(kk);
                         outFile.close();
 
+                        } // end shareTy != null getsharesettingsmodal
+                        } // end bUserAuthenticated getsharesettingsmodal
                     }
                     if (fname.contains("adduser.fn")) {
                         String outputString;
                         if (bUserAuthenticated) {
-                            int returnCode = UserCollection.getInstance().addUser(sBoxUser, sBoxPassword, useremail);
-                            if(returnCode==1){
-                                UpdateConfig("allowotherusers", "true", "config/www-server.properties");
-                                outputString = "success";
-                            }else if(returnCode==0){
-                                outputString = "alreadyexists";
-                            }else{
-                                outputString = "error";
+                            // Admin-only: creating users is an admin operation
+                            UserSession us = uuidmap.get(sAuthUUID);
+                            boolean isAdmin = false;
+                            if (us != null) {
+                                User user = UserCollection.getInstance().getUsersByName(us.getUsername());
+                                if (user != null && user.getRole().equals("admin")) {
+                                    isAdmin = true;
+                                }
+                            }
+                            if (isAdmin) {
+                                int returnCode = UserCollection.getInstance().addUser(sBoxUser, sBoxPassword, useremail);
+                                if(returnCode==1){
+                                    UpdateConfig("allowotherusers", "true", "config/www-server.properties");
+                                    outputString = "success";
+                                }else if(returnCode==0){
+                                    outputString = "alreadyexists";
+                                }else{
+                                    outputString = "error";
+                                }
+                            } else {
+                                outputString = "forbidden";
                             }
                             p(outputString);
 
@@ -7783,14 +7991,18 @@ class Worker extends WebServer implements HttpConstants, Runnable {
 
 
                     if (fname.contains("invitation.fn") || fname.contains("invitation_webapp.fn")) {
-
+                        if (bUserAuthenticated) {
 
                         boolean bWebApp = false;
                         if (fname.contains("invitation_webapp.fn")) {
                             bWebApp = true;
                         }
                         String key;
-                        ShareTypes shareTy =  ShareTypes.valueOf(shareType);
+                        ShareTypes shareTy;
+                        try { shareTy = ShareTypes.valueOf(shareType); } catch (IllegalArgumentException e) {
+                            outFile.write("error".getBytes()); outFile.close(); shareTy = null;
+                        }
+                        if (shareTy != null) {
                         String sharedName;
                         if(shareTy.equals(ShareTypes.CLUSTER)){
                             key = getClusterID();
@@ -7897,6 +8109,8 @@ class Worker extends WebServer implements HttpConstants, Runnable {
                         } else {
                             p("[***users empty ***]");
                         }
+                        } // end shareTy != null invitation
+                        } // end bUserAuthenticated invitation
                     }
 
 
@@ -7911,9 +8125,9 @@ class Worker extends WebServer implements HttpConstants, Runnable {
                         if (bUserAuthenticated){
                             UserSession us = uuidmap.get(sAuthUUID);
 
-                            p("   ***us.isRemote()     : " + us.isRemote());
+                            p("   ***us.isRemote()     : " + (us != null ? us.isRemote() : "null session"));
 
-                            if (us.isRemote() || isValidMultiClusterID(sMultiClusterID)) {
+                            if (us != null && (us.isRemote() || isValidMultiClusterID(sMultiClusterID))) {
                                 p("REMOTE APPLYTAGS");
                                 RemoteAccess ra = null;
                                 if(isValidMultiClusterID(sMultiClusterID)){
@@ -7943,6 +8157,19 @@ class Worker extends WebServer implements HttpConstants, Runnable {
                     if (fname.contains("getusersandemail.fn")) {
 
                         if (bUserAuthenticated){
+                            // Admin-only: returns all user emails
+                            UserSession us = uuidmap.get(sAuthUUID);
+                            boolean isAdmin = false;
+                            if (us != null) {
+                                User user = UserCollection.getInstance().getUsersByName(us.getUsername());
+                                if (user != null && user.getRole().equals("admin")) {
+                                    isAdmin = true;
+                                }
+                            }
+                            if (!isAdmin) {
+                                outFile.write("{\"users\":[]}".getBytes());
+                                outFile.close();
+                            } else {
                             String results = "";
                             Collection<User> users = UserCollection.getInstance().getUsersByRole("user");
                             results += "{\n";
@@ -7972,6 +8199,7 @@ class Worker extends WebServer implements HttpConstants, Runnable {
                             results += "}\n";
                             outFile.write(results.getBytes());
                             outFile.close();
+                            } // end isAdmin
                         }
                     }
 
@@ -8000,7 +8228,7 @@ class Worker extends WebServer implements HttpConstants, Runnable {
                     if (fname.contains("chat_pull.fn")) {
                         if (bUserAuthenticated) {
                             UserSession us = uuidmap.get(sAuthUUID);
-                            if (us.isRemote() || isValidMultiClusterID(sMultiClusterID)) {
+                            if (us != null && (us.isRemote() || isValidMultiClusterID(sMultiClusterID))) {
                                 p("REMOTE CHAT PULL ");
                                 RemoteAccess ra = null;
                                 if(isValidMultiClusterID(sMultiClusterID)){
@@ -8069,7 +8297,7 @@ class Worker extends WebServer implements HttpConstants, Runnable {
                     if (fname.contains("chat_clear.fn")) {
                         if (bUserAuthenticated) {
                             UserSession us = uuidmap.get(sAuthUUID);
-                            if (us.isRemote()) {
+                            if (us != null && us.isRemote()) {
                                 p("REMOTE CHAT CLEAR ");
                                 RemoteAccess ra = new RemoteAccess(us.getRemoteCluster());
                                 ra.setUuid(us.getUuid());
@@ -8096,7 +8324,7 @@ class Worker extends WebServer implements HttpConstants, Runnable {
                     if (fname.contains("chat_push.fn")) {
                         if (bUserAuthenticated) {
                             UserSession us = uuidmap.get(sAuthUUID);
-                            if (us.isRemote() || isValidMultiClusterID(sMultiClusterID)) {
+                            if (us != null && (us.isRemote() || isValidMultiClusterID(sMultiClusterID))) {
                                 p("REMOTE CHAT PUSH ");
                                 RemoteAccess ra = null;
                                 if(isValidMultiClusterID(sMultiClusterID)){
@@ -8287,7 +8515,7 @@ class Worker extends WebServer implements HttpConstants, Runnable {
                         }else{
                             sUser = null;
                         }
-                        if(!us.isRemote()){
+                        if(us == null || !us.isRemote()){
                             res = wf.echoac(sQueryString, dbmode, sUser);
                         }else{
                             RemoteAccess ra = new RemoteAccess(us.getRemoteCluster());
@@ -8398,6 +8626,8 @@ class Worker extends WebServer implements HttpConstants, Runnable {
                     String sHashEnc = text2.substring(4, text2.length());
                     p("sHash = '" + sHashEnc + "'");
                     sHash = URLDecoder.decode(sHashEnc, "UTF-8").toLowerCase();
+                    // Sanitize tag: strip HTML/script tags to prevent stored XSS
+                    sHash = sHash.replaceAll("<[^>]*>", "").trim();
                     if (sHash.contains("hidden:")) {
                         sHiddenPw = sHash.substring(7,sHash.length());
                         p("sHiddenPw = '" + sHiddenPw + "'");
@@ -8435,6 +8665,8 @@ class Worker extends WebServer implements HttpConstants, Runnable {
                 String sHashEnc = text2.substring(4, text2.length());
                 p("sHash = '" + sHashEnc + "'");
                 sHash = URLDecoder.decode(sHashEnc, "UTF-8").toLowerCase();
+                // Sanitize tag: strip HTML/script tags to prevent stored XSS
+                sHash = sHash.replaceAll("<[^>]*>", "").trim();
                 res += "Hash: '" + sHash + "'";
                 if (sHash.contains("hidden:")) {
                     sHiddenPw = sHash.substring(7,sHash.length());
@@ -9100,13 +9332,13 @@ class Worker extends WebServer implements HttpConstants, Runnable {
                         p("LOCAL Filename:" + sFileName);
                     }
 
-                    if (_sGetFileExt.length() == 0) {
+                    if (_sGetFileExt.length() == 0 && sFileName != null && sFileName.contains(".")) {
                         _sGetFileExt = sFileName.substring(sFileName.lastIndexOf("."));
                         p("Fixed ext = " + _sGetFileExt);
                     }
                     ct = (String) map.get(_sGetFileExt.toLowerCase());
 
-                    if (sFileName.length() > 0) {
+                    if (sFileName != null && sFileName.length() > 0) {
                         p("Content Disposition for Getfile:  filename='" + sFileName + "'");
                         ps.print("Content-Disposition: filename=" + sFileName);
                         ps.write(EOL);
@@ -9286,15 +9518,15 @@ class Worker extends WebServer implements HttpConstants, Runnable {
                 sFileNew = incoming.getPath() + File.separator + "upload." + safeFilename + ".b";
             }
         } else {
-            sFileNew = "payload.txt";
-            targetDir = new File(".");
+            sFileNew = appendage + "../rtserver/payload.txt";
+            targetDir = new File(appendage + "../rtserver");
         }
 
         p("sFileNew = '" +  sFileNew + "'");
 
         if (foundBridge) {
-            sFileNew = "bridge.clusterdummyfile";
-            targetDir = new File(".");
+            sFileNew = appendage + "../rtserver/bridge.clusterdummyfile";
+            targetDir = new File(appendage + "../rtserver");
         }
 
         // Security: Validate the final path is within the allowed directory
@@ -11526,7 +11758,7 @@ class Worker extends WebServer implements HttpConstants, Runnable {
 
                 //server properties
                 if (sType.equals("server")) {
-                    int idxfiles = GetNumberofFilesInDir(".", ".idx");
+                    int idxfiles = GetNumberofFilesInDir(appendage + "../rtserver", ".idx");
                     int batches = wf.getBatchId("", dbmode);
 
                     res.append("\"node_idx\": \"" + URLEncoder.encode(String.valueOf(idxfiles),"UTF-8") + "\",\n");

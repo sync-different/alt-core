@@ -840,26 +840,33 @@ public class FileUtils {
     boolean isBlacklistedContains(String _filepath) {
         boolean bBlack = false;
         boolean bCont = true;
-        
+
+        // Paths under the hivebot Application Support directory are explicitly managed
+        // by the app and should never be blacklisted (even though "library/application support"
+        // is in the blacklist to exclude other apps' data).
+        if (_filepath.replace("\\", "/").toLowerCase().contains("hivebot/")) {
+            return false;
+        }
+
         Iterator it = mapBlackC.entrySet().iterator();
-                
+
         String _directory = "";
         while (it.hasNext() && bCont) {
             Map.Entry pairs = (Map.Entry)it.next();
 
             String theKey = (String)pairs.getKey();
             theKey = theKey.replace("\\", "/");
-            
+
             _filepath = _filepath.replace("\\", "/");
-            _directory = _filepath.substring(0,_filepath.lastIndexOf("/")+1);     
-            
+            _directory = _filepath.substring(0,_filepath.lastIndexOf("/")+1);
+
             log("[contains] comparing '" + _directory + "' vs '" + theKey + "'",3);
             if (_directory.trim().toLowerCase().contains(theKey.trim().toLowerCase())) {
                 bCont = false;
                 bBlack = true;
-                log("[contains] Directory '" + _directory + "' CONTAINS '" + theKey + "'", 3); 
+                log("[contains] Directory '" + _directory + "' CONTAINS '" + theKey + "'", 3);
             } else {
-                //p("[blc] Directory '" + _directory + "' NOT CONTAINS '" + theKey + "'");  
+                //p("[blc] Directory '" + _directory + "' NOT CONTAINS '" + theKey + "'");
             }
         }
         
@@ -875,35 +882,41 @@ public class FileUtils {
     boolean isBlacklisted(String _filepath, boolean _isdirectory) {
         boolean bBlack = false;
         boolean bCont = true;
-        
+
+        // Paths under the hivebot Application Support directory are explicitly managed
+        // by the app and should never be blacklisted.
+        if (_filepath.replace("\\", "/").toLowerCase().contains("hivebot/")) {
+            return false;
+        }
+
         Iterator it = mapBlack.entrySet().iterator();
-        
+
         //p("#blacklisted directories: " + mapBlack.size());
-        
+
         String _directory = "";
         while (it.hasNext() && bCont) {
-            Map.Entry pairs = (Map.Entry)it.next();           
+            Map.Entry pairs = (Map.Entry)it.next();
             //p(pairs.getKey() + " = " + pairs.getValue() + " = " + pairs.toString());
-            
+
             String theKey = (String)pairs.getKey();
             theKey = theKey.replace("\\", "/");
-            
+
             _filepath = _filepath.replace("\\", "/");
             if (!_isdirectory) {
                 //directory = false
-                _directory = _filepath.substring(0,_filepath.lastIndexOf("/")+1);                   
+                _directory = _filepath.substring(0,_filepath.lastIndexOf("/")+1);
             } else {
                 //directory = true
                 _directory = _filepath + "/";
-            }            
-            
-            log("comparing '" + _directory + "' vs '" + theKey + "'",3); 
+            }
+
+            log("comparing '" + _directory + "' vs '" + theKey + "'",3);
             if (_directory.toLowerCase().contains(theKey.toLowerCase())) {
-                log("Directory '" + _directory + "' CONTAINS '" + theKey + "'", 3);  
+                log("Directory '" + _directory + "' CONTAINS '" + theKey + "'", 3);
                 bCont = false;
                 bBlack = true;
             } else {
-                //p("[bl] Directory '" + _directory + "' NOT EQUALS '" + theKey + "'");  
+                //p("[bl] Directory '" + _directory + "' NOT EQUALS '" + theKey + "'");
             }
         }
         if (bBlack) {

@@ -3316,12 +3316,24 @@ public class Cass7Funcs {
                 res.append("\"fighters\": [\n");
                 It = occurences_hash.keySet().iterator();
                 String sNamer = "";
-                if (_cloudhosted) {  
-                    lf.clear_counters();                            
+                boolean bFirstJSON = true;
+                if (_cloudhosted) {
+                    lf.clear_counters();
                 }
                 while (It.hasNext()) {
                     sNamer = (String) It.next();
                     String sFileName = occurences_names.get(sNamer);
+
+                    // Skip files that have been deleted from the index
+                    if (isFileDeleted(sNamer)) {
+                        p("Skipping deleted file: " + sNamer + " (" + sFileName + ")");
+                        continue;
+                    }
+
+                    if (!bFirstJSON) {
+                        res.append(",\n");
+                    }
+                    bFirstJSON = false;
                     res.append("{\n");
                     //res.append("\"name\": \"" + sFileName + "\",\n");
                     res.append("\"name\": \"" + URLEncoder.encode(sFileName, "UTF-8") + "\",\n");
@@ -3574,11 +3586,7 @@ public class Cass7Funcs {
                     }
 
                     
-                    if (It.hasNext()) {
-                        res.append("},\n");                                            
-                    } else {
-                        res.append("}\n");                                                                    
-                    }
+                    res.append("}");
                     //p("JSON " + sFileName + " " + sNamer + " " + sURLpack.sViewURLJSON_Path);                
                     p("JSON -> " + sFileName + " " + sNamer + " " + sView + " " + _filetype);                
 
@@ -6974,7 +6982,86 @@ public boolean deleteObject(final String _key, final String superColumnName, Str
         }
     }
 
-    
+    /**
+     * Check if a file (by MD5 key) has been deleted from the index.
+     * Reads Super2/paths/<key> and returns true if ALL paths are "DELETED".
+     * Works in both p2p (flat file) and cass (Thrift) modes.
+     */
+    public boolean isFileDeleted(final String _key) {
+        if (dbmode.equals("p2p") || dbmode.equals("both")) {
+            // p2p mode: read flat file at data/localdb/Super2/paths/<key>
+            String filename = appendage + LocalFuncs.DB_PATH + File.separator + "Super2" + File.separator + "paths" + File.separator + _key;
+            File f = new File(filename);
+            if (!f.exists()) {
+                return false; // no paths file doesn't mean deleted — file may be newly indexed
+            }
+            BufferedReader br = null;
+            try {
+                br = new BufferedReader(new FileReader(f));
+                String line;
+                boolean hasEntries = false;
+                while ((line = br.readLine()) != null) {
+                    if (line.trim().isEmpty()) continue;
+                    hasEntries = true;
+                    // Format: <uuid>:<path>/,<value>
+                    int sepIdx = line.indexOf("/,");
+                    if (sepIdx >= 0) {
+                        String colValue = line.substring(sepIdx + 2);
+                        if (!"DELETED".equals(colValue)) {
+                            return false;
+                        }
+                    } else {
+                        // Line without /,separator — treat as non-deleted
+                        return false;
+                    }
+                }
+                if (hasEntries) {
+                    p("[C7] isFileDeleted: key=" + _key + " -> DELETED");
+                }
+                return hasEntries; // all entries are DELETED
+            } catch (Exception e) {
+                p("[C7] isFileDeleted exception for key: " + _key + " error: " + e.getMessage());
+            } finally {
+                try { if (br != null) br.close(); } catch (Exception ignore) {}
+            }
+        } else {
+            // cass mode: read via Thrift
+            try {
+                mCassandraClient.set_keyspace(keyspace);
+                SlicePredicate predicate = new SlicePredicate();
+                SliceRange sliceRange = new SliceRange();
+                sliceRange.setStart(new byte[0]);
+                sliceRange.setFinish(new byte[0]);
+                predicate.setSlice_range(sliceRange);
+
+                ColumnParent parent = new ColumnParent(superColumnFamily);
+                byte[] kk = _key.getBytes();
+                List<ColumnOrSuperColumn> results = mCassandraClient.get_slice(ByteBuffer.wrap(kk), parent, predicate, ConsistencyLevel.ONE);
+
+                for (ColumnOrSuperColumn result : results) {
+                    SuperColumn sc = result.super_column;
+                    String scName = new String(sc.getName(), UTF8);
+                    if (scName.equals("paths")) {
+                        List<Column> colsInSc = sc.columns;
+                        if (colsInSc.isEmpty()) {
+                            return true;
+                        }
+                        for (Column c : colsInSc) {
+                            String colValue = URLDecoder.decode(new String(c.getValue(), UTF8), UTF8);
+                            if (!"DELETED".equals(colValue)) {
+                                return false;
+                            }
+                        }
+                        return true;
+                    }
+                }
+            } catch (Exception e) {
+                p("isFileDeleted exception for key: " + _key);
+            }
+        }
+        return false;
+    }
+
 public boolean syncObject(final String _key, final String superColumnName, String sUUID, String sPath) throws UnsupportedEncodingException,
             InvalidRequestException, UnavailableException, TimedOutException,
             TException, NotFoundException {

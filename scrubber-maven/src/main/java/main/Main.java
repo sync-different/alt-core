@@ -28,7 +28,7 @@ import java.util.StringTokenizer;
 //import services.ScannerService;
 import services.ProcessorService;
 //import services.ClientService;
-//import services.TransferService;
+import services.TransferService;
 import services.BroadcastService;
 import services.BackupServerService;
 
@@ -331,7 +331,7 @@ public class Main extends AbstractService {
             String sMode = getConfig("mode", _configpath);
             sModeAtLoad = sMode;
                 
-            _flags = "cstbvprad";
+            _flags = "cstbprad";
 
             if (args.length >= 8 ) {
                 _flags = args[7];
@@ -341,17 +341,17 @@ public class Main extends AbstractService {
                     if (sDBMode.equals("p2p") || (sDBMode.equals("both"))) {
                         //P2p mode
                         p("P2P MODE");
-                        _flags = "cstbvp";                                                
+                        _flags = "cstbp";
                     } else {
                         //client
                         p("CLIENT MODE");
-                        _flags = "cstbv";                        
+                        _flags = "cstb";
                     }
                 }
                 if (sMode.equals("server")) {
                     //server
                     p("SERVER+CLIENT MODE");
-                    _flags = "cstbvpraz";
+                    _flags = "cstbpraz";
                 }
             }
             
@@ -367,7 +367,10 @@ public class Main extends AbstractService {
                     if (_flags.contains("p")) {
                         //Server - Processor
                         p("[spawning a processor]");
-                        ps = new ProcessorService(mDelay,_incoming,50,1000, _server, _serverport, mLogLevel, _configpath);   
+                        ps = new ProcessorService(mDelay,_incoming,50,1000, _server, _serverport, mLogLevel, _configpath);
+                        // Tell TransferService that ProcessorService is running in the same process
+                        // so it can copy files directly instead of creating ZIP packages
+                        TransferService.bLocalProcess = true;
                     }
  
                     if (_flags.contains("r")) {

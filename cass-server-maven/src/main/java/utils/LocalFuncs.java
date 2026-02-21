@@ -1030,7 +1030,7 @@ public class LocalFuncs {
             
             log("Updating number of copies for Batch id: " +_batchid, 2);
             String _name = "batch@" + _batchid;
-            String filename = DB_PATH + File.separator + "Standard1" + File.separator + _name;
+            String filename = appendage + DB_PATH + File.separator + "Standard1" + File.separator + _name;
             File fh = new File(filename);
             if (fh.exists()) {
                 
@@ -1544,9 +1544,9 @@ public class LocalFuncs {
     public void loadHiddenFiles() {
         //occurences_copies = Collections.synchronizedMap(occurences_copies);
             
-        File f = new File(DB_PATH + File.separator + "Standard1" + File.separator + "hidden@");
+        File f = new File(appendage + DB_PATH + File.separator + "Standard1" + File.separator + "hidden@");
         if (f.exists()) {
-            Filer = readDoc(DB_PATH + File.separator + "Standard1" + File.separator + "hidden@");
+            Filer = readDoc(appendage + DB_PATH + File.separator + "Standard1" + File.separator + "hidden@");
             Scanner scanner = new Scanner(Filer);
             
             int i = 0;
@@ -1958,16 +1958,17 @@ public class LocalFuncs {
                         sAppend = "./";
                         if (appendage.length() > 0) sAppend = "";
                         
+                        String sRtPath = sAppend + appendageRW + "../rtserver/";
                         if (bReadOnly) {
                             p("MAP DB READ ONLY");
-                            db_r = DBMaker.newFileDB(new File(sAppend + appendageRW + sFile)).closeOnJvmShutdown().readOnly().make();                            
+                            db_r = DBMaker.newFileDB(new File(sRtPath + sFile)).closeOnJvmShutdown().readOnly().make();
                         } else {
                             p("MAP DB READ/WRITE");
                             //.asyncWriteEnable()
-                            tx_mm1 = DBMaker.newFileDB(new File(sAppend + appendageRW + sFile + "_mm1")).closeOnJvmShutdown().cacheLRUEnable().mmapFileEnableIfSupported().makeTxMaker();                            
-                            tx_mm2 = DBMaker.newFileDB(new File(sAppend + appendageRW + sFile + "_mm2")).closeOnJvmShutdown().cacheLRUEnable().mmapFileEnableIfSupported().makeTxMaker();                            
-                            tx_cp = DBMaker.newFileDB(new File(sAppend + appendageRW + sFile + "_cp")).closeOnJvmShutdown().cacheLRUEnable().mmapFileEnableIfSupported().makeTxMaker();                            
-                            tx_attr = DBMaker.newFileDB(new File(sAppend + appendageRW + sFile + "_attr")).closeOnJvmShutdown().cacheLRUEnable().mmapFileEnableIfSupported().makeTxMaker();                            
+                            tx_mm1 = DBMaker.newFileDB(new File(sRtPath + sFile + "_mm1")).closeOnJvmShutdown().cacheLRUEnable().mmapFileEnableIfSupported().makeTxMaker();
+                            tx_mm2 = DBMaker.newFileDB(new File(sRtPath + sFile + "_mm2")).closeOnJvmShutdown().cacheLRUEnable().mmapFileEnableIfSupported().makeTxMaker();
+                            tx_cp = DBMaker.newFileDB(new File(sRtPath + sFile + "_cp")).closeOnJvmShutdown().cacheLRUEnable().mmapFileEnableIfSupported().makeTxMaker();
+                            tx_attr = DBMaker.newFileDB(new File(sRtPath + sFile + "_attr")).closeOnJvmShutdown().cacheLRUEnable().mmapFileEnableIfSupported().makeTxMaker();
                             //db = tx.makeTx();
                         }
                         bOK = true;
@@ -2357,7 +2358,7 @@ public class LocalFuncs {
                     //p("Skipping loadNodes(). Already loaded.");
                 }
                 
-                String filename = DB_PATH + File.separator + "Standard1" + File.separator + ".all";
+                String filename = appendage + DB_PATH + File.separator + "Standard1" + File.separator + ".all";
                 FileInputStream bf2 = new FileInputStream(filename);
                 Scanner scanner2 = new Scanner(bf2);
                 
@@ -3620,7 +3621,7 @@ public class LocalFuncs {
                 BufferedReader br = null;
                        
                 try {
-                    String filename2 = DB_PATH + File.separator + "NodeInfo" + File.separator + fn.getName();
+                    String filename2 = appendage + DB_PATH + File.separator + "NodeInfo" + File.separator + fn.getName();
 
                     File fh = new File(filename2);
                     if (fh.exists()) {
@@ -6088,7 +6089,7 @@ public class LocalFuncs {
     }
     
     public boolean existsHashes(String _ks, String _cf, String _key) {
-        File f = new File(DB_PATH + File.separator + _cf + File.separator + _key);
+        File f = new File(appendage + DB_PATH + File.separator + _cf + File.separator + _key);
         
         return !f.exists();
     }
@@ -6905,9 +6906,12 @@ public class LocalFuncs {
                         }
                     }
 
-                    if (bAdd) {
+                    boolean bDeleted = isFileDeleted(key);
+                    if (bAdd && !bDeleted) {
                         String sfilename = occurences_names.get(key);
                         read_row_hash(key, occurences_hash, occurences_names, _filetype, cache, sfilename);
+                    } else if (bDeleted) {
+                        p("get_objects_sorted: SKIPPING deleted key: " + key);
                     }
                     
                     /*if (!bCompoundQuery) {
@@ -6938,7 +6942,7 @@ public class LocalFuncs {
                 } //if bskip     
 
                 
-                if ((decrementIncrementCounter) && (!bSkipHidden)) {
+                if ((decrementIncrementCounter) && (!bSkipHidden) && !isFileDeleted(key)) {
                     if (!bCompoundQuery){
                         increment_counter(key, occurences_names.get(key), ndaysback, _filetype, occurences);
                         nSize++;
@@ -7460,19 +7464,180 @@ public class LocalFuncs {
 
         //since we deleted an object, mark as new query
         bNewQuery = true;
-        
+
         String sPath2 = sPath.replace("\\", "/");
         String sColumn = sUUID + ":" + sPath2 + "/";
         p("marking entry as deleted: key '" + _key + "' sColumn: '" + sColumn +"'");
-        
+
         int ret_code = edit_SuperColumn(keyspace, "Super2", _key, "paths", sColumn, "DELETED");
+
+        // Also remove from Standard1/.all and Standard2 keyword indexes so the file
+        // no longer appears in query results. The isFileDeleted() filter is a backup
+        // check, but removing from the indexes is the authoritative cleanup.
+        if (isFileDeleted(_key)) {
+            removeFromAllIndex(_key);
+            removeFromKeywordIndexes(_key);
+        }
+
         if (ret_code == 0) {
             return true;
         } else {
             return false;
         }
     }
+
+    /**
+     * Removes the MD5 key from Standard1/.all index file.
+     * Scans the file and removes any line whose value field contains the MD5.
+     * Format of .all file: date,md5,filepath
+     */
+    private void removeFromAllIndex(final String _key) {
+        String sPath = appendage + DB_PATH;
+        String filename = sPath + File.separator + "Standard1" + File.separator + ".all";
+        File f = new File(filename);
+        if (!f.exists()) return;
+
+        BufferedReader br = null;
+        BufferedWriter bw = null;
+        try {
+            br = new BufferedReader(new FileReader(f));
+            StringBuilder sContent = new StringBuilder();
+            String line;
+            boolean removed = false;
+            while ((line = br.readLine()) != null) {
+                // .all line format: date,md5,filepath — check if md5 field matches
+                int firstComma = line.indexOf(",");
+                if (firstComma >= 0) {
+                    String rest = line.substring(firstComma + 1);
+                    if (rest.startsWith(_key + ",") || rest.equals(_key)) {
+                        removed = true;
+                        continue; // skip this line
+                    }
+                }
+                sContent.append(line).append("\n");
+            }
+            br.close();
+            br = null;
+
+            if (removed) {
+                bw = new BufferedWriter(new FileWriter(f, false));
+                bw.write(sContent.toString());
+                bw.close();
+                bw = null;
+                p("removeFromAllIndex: removed " + _key + " from .all");
+            }
+        } catch (Exception e) {
+            p("removeFromAllIndex exception: " + e.getMessage());
+        } finally {
+            try { if (br != null) br.close(); } catch (Exception ignore) {}
+            try { if (bw != null) bw.close(); } catch (Exception ignore) {}
+        }
+    }
+
+    /**
+     * Removes the MD5 key from Standard1 keyword index files.
+     * Scans all files in Standard1/ and removes lines containing the MD5.
+     * Each keyword file has format: date,md5,filepath
+     */
+    private void removeFromKeywordIndexes(final String _key) {
+        String sPath = appendage + DB_PATH + File.separator + "Standard1";
+        File dir = new File(sPath);
+        if (!dir.exists() || !dir.isDirectory()) return;
+
+        File[] files = dir.listFiles();
+        if (files == null) return;
+
+        int cleaned = 0;
+        for (File indexFile : files) {
+            if (!indexFile.isFile()) continue;
+            // Skip .all — already handled by removeFromAllIndex
+            if (".all".equals(indexFile.getName())) continue;
+            BufferedReader br = null;
+            BufferedWriter bw = null;
+            try {
+                br = new BufferedReader(new FileReader(indexFile));
+                StringBuilder sContent = new StringBuilder();
+                String line;
+                boolean removed = false;
+                while ((line = br.readLine()) != null) {
+                    // Standard1 keyword line format: date,md5,filepath
+                    int firstComma = line.indexOf(",");
+                    if (firstComma >= 0) {
+                        String rest = line.substring(firstComma + 1);
+                        if (rest.startsWith(_key + ",") || rest.equals(_key)) {
+                            removed = true;
+                            continue;
+                        }
+                    }
+                    sContent.append(line).append("\n");
+                }
+                br.close();
+                br = null;
+
+                if (removed) {
+                    if (sContent.length() == 0) {
+                        indexFile.delete();
+                    } else {
+                        bw = new BufferedWriter(new FileWriter(indexFile, false));
+                        bw.write(sContent.toString());
+                        bw.close();
+                        bw = null;
+                    }
+                    cleaned++;
+                }
+            } catch (Exception e) {
+                // Skip files that can't be processed
+            } finally {
+                try { if (br != null) br.close(); } catch (Exception ignore) {}
+                try { if (bw != null) bw.close(); } catch (Exception ignore) {}
+            }
+        }
+        if (cleaned > 0) {
+            p("removeFromKeywordIndexes: cleaned " + _key + " from " + cleaned + " Standard1 index files");
+        }
+    }
     
+    /**
+     * Check if a file (by MD5 key) has been deleted from the index.
+     * Reads Super2/paths/<key> flat file and returns true if ALL entries are "DELETED".
+     */
+    public boolean isFileDeleted(final String _key) {
+        String filename = appendage + DB_PATH + File.separator + "Super2" + File.separator + "paths" + File.separator + _key;
+        File f = new File(filename);
+        if (!f.exists()) {
+            return false; // no paths file doesn't mean deleted — file may be newly indexed
+        }
+        BufferedReader br = null;
+        try {
+            br = new BufferedReader(new FileReader(f));
+            String line;
+            boolean hasEntries = false;
+            while ((line = br.readLine()) != null) {
+                if (line.trim().isEmpty()) continue;
+                hasEntries = true;
+                int sepIdx = line.indexOf("/,");
+                if (sepIdx >= 0) {
+                    String colValue = line.substring(sepIdx + 2);
+                    if (!"DELETED".equals(colValue)) {
+                        return false;
+                    }
+                } else {
+                    // Line without /,separator — treat as non-deleted
+                    return false;
+                }
+            }
+            if (hasEntries) {
+                p("isFileDeleted: key=" + _key + " -> DELETED (all entries marked)");
+            }
+            return hasEntries;
+        } catch (Exception e) {
+            p("isFileDeleted exception for key: " + _key + " error: " + e.getMessage());
+        } finally {
+            try { if (br != null) br.close(); } catch (Exception ignore) {}
+        }
+        return false;
+    }
+
     public void decrement_counter(HashMap<String, String> occurences_names, String _key, String _filetype, int _daysback, SortableValueMapLong<String, Long> occurences) {
         //if (bNewQuery) {
         
@@ -7699,7 +7864,7 @@ public class LocalFuncs {
         BufferedReader br = null;
         
         try {
-            FileReader r = new FileReader(DB_PATH + File.separator + _cf + File.separator + _sc + File.separator + _key);
+            FileReader r = new FileReader(appendage + DB_PATH + File.separator + _cf + File.separator + _sc + File.separator + _key);
 
             br = new BufferedReader(r);
             String sCurrentLine;
@@ -7787,7 +7952,7 @@ public class LocalFuncs {
     
     int getNumberofIDXFiles() {
         try {
-            File tf = new File(".");
+            File tf = new File(appendage + "../rtserver");
             File[] files = tf.listFiles();
             int nIDX = 0;
             for (File f:files) {

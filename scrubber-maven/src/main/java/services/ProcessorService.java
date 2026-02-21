@@ -134,6 +134,7 @@ public class ProcessorService implements Runnable{
 
    static String appendage = "";
     static String appendageRW = "";
+    static boolean mMobileBackupScanVerified = false;
     
     public void SetShutdown() {
         mTerminated = true;
@@ -481,8 +482,18 @@ public class ProcessorService implements Runnable{
                 if (file.isDirectory())
                     continue;
                 final String filename = file.getName();
+
+                // Skip files without a dot — they can't be valid upload artifacts
+                // and would cause StringIndexOutOfBoundsException downstream
+                if (!filename.contains(".")) {
+                    pw("Skipping file with no extension: " + filename);
+                    continue;
+                }
+
+              try { // Per-file try-catch: one bad file must not kill the processor
+
                 if (filename.endsWith(".zip")) {
-                    
+
                     //unzip packed file.
                     try {
                         p("Processing ZIP file " + filename);
@@ -490,7 +501,7 @@ public class ProcessorService implements Runnable{
                         p("Processing ZIP file " + file.getCanonicalPath());
 
                         ZipFolder zipper = new ZipFolder();
-                        int res = zipper.unzipFile(file.getCanonicalPath(), mScanDirectory);                                                
+                        int res = zipper.unzipFile(file.getCanonicalPath(), mScanDirectory);
                         p("Zip res:" + res);
                         if (res > 0) {
                             p("Unzip OK. deleting...");
@@ -499,9 +510,9 @@ public class ProcessorService implements Runnable{
                             log("WARNING : Unzip error file:" + filename, 0);
                             try {
                                 if (file.delete()) {
-                                    p("file corrupt zip delete OK");                                    
-                                } else {                                    
-                                    p("file corrupt zip delete FAIL");                                    
+                                    p("file corrupt zip delete OK");
+                                } else {
+                                    p("file corrupt zip delete FAIL");
                                 }
                             } catch (OutOfMemoryError oome) {
                                 oome.printStackTrace();
@@ -515,17 +526,30 @@ public class ProcessorService implements Runnable{
                         }
                     } catch (Exception e) {
                         e.printStackTrace();
-                    }                      
+                    }
                 } else if (filename.endsWith(".b") || filename.endsWith(".p")) {//.b
                     File dMobileBackup = new File(appendage + "../scrubber/mobilebackup");
                     if(!dMobileBackup.exists()){
                         pw("Mobile backup folder does not exist. Creating...");
                         dMobileBackup.mkdir();
+                    }
+                    // Ensure mobilebackup is in the scan config (once per session).
+                    // The directory may already exist but the scan path may
+                    // point to an old location (e.g., after app rename).
+                    if (!mMobileBackupScanVerified) {
                         addMobileBackupFolder();
-                    } else {
-                        pw("Mobile backup folder exist... Skip Creating...");                       
+                        mMobileBackupScanVerified = true;
                     }
                     String[] filenametokens = filename.split("\\.");
+
+                    // Validate token count: .b needs >= 3 (device.name.b), .p needs >= 5 (device.name.total.index.p)
+                    int minTokens = filename.endsWith(".p") ? 5 : 3;
+                    if (filenametokens.length < minTokens) {
+                        pw("Malformed upload filename (too few tokens): " + filename + " — deleting");
+                        file.delete();
+                        continue;
+                    }
+
                     String deviceid = filenametokens[0];
 
                     String name = "";
@@ -617,7 +641,23 @@ public class ProcessorService implements Runnable{
                             totalparts = Integer.parseInt(filenametokens[filenametokens.length-3]);
                             nropart = Integer.parseInt(filenametokens[filenametokens.length-2]);
                         } catch (Exception e) {
-                            e.printStackTrace();
+                            pw("Malformed .p filename (bad chunk numbers): " + filename + " — deleting");
+                            file.delete();
+                            continue;
+                        }
+                        // Validate chunk numbers are positive
+                        if (totalparts <= 0 || nropart <= 0) {
+                            pw("Invalid chunk numbers (total=" + totalparts + " part=" + nropart + "): " + filename + " — deleting");
+                            file.delete();
+                            continue;
+                        }
+                        // Check for orphaned chunks: if file is older than 1 hour, delete it
+                        long ageMs = System.currentTimeMillis() - file.lastModified();
+                        long ORPHAN_TIMEOUT_MS = 60 * 60 * 1000; // 1 hour
+                        if (totalparts != nropart && ageMs > ORPHAN_TIMEOUT_MS) {
+                            pw("Orphaned chunk (age=" + (ageMs/1000/60) + "min): " + filename + " — deleting");
+                            file.delete();
+                            continue;
                         }
                         if(totalparts == nropart){
                             //final part arrived, time to build large file
@@ -666,7 +706,7 @@ public class ProcessorService implements Runnable{
                                 p("Finalizing file merge. Full file at: " + ofile.getAbsolutePath());
                                 fos.close();
                                 fos = null;
-                            }catch (Exception exception){                                
+                            }catch (Exception exception){
                                 exception.printStackTrace();
                                 pw("WARNING - there was an exception merging the file." + ofile.getAbsolutePath());
                             }
@@ -754,8 +794,13 @@ public class ProcessorService implements Runnable{
 
                      } else {
                             p("Skipping file belongs to another batch.");
-                     }   
+                     }
                 }
+
+              } catch (Exception ex) {
+                pw("ERROR processing file: " + filename + " — " + ex.getMessage());
+                ex.printStackTrace();
+              } // end per-file try-catch
             }
         }
         if (process_files != 0){
@@ -1226,12 +1271,18 @@ public class ProcessorService implements Runnable{
                     ret_code += c8.insertSuperColumn(keyspace, "Super2", key, "hashes", sub_folder_full, sub_folder_full);
                     mStatistics.nInsertHash += 1;
                     
+                    // Always index the full filename so the file can be found by name in search,
+                    // regardless of whether the UUID is local or remote
+                    p("adding standard1 (filename): '" + _record.dbe_filename + "' name:" + strDateModified + " value: " + sAdder);
+                    ret_code = c8.insert_column(keyspace, "Standard1", _record.dbe_filename, strDateModified, sAdder, true);
+                    ++mStatistics.nInsert;
+
                     StringTokenizer st = new StringTokenizer(sub_folder_full, delimiters, true);
 
                     while (st.hasMoreTokens()) {
-                        
+
                         String sub_folder = st.nextToken();
-                                                
+
                         //- Add path name subtring into autocomplete & object table
                         //- TODO move max-length-sub-folder to config setting
                         if (sub_folder.length() >= mMinSubstrLen && sub_folder.length() < mMaxStrLen) {
@@ -1246,19 +1297,13 @@ public class ProcessorService implements Runnable{
                                 p("Skipping HEXFILE:" + sub_folder);
                                 bCont = false;
                             }
-                            
+
                             //if the file is local, don't need to index the substrings since we have the info in records.db
                             if (isLocalUUID(_record.dbe_uuid.toString())) {
                                 bCont = false;
                             }
-                            
-                            if (bCont) {                                                                                
-                                //store full name in index so the file can be found in search.
-                                p("adding standard1: '" + _record.dbe_filename + "' name:" + strDateModified + " value: " + sAdder);
-                                ret_code = c8.insert_column(keyspace, "Standard1", _record.dbe_filename, strDateModified, sAdder, true);
-                                //ret_code = c8.insert_column(keyspace, "Standard1", _record.dbe_filename, strDateModified, dbe_md5, true);
-                                //ret_code = c8.insert_local_index(keyspace, "Standard1", _record.dbe_filename, strDateModified, dbe_md5, _record.dbe_filename);
-                                ++mStatistics.nInsert;
+
+                            if (bCont) {
 
                                 //-Generate substring (ie: documents do doc d... documents oc ocu...
                                 for (int idx = 0; idx < sub_folder.length() + 1; ++idx) {

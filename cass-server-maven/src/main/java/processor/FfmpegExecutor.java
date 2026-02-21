@@ -174,7 +174,7 @@ public class FfmpegExecutor {
                     
                 
                 }else{//mac
-                    String ffmpegexePath = _projectsFolderPath + "/../"  + "ffmpeg";
+                    String ffmpegexePath = _projectsFolderPath + "/ffmpeg";
                     
                     File ffmpegexeFile = new File(ffmpegexePath);
                     File _outputthumbFile = new File(_outputfolderPath + "/thumbnail.jpg");
@@ -199,7 +199,7 @@ public class FfmpegExecutor {
                     BufferedReader stdOutput = null;
                     String s = null;
 
-                    p = Runtime.getRuntime().exec("chmod +x " + scriptName);
+                    p = new ProcessBuilder("chmod", "+x", scriptName).start();
 
                     stdError = new BufferedReader(new InputStreamReader(p.getErrorStream()));
                             s = null;
@@ -216,7 +216,7 @@ public class FfmpegExecutor {
                         logwriter.write("[O]" + s + "\n");
                     }
 
-                    p = Runtime.getRuntime().exec(scriptName);
+                    p = new ProcessBuilder(scriptName).start();
                     p(outputm3u8File.getCanonicalPath());
 
                     stdError = new BufferedReader(new InputStreamReader(p.getErrorStream()));
@@ -247,7 +247,7 @@ public class FfmpegExecutor {
     }
 
     private String getCommandMac(String _projectsFolderPath, File ffmpegexeFile, File _input, File outputm3u8File, String _md5, File outputtsFile, File outputthumbnailFile,File outputAudioFile,File outputAudioJsonFile) throws UnsupportedEncodingException, IOException {
-        String ffmpegtxtPath = _projectsFolderPath + "/../ffmpeg.txt";
+        String ffmpegtxtPath = _projectsFolderPath + "/ffmpeg.txt";
         File ffmpegtxtFile = new File(ffmpegtxtPath);
         byte[] encoded = Files.readAllBytes(Paths.get(ffmpegtxtFile.getCanonicalPath()));
         String commandFile = new String(encoded, "UTF-8");
