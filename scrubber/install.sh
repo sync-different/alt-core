@@ -1,3 +1,10 @@
+# Purge cached project JARs from maven local repo to force fresh install
+echo "Purging cached project JARs from maven local repo..."
+rm -rf "$HOME/.m2/repository/com/alterante/utils/alterante/1.0.0"
+rm -rf "$HOME/.m2/repository/com/alterante/rtserver/rtserver/1.0.0"
+rm -rf "$HOME/.m2/repository/com/alterante/cass/cass-server/1.0.0"
+rm -rf "$HOME/.m2/repository/com/alterante/scrubber/scrubber/1.0.0"
+
 mvn install:install-file \
    -Dfile=./repo/binary-extractor-1.0-SNAPSHOT.jar \
    -DgroupId=com.alterante.utils \
@@ -140,13 +147,9 @@ if [ ! -f "$UBER_JAR_NAME" ]; then
    -Dpackaging=jar \
    -DgeneratePom=true
 
-  mvn install:install-file \
-     -Dfile=./repo/json-smart-1.2.jar \
-     -DgroupId=com.alterante.cass \
-     -DartifactId=jsonsmart \
-     -Dversion=1.2 \
-     -Dpackaging=jar \
-     -DgeneratePom=true
+  # json-smart is now resolved from Maven Central (net.minidev:json-smart:2.5.2)
+  # via rtserver-maven and scrubber-maven POM dependencies.
+  # Local json-smart-1.2.jar install removed (was unused — different groupId).
 
   mvn install:install-file \
      -Dfile=./repo/mailer.jar \

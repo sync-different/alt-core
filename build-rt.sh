@@ -1,3 +1,10 @@
+#!/bin/bash
+# Build rtserver module and propagate to uber JAR
+# Usage: ./build-rt.sh [--no-uber]
+
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+cd "$SCRIPT_DIR"
+
 echo "building commons"
 cd alt-common
 mvn clean
@@ -15,7 +22,6 @@ cp cass-server-maven/target/cass-server-1.0.0.jar ./rtserver-maven/lib/cass-serv
 cp cass-server-maven/target/cass-server-1.0.0.jar ./scrubber/repo/cass-server.jar
 
 echo "-------------------building rtserver.jar"
-rtserver.jar
 cd rtserver-maven
 ./sync.sh
 mvn clean
@@ -23,3 +29,17 @@ mvn compile
 mvn package
 cd ..
 cp rtserver-maven/target/rtserver-1.0-SNAPSHOT.jar ./scrubber/repo/rtserver.jar
+
+if [ "$1" != "--no-uber" ]; then
+    echo "-------------------rebuilding uber jar"
+    cd scrubber
+    ./sync.sh
+    ./install.sh
+    mvn clean
+    mvn compile
+    mvn package
+    cd ..
+    echo "-------------------uber JAR rebuilt successfully"
+else
+    echo "-------------------skipping uber JAR rebuild (--no-uber)"
+fi

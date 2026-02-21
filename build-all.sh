@@ -1,3 +1,10 @@
+#!/bin/bash
+# Build all modules and create uber JAR
+# This builds in dependency order: alt-common → cass-server → rtserver → scrubber-maven → uber JAR
+
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+cd "$SCRIPT_DIR"
+
 echo "building commons"
 cd alt-common
 mvn clean
@@ -41,4 +48,3 @@ cd scrubber
 mvn clean
 mvn compile
 mvn package
-
