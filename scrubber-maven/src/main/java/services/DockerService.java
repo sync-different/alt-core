@@ -9,13 +9,39 @@ import com.github.dockerjava.core.DockerClientBuilder;
 import com.github.dockerjava.core.command.ExecStartResultCallback;
 import com.github.dockerjava.httpclient5.ApacheDockerHttpClient;
 
+import utils.Appendage;
+
 import java.io.*;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.text.SimpleDateFormat;
 import java.time.Duration;
+import java.util.Calendar;
 import java.util.Properties;
+import java.util.Date;
+
 
 public class DockerService implements Runnable {
+
+    static String appendage = "";
+    static String appendageRW = "";
+    public static boolean bConsole = true;
+    
+    public static final String ANSI_RED = "\u001B[31m";
+    public static final String ANSI_GREEN = "\u001B[32m";
+    public static final String ANSI_YELLOW = "\u001B[33m";
+    public static final String ANSI_RESET = "\u001B[0m";
+
+    protected static void pw(String s) {
+        Date ts_start = Calendar.getInstance().getTime();
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy/MM/dd hh:mm:ss");
+        String sDate = sdf.format(ts_start);
+
+        if (bConsole) {
+            long threadID = Thread.currentThread().getId();
+            System.out.println(ANSI_YELLOW + sDate + " [WARNING] [SC.DockerService-" + threadID + "] " + s + ANSI_RESET);
+        }
+    }
 
     public static void main(String[] args) {
         new DockerService();
@@ -31,6 +57,12 @@ public class DockerService implements Runnable {
     public void run() {
 
         try {
+            Appendage app = new Appendage();
+            appendage = app.getAppendage();
+            appendageRW = app.getAppendageRW();
+
+            pw("****  DockerService appendage: " + appendage);
+
             while(true) {
                 if (isDockerRunning()) {
                     System.out.println("Launching Docker for LocalAI....");
@@ -120,7 +152,9 @@ public class DockerService implements Runnable {
     private void saveContainerId(String containerId) throws IOException {
         // ... inside your method
         Properties props = new Properties();
-        File f = new File(".."+File.separator+"scrubber"+File.separator+"config"+File.separator+"www-docker.properties");
+        //File f = new File(appendage + ".." + File.separator+"scrubber"+ File.separator + "config" + File.separator+"www-docker.properties");
+        pw("****  saveContainerId appendage: " + appendage);
+        File f = new File (appendage + "../scrubber/config/www-docker.properties");
         if (f.exists()) {
             try (InputStream is = new BufferedInputStream(new FileInputStream(f))) {
                 props.load(is);
@@ -129,12 +163,16 @@ public class DockerService implements Runnable {
             try (OutputStream os = new FileOutputStream(f)) {
                 props.store(os, "Updated by DockerService");
             }
+        } else {
+            pw("WARNING: Could not save Docker container ID to properties file because it does not exist: " + f.getAbsolutePath());
         }
     }
 
     private String getModelName() throws IOException {
         Properties props = new Properties();
-        File f = new File (".." + File.separator + "scrubber" + File.separator + "config" + File.separator + "www-docker.properties");
+        //File f = new File (appendage + ".." + File.separator + "scrubber" + File.separator + "config" + File.separator + "www-docker.properties");
+        pw ("****  getModelName appendage: " + appendage);
+        File f = new File (appendage + "../scrubber/config/www-docker.properties");
         String dockerLocalAIModelName = null;
         if (f.exists()) {
             InputStream is = new BufferedInputStream(new FileInputStream(f));
@@ -144,13 +182,17 @@ public class DockerService implements Runnable {
             if (prop != null) {
                 dockerLocalAIModelName = prop;
             }
+        } else {
+            pw("WARNING: Could not load Docker LocalAI model name from properties file because it does not exist: " + f.getAbsolutePath());
         }
         return dockerLocalAIModelName;
     }
     
     private String getImageName() throws IOException {
         Properties props = new Properties();
-        File f = new File (".." + File.separator + "scrubber" + File.separator + "config" + File.separator + "www-docker.properties");
+        //File f = new File (appendage + ".." + File.separator + "scrubber" + File.separator + "config" + File.separator + "www-docker.properties");
+        pw("****  getImageName appendage: " + appendage);
+        File f = new File (appendage + "../scrubber/config/www-docker.properties");
         String dockerLocalAIImageName = null;
         if (f.exists()) {
             InputStream is = new BufferedInputStream(new FileInputStream(f));
@@ -160,13 +202,17 @@ public class DockerService implements Runnable {
             if (prop != null) {
                 dockerLocalAIImageName = prop;
             }
+        } else {
+            pw("WARNING: Could not load Docker LocalAI image name from properties file because it does not exist: " + f.getAbsolutePath());
         }
         return dockerLocalAIImageName;
     }
     
     private String checkIfContainerExists() throws Exception {
         Properties props = new Properties();
-        File f = new File (".." + File.separator + "scrubber" + File.separator + "config" + File.separator + "www-docker.properties");
+        //File f = new File (appendage + ".." + File.separator + "scrubber" + File.separator + "config" + File.separator + "www-docker.properties");
+        pw("****  checkIfContainerExists appendage: " + appendage);
+        File f = new File (appendage + "../scrubber/config/www-docker.properties");
         String dockerLocalAIContainerId = null;
         if (f.exists()) {
             InputStream is = new BufferedInputStream(new FileInputStream(f));
@@ -176,7 +222,10 @@ public class DockerService implements Runnable {
             if (prop != null) {
                 dockerLocalAIContainerId = prop;
             }
+        } else {
+            pw("WARNING: Could not load Docker LocalAI container ID from properties file because it does not exist: " + f.getAbsolutePath());   
         }
+
         if (dockerLocalAIContainerId != null && !dockerLocalAIContainerId.isEmpty()) {
             System.out.println("Found existing LocalAI container ID: " + dockerLocalAIContainerId);
             return dockerLocalAIContainerId;
@@ -197,17 +246,21 @@ public class DockerService implements Runnable {
 
         DockerClient dockerClient = DockerClientBuilder.getInstance().withDockerHttpClient(httpClient).build();
 
-        // Pull image if not present
-        dockerClient.pullImageCmd("localai/localai:latest").start().awaitCompletion();
-
-        ExposedPort port= ExposedPort.tcp(8080);
-        Ports ports= new Ports();
-        ports.bind(port, Ports.Binding.bindPort(8080));
         String sImageName = getImageName();
         if (sImageName == null || sImageName.isEmpty()) {
             sImageName = "localai/localai:v3.1.1"; // Default image name if not specified
         }
         System.out.println("****  LocalAI Image : " + sImageName);
+
+        // Pull image if not present
+        pw("Pulling Docker image: " + sImageName);
+        dockerClient.pullImageCmd(sImageName).start().awaitCompletion();
+        pw("After Pulling Docker image: " + sImageName);
+
+        ExposedPort port= ExposedPort.tcp(8080);
+        Ports ports= new Ports();
+        ports.bind(port, Ports.Binding.bindPort(8080));
+        
         // Create container
         CreateContainerResponse container = dockerClient.createContainerCmd(sImageName)
                 .withCmd("sleep","500000")

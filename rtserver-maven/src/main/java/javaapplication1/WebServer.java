@@ -1773,6 +1773,7 @@ class Worker extends WebServer implements HttpConstants, Runnable {
                 String sFile = "";
                 String sFolder="";
                 String sFolderSel="";
+                String sTargetUuid="";
                 String sBlacklist="";
                 String sPermissions="";
 
@@ -1841,7 +1842,13 @@ class Worker extends WebServer implements HttpConstants, Runnable {
                     if (w.startsWith("uuid=")) {
                         sUUID = w.substring(5,w.length());
                         p("uuid: " + sUUID);
-                        if(sAuthUUID==null || sAuthUUID.trim().length()==0){
+                        // Use query param UUID if no cookie auth or cookie auth failed
+                        if(!bUserAuthenticated && sUUID.length() > 0){
+                            sAuthUUID=sUUID;
+                            if (isUUIDValid(sAuthUUID)) {
+                                bUserAuthenticated = true;
+                            }
+                        } else if(sAuthUUID==null || sAuthUUID.trim().length()==0){
                             sAuthUUID=sUUID;
                         }
                     }
@@ -2033,6 +2040,11 @@ class Worker extends WebServer implements HttpConstants, Runnable {
                         String sTmp = w.substring(11,w.length());
                         sFolderSel = URLDecoder.decode(sTmp, "UTF-8");
                         p("sFolderSel: " + sFolderSel);
+                    }
+                    if (w.startsWith("targetUuid=")) {
+                        String sTmp = w.substring(11,w.length());
+                        sTargetUuid = URLDecoder.decode(sTmp, "UTF-8");
+                        p("targetUuid: " + sTargetUuid);
                     }
 
                     if (w.startsWith("blacklist=")) {
@@ -3378,8 +3390,24 @@ class Worker extends WebServer implements HttpConstants, Runnable {
 
                         //case 3- specific path
                         if(sFolder!=null && !sFolder.equals("units") && !sFolder.equals("scanfolders")){
-                            // Validate folder is within configured scan roots
-                            boolean isWithinScanRoot = false;
+                            // Check if current user is admin AND explicitly browsing for scan folder selection
+                            // (bFolderSel=browse signals the Edit Scan Folders modal)
+                            boolean isAdminBrowse = false;
+                            if (sFolderSel != null && sFolderSel.equals("browse")) {
+                                UserSession usBrowse = uuidmap.get(sAuthUUID);
+                                if (usBrowse != null) {
+                                    String browseUser = usBrowse.getUsername();
+                                    UserCollection ucBrowse = UserCollection.getInstance();
+                                    User userBrowse = ucBrowse.getUsersByName(browseUser);
+                                    if (userBrowse != null && userBrowse.getRole().equals("admin")) {
+                                        isAdminBrowse = true;
+                                    }
+                                }
+                            }
+
+                            // Validate folder is within configured scan roots (bypass for admin)
+                            boolean isWithinScanRoot = isAdminBrowse;
+                            if (!isAdminBrowse) {
                             try {
                                 String canonicalRequested = new File(sFolder).getCanonicalPath();
                                 File scanConfigFile = new File(appendage + "../scrubber/config/www-rtbackup.properties");
@@ -3413,6 +3441,7 @@ class Worker extends WebServer implements HttpConstants, Runnable {
                             } catch (Exception e) {
                                 p("Error validating folder path: " + e.getMessage());
                             }
+                            } // end !isAdminBrowse
 
                             if (!isWithinScanRoot) {
                                 p("SECURITY: folder path rejected (not within scan roots): " + sFolder);
@@ -3445,14 +3474,16 @@ class Worker extends WebServer implements HttpConstants, Runnable {
                                         p("  file: '" + f.getName() + "'");
                                         sType = "file";
                                     }
-                                    String sExtension = getFileExtension(f.getName());
+                                    String sNameEscaped = f.getName().replace("\\", "\\\\").replace("\"", "\\\"");
+                                    String sExtension = getFileExtension(f.getName()).replace("\\", "\\\\").replace("\"", "\\\"");
                                     if (sType == "file") sMD5gf = getFileMD5(f.getName());
+                                    String sMD5Escaped = sMD5gf.replace("\\", "\\\\").replace("\"", "\\\"");
                                     result += "{" +
-                                            "\"" + "name\"" + ":" + "\""+ f.getName() + "\"" +
+                                            "\"" + "name\"" + ":" + "\""+ sNameEscaped + "\"" +
                                             "," +
                                             "\"" + "type\"" + ":" + "\"" + sType + "\"" +
                                             "," +
-                                            "\"" + "md5\"" + ":" + "\"" + sMD5gf + "\"" +
+                                            "\"" + "md5\"" + ":" + "\"" + sMD5Escaped + "\"" +
                                             "," +
                                             "\"" + "extension\"" + ":" + "\"" + sExtension + "\"" + "}";
                                     sMD5gf = ""; //clear after use
@@ -3494,8 +3525,9 @@ class Worker extends WebServer implements HttpConstants, Runnable {
                         if (isWin) {
                             projectsFolderPath = "..\\";
                         } else {
-                            projectsFolderPath = "../";
+                            projectsFolderPath = appendage + "../";
                         }
+                        p("  *** (gettrasnalte.json) projectsFolderPath: " + projectsFolderPath);
 
                         String outputfolderPath;
                         if (isWin) {
@@ -3812,6 +3844,99 @@ class Worker extends WebServer implements HttpConstants, Runnable {
                                 p("setfolderperm.fn: saved successfully");
                             } catch (Exception e) {
                                 p("setfolderperm.fn error: " + e.getMessage());
+                                e.printStackTrace();
+                                resultMsg = "{\"success\":false,\"error\":\"" + e.getMessage().replace("\"", "'") + "\"}";
+                            }
+                        }
+
+                        outFile.write(resultMsg.getBytes("UTF-8"));
+                        outFile.close();
+                    }
+
+// ***************************************************
+// setfolder-json.fn - Save scan folder paths to scan1.txt
+// Requires admin role. Accepts scandir parameter with URL-encoded semicolon-separated paths.
+// Format: ?scandir=%2FVolumes%2FMac%20HD%2FUsers%2F;%2FVolumes%2FMac%20HD%2FPictures%2F
+// ***************************************************
+                    if (fname.contains("setfolder-json.fn")) {
+                        p("   ***   -----setfolder-json.fn");
+
+                        // Get current user info - only admins can set scan folders
+                        UserSession us = uuidmap.get(sAuthUUID);
+                        String currentUser = null;
+                        boolean isAdmin = false;
+                        if (us != null) {
+                            currentUser = us.getUsername();
+                            UserCollection uc = UserCollection.getInstance();
+                            User user = uc.getUsersByName(currentUser);
+                            if (user != null && user.getRole().equals("admin")) {
+                                isAdmin = true;
+                            }
+                        }
+                        p("currentUser: " + currentUser + ", isAdmin: " + isAdmin);
+
+                        String resultMsg;
+                        if (!isAdmin) {
+                            resultMsg = "{\"success\":false,\"error\":\"Permission denied. Admin role required.\"}";
+                            p("setfolder-json.fn: permission denied - not admin");
+                        } else if (sFolder == null || sFolder.isEmpty()) {
+                            resultMsg = "{\"success\":false,\"error\":\"No scandir data provided.\"}";
+                            p("setfolder-json.fn: no scandir data");
+                        } else {
+                            try {
+                                // sFolder contains the URL-encoded semicolon-separated paths
+                                String scanDirValue = sFolder;
+                                p("setfolder-json.fn: scandir value = " + scanDirValue);
+
+                                // Validate each path exists and is a directory
+                                String decoded = URLDecoder.decode(scanDirValue, "UTF-8");
+                                String[] paths = decoded.split(";");
+                                StringBuilder validPaths = new StringBuilder();
+                                boolean first = true;
+                                for (String path : paths) {
+                                    if (path.trim().isEmpty()) continue;
+                                    File dir = new File(path.trim());
+                                    if (!dir.exists() || !dir.isDirectory()) {
+                                        p("setfolder-json.fn: invalid path: " + path);
+                                        continue;
+                                    }
+                                    if (!first) validPaths.append(";");
+                                    validPaths.append(URLEncoder.encode(path.trim(), "UTF-8").replaceAll("\\+", "%20"));
+                                    first = false;
+                                }
+
+                                if (validPaths.length() == 0) {
+                                    resultMsg = "{\"success\":false,\"error\":\"No valid folder paths provided.\"}";
+                                    p("setfolder-json.fn: no valid paths");
+                                } else {
+                                    // Resolve scan1.txt path from www-rtbackup.properties
+                                    File rtbackup = new File(appendage + "../scrubber/config/www-rtbackup.properties");
+                                    if (rtbackup.exists()) {
+                                        Properties props = new Properties();
+                                        InputStream isscan = new BufferedInputStream(new FileInputStream(rtbackup));
+                                        props.load(isscan);
+                                        isscan.close();
+                                        String scanFilePath = props.getProperty("scandir");
+                                        p("setfolder-json.fn: scanFilePath = " + scanFilePath);
+
+                                        if (scanFilePath != null && !scanFilePath.isEmpty()) {
+                                            File scanFile = new File(appendage + scanFilePath);
+                                            if (scanFile.exists()) {
+                                                int nRes = UpdateConfig("scandir", validPaths.toString(), appendage + scanFilePath);
+                                                p("setfolder-json.fn: UpdateConfig result = " + nRes);
+                                                resultMsg = "{\"success\":true}";
+                                            } else {
+                                                resultMsg = "{\"success\":false,\"error\":\"Scan config file not found: " + scanFilePath + "\"}";
+                                            }
+                                        } else {
+                                            resultMsg = "{\"success\":false,\"error\":\"scandir property not found in rtbackup config.\"}";
+                                        }
+                                    } else {
+                                        resultMsg = "{\"success\":false,\"error\":\"rtbackup config file not found.\"}";
+                                    }
+                                }
+                            } catch (Exception e) {
+                                p("setfolder-json.fn error: " + e.getMessage());
                                 e.printStackTrace();
                                 resultMsg = "{\"success\":false,\"error\":\"" + e.getMessage().replace("\"", "'") + "\"}";
                             }
@@ -4690,15 +4815,91 @@ class Worker extends WebServer implements HttpConstants, Runnable {
                         p("call logout.fn");
                         String result = "";
                         if (sAuthUUID.length() > 0) {
-                            UserSession us = uuidmap.get(sAuthUUID);
-                            if (us != null) {
-                                uuidmap.remove(sAuthUUID);
-                                result = "{" + "\"" + "status" + "\"" + ":" + "\"" + "ok" + "\"" + "}";
+                            // If targetUuid is provided, admin is removing another user's token
+                            if (sTargetUuid.length() > 0) {
+                                if (isUserAdmin(sAuthUUID)) {
+                                    UserSession usTarget = uuidmap.get(sTargetUuid);
+                                    if (usTarget != null) {
+                                        uuidmap.remove(sTargetUuid);
+                                        result = "{\"status\":\"ok\"}";
+                                    } else {
+                                        result = "{\"status\":\"invalid\"}";
+                                    }
+                                } else {
+                                    result = "{\"status\":\"unauthorized\"}";
+                                }
                             } else {
-                                result = "{" + "\"" + "status" + "\"" + ":" + "\"" + "invalid" + "\"" + "}";
+                                // Normal logout: remove caller's own token
+                                UserSession us = uuidmap.get(sAuthUUID);
+                                if (us != null) {
+                                    uuidmap.remove(sAuthUUID);
+                                    result = "{\"status\":\"ok\"}";
+                                } else {
+                                    result = "{\"status\":\"invalid\"}";
+                                }
                             }
                         } else {
-                            result = "{" + "\"" + "status" + "\"" + ":" + "\"" + "error-nouuid" + "\"" + "}";
+                            result = "{\"status\":\"error-nouuid\"}";
+                        }
+                        outFile.write(result.getBytes());
+                    }
+
+                    if (fname.contains("getlogins.fn")) {
+                        p("call getlogins.fn");
+                        String result = "";
+                        if (isUserAdmin(sAuthUUID)) {
+                            StringBuilder sb = new StringBuilder();
+                            sb.append("[");
+                            boolean first = true;
+                            java.util.Enumeration<String> keys = uuidmap.keys();
+                            while (keys.hasMoreElements()) {
+                                String key = keys.nextElement();
+                                UserSession usEntry = uuidmap.get(key);
+                                if (usEntry != null) {
+                                    if (!first) sb.append(",");
+                                    first = false;
+                                    String usernameEscaped = usEntry.getUsername().replace("\\", "\\\\").replace("\"", "\\\"");
+                                    sb.append("{");
+                                    sb.append("\"username\":\"" + usernameEscaped + "\",");
+                                    sb.append("\"uuid\":\"" + key + "\",");
+                                    sb.append("\"loginTime\":" + usEntry.getLoginTime() + ",");
+                                    sb.append("\"isRemote\":" + usEntry.isRemote());
+                                    sb.append("}");
+                                }
+                            }
+                            sb.append("]");
+                            result = sb.toString();
+                        } else {
+                            result = "{\"error\":\"unauthorized\"}";
+                        }
+                        outFile.write(result.getBytes());
+                    }
+
+                    if (fname.contains("gen_public.fn")) {
+                        p("call gen_public.fn");
+                        String result = "";
+                        if (isUserAdmin(sAuthUUID)) {
+                            // sBoxUser param contains the target username
+                            if (sBoxUser != null && !sBoxUser.isEmpty()) {
+                                User targetUser = UserCollection.getInstance().getUsersByName(sBoxUser);
+                                if (targetUser != null && !targetUser.getRole().equals("admin")) {
+                                    // Generate a new UUID token for this user
+                                    String publicUuid = UUID.randomUUID().toString();
+                                    UserSession publicSession = new UserSession(sBoxUser, publicUuid, "", "", false, 128);
+                                    uuidmap.put(publicUuid, publicSession);
+                                    String usernameEscaped = sBoxUser.replace("\\", "\\\\").replace("\"", "\\\"");
+                                    result = "{\"uuid\":\"" + publicUuid + "\",\"username\":\"" + usernameEscaped + "\"}";
+                                    p("Generated public token for user: " + sBoxUser + " uuid: " + publicUuid);
+                                } else if (targetUser != null && targetUser.getRole().equals("admin")) {
+                                    result = "{\"error\":\"Cannot generate public token for admin user\"}";
+                                } else {
+                                    result = "{\"error\":\"User not found\"}";
+                                }
+                            } else {
+                                result = "{\"error\":\"Missing username parameter\"}";
+                            }
+                        } else {
+                            result = "{\"error\":\"unauthorized\"}";
                         }
                         outFile.write(result.getBytes());
                     }
@@ -4890,6 +5091,7 @@ class Worker extends WebServer implements HttpConstants, Runnable {
                                 if(!cluster.isEmpty())
                                     us.setRemoteCluster(cluster);
                                 uuidmap.put(sessionUuid, us);
+                                uuid = sessionUuid; // Pass to printHeaders so it doesn't create a duplicate session
                                 p("Stored session for user: " + sBoxUser + " with UUID: " + sessionUuid);
 
                                 if(bMobile){

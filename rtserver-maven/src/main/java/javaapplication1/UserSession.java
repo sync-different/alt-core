@@ -9,6 +9,7 @@ public class UserSession {
     private String remoteCluster = null;
     private boolean aesencrypt;
     private int aessize;
+    private long loginTime;
 
     public UserSession(String username, String uuid, String passwordkey, String iv, boolean aesecrypt, int aessize) {
         this.username = username;
@@ -17,6 +18,7 @@ public class UserSession {
         this.iv = iv;
         this.aesencrypt = aesecrypt;
         this.aessize = aessize;
+        this.loginTime = System.currentTimeMillis();
     }
     
 
@@ -120,5 +122,19 @@ public class UserSession {
      */
     public void setAessize(int aessize) {
         this.aessize = aessize;
+    }
+
+    /**
+     * @return the loginTime (epoch millis)
+     */
+    public long getLoginTime() {
+        return loginTime;
+    }
+
+    /**
+     * @param loginTime the loginTime to set
+     */
+    public void setLoginTime(long loginTime) {
+        this.loginTime = loginTime;
     }
 }
