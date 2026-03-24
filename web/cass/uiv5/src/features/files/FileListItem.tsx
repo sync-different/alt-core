@@ -33,6 +33,7 @@ import {
   Description as DocumentIcon,
   Add as AddIcon,
   QueueMusic as QueueMusicIcon,
+  Link as LinkIcon,
 } from '@mui/icons-material';
 import { formatDate, formatFileSize, decodeFilename } from '../../utils/formatters';
 import { useFileSelection } from '../../hooks/useFileSelection';
@@ -42,6 +43,8 @@ import { addFiles as addToPlaylist, setOpen as setPlaylistOpen } from '../../sto
 import type { File } from '../../types/models';
 import type { AppDispatch, RootState } from '../../store/store';
 import { useSelector } from 'react-redux';
+import { selectIsAdmin } from '../../store/slices/authSlice';
+import { PublicLinkModal } from '../../components/modals/PublicLinkModal';
 
 interface ColumnWidths {
   thumbnail: number;
@@ -64,7 +67,9 @@ export function FileListItem({ file, onRowClick, onDownload, listSize = 'medium'
   const dispatch = useDispatch<AppDispatch>();
   const { isSelected, toggleSelect, handleClick } = useFileSelection();
   const selected = isSelected(file.nickname);
+  const isAdmin = useSelector(selectIsAdmin);
   const tags = useSelector((state: RootState) => state.tags.tags);
+  const [publicLinkOpen, setPublicLinkOpen] = useState(false);
   const [snackbar, setSnackbar] = useState<{ open: boolean; message: string; severity: 'success' | 'error' }>({
     open: false,
     message: '',
@@ -400,6 +405,13 @@ export function FileListItem({ file, onRowClick, onDownload, listSize = 'medium'
               </IconButton>
             </Tooltip>
           )}
+          {isAdmin && (
+            <Tooltip title="Public Link">
+              <IconButton onClick={() => setPublicLinkOpen(true)}>
+                <LinkIcon />
+              </IconButton>
+            </Tooltip>
+          )}
           <Tooltip title="Download">
             <IconButton onClick={handleDownload}>
               <DownloadIcon />
@@ -417,6 +429,13 @@ export function FileListItem({ file, onRowClick, onDownload, listSize = 'medium'
           </Tooltip>
         </Box>
       </TableCell>
+
+      {/* Public Link Modal */}
+      <PublicLinkModal
+        open={publicLinkOpen}
+        onClose={() => setPublicLinkOpen(false)}
+        file={file}
+      />
 
       <Snackbar
         open={snackbar.open}

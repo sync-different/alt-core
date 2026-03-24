@@ -13,6 +13,7 @@ import { FoldersPage } from './pages/FoldersPage';
 import { BackupPage } from './pages/BackupPage';
 import { SharesPage } from './pages/SharesPage';
 import { MultiClusterPage } from './pages/MultiClusterPage';
+import { AdminPage } from './pages/AdminPage';
 
 export const router = createBrowserRouter([
   {
@@ -53,6 +54,10 @@ export const router = createBrowserRouter([
           {
             path: 'clusters',
             element: <MultiClusterPage />,
+          },
+          {
+            path: 'admin',
+            element: <AdminPage />,
           },
         ],
       },

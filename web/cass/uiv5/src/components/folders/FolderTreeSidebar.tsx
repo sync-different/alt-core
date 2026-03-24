@@ -5,10 +5,11 @@
  */
 
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { useDispatch } from 'react-redux';
+import { useDispatch, useSelector } from 'react-redux';
 import {
   Box,
   Drawer,
+  Tooltip,
   Typography,
   IconButton,
   CircularProgress,
@@ -18,12 +19,15 @@ import {
   Menu as MenuIcon,
   Folder as FolderIcon,
   FolderOpen as FolderOpenIcon,
+  Edit as EditIcon,
 } from '@mui/icons-material';
 import { SimpleTreeView } from '@mui/x-tree-view/SimpleTreeView';
 import { TreeItem } from '@mui/x-tree-view/TreeItem';
 import { fetchFolders } from '../../services/fileApi';
 import { checkFolderPermission } from '../../services/folderPermissionApi';
 import { selectFolder } from '../../store/slices/folderPermissionsSlice';
+import { selectIsAdmin } from '../../store/slices/authSlice';
+import { EditFoldersModal } from './EditFoldersModal';
 import type { AppDispatch } from '../../store/store';
 
 const SIDEBAR_WIDTH = 280;
@@ -46,10 +50,12 @@ interface FolderTreeSidebarProps {
 
 export function FolderTreeSidebar({ open, onToggle, onFolderNavigate }: FolderTreeSidebarProps) {
   const dispatch = useDispatch<AppDispatch>();
+  const isAdmin = useSelector(selectIsAdmin);
   const [treeData, setTreeData] = useState<TreeNode[]>([]);
   const [loading, setLoading] = useState(false);
   const [expandedItems, setExpandedItems] = useState<string[]>([]);
   const [selectedItem, setSelectedItem] = useState<string | null>(null);
+  const [editModalOpen, setEditModalOpen] = useState(false);
 
   // Use ref to store callback to avoid re-renders causing issues
   const onFolderNavigateRef = useRef(onFolderNavigate);
@@ -334,9 +340,23 @@ export function FolderTreeSidebar({ open, onToggle, onFolderNavigate }: FolderTr
             }}
           >
             <Typography variant="h6">Folders</Typography>
-            <IconButton size="small" onClick={onToggle} sx={{ color: 'white' }}>
-              <ChevronLeftIcon />
-            </IconButton>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+              <Tooltip title={isAdmin ? 'Edit scan folders' : 'Admin only'}>
+                <span>
+                  <IconButton
+                    size="small"
+                    onClick={() => setEditModalOpen(true)}
+                    disabled={!isAdmin}
+                    sx={{ color: isAdmin ? 'white' : 'rgba(255,255,255,0.3)' }}
+                  >
+                    <EditIcon fontSize="small" />
+                  </IconButton>
+                </span>
+              </Tooltip>
+              <IconButton size="small" onClick={onToggle} sx={{ color: 'white' }}>
+                <ChevronLeftIcon />
+              </IconButton>
+            </Box>
           </Box>
 
           {/* Tree Content */}
@@ -395,6 +415,17 @@ export function FolderTreeSidebar({ open, onToggle, onFolderNavigate }: FolderTr
           </Box>
         </Box>
       </Drawer>
+
+      {/* Edit Folders Modal */}
+      <EditFoldersModal
+        open={editModalOpen}
+        onClose={() => setEditModalOpen(false)}
+        onSaved={() => {
+          // Refresh the sidebar tree after saving
+          dataLoadedRef.current = false;
+          loadRootFolders();
+        }}
+      />
     </>
   );
 }

@@ -37,6 +37,7 @@ import {
   Description as DocumentIcon,
   Add as AddIcon,
   QueueMusic as QueueMusicIcon,
+  Link as LinkIcon,
 } from '@mui/icons-material';
 import { formatDate, formatFileSize, decodeFilename } from '../../utils/formatters';
 import { useFileSelection } from '../../hooks/useFileSelection';
@@ -46,6 +47,8 @@ import { addFiles as addToPlaylist, setOpen as setPlaylistOpen } from '../../sto
 import type { File } from '../../types/models';
 import type { AppDispatch, RootState } from '../../store/store';
 import { useSelector } from 'react-redux';
+import { selectIsAdmin } from '../../store/slices/authSlice';
+import { PublicLinkModal } from '../../components/modals/PublicLinkModal';
 
 interface FileCardProps {
   file: File;
@@ -59,8 +62,10 @@ export function FileCard({ file, onCardClick, onDownload, showDetails = true, gr
   const dispatch = useDispatch<AppDispatch>();
   const { isSelected, toggleSelect, handleClick } = useFileSelection();
   const selected = isSelected(file.nickname);
+  const isAdmin = useSelector(selectIsAdmin);
   const tags = useSelector((state: RootState) => state.tags.tags);
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+  const [publicLinkOpen, setPublicLinkOpen] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
   const [snackbar, setSnackbar] = useState<{ open: boolean; message: string; severity: 'success' | 'error' }>({
     open: false,
@@ -76,6 +81,8 @@ export function FileCard({ file, onCardClick, onDownload, showDetails = true, gr
   const iconSize = gridSize === 'xs' ? 32 : gridSize === 'small' ? 48 : gridSize === 'medium' ? 80 : 120;
 
   const handleCardClick = (event: React.MouseEvent) => {
+    // Don't trigger if a modal/dialog is open
+    if (publicLinkOpen) return;
     // Don't trigger selection if clicking on checkbox or menu
     if ((event.target as HTMLElement).closest('.MuiCheckbox-root, .MuiIconButton-root')) {
       return;
@@ -497,7 +504,20 @@ export function FileCard({ file, onCardClick, onDownload, showDetails = true, gr
           <FolderIcon fontSize="small" sx={{ mr: 1 }} />
           Open Folder
         </MenuItem>
+        {isAdmin && (
+          <MenuItem onClick={(e) => { e.stopPropagation(); handleMenuClose(); setPublicLinkOpen(true); }}>
+            <LinkIcon fontSize="small" sx={{ mr: 1 }} />
+            Public Link
+          </MenuItem>
+        )}
       </Menu>
+
+      {/* Public Link Modal */}
+      <PublicLinkModal
+        open={publicLinkOpen}
+        onClose={() => setPublicLinkOpen(false)}
+        file={file}
+      />
 
       <Snackbar
         open={snackbar.open}

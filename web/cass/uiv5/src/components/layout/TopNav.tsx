@@ -33,10 +33,11 @@ import {
   Share as ShareIcon,
   Cloud as CloudIcon,
   InsertDriveFile as FileIcon,
+  AdminPanelSettings as AdminIcon,
 } from '@mui/icons-material';
-import { clearAuth, selectUsername } from '../../store/slices/authSlice';
+import { clearAuth, selectUsername, selectIsAdmin } from '../../store/slices/authSlice';
 import { setFilters } from '../../store/slices/filesSlice';
-import { fetchSearchSuggestions } from '../../services/fileApi';
+import { fetchSearchSuggestions, logoutCurrentUser } from '../../services/fileApi';
 import type { RootState } from '../../store/store';
 import Cookies from 'js-cookie';
 import { UploadZone } from '../upload/UploadZone';
@@ -72,6 +73,7 @@ export function TopNav() {
   const location = useLocation();
   const dispatch = useDispatch();
   const username = useSelector(selectUsername);
+  const isAdmin = useSelector(selectIsAdmin);
   const searchQuery = useSelector((state: RootState) => state.files.filters.searchQuery);
   const ftype = useSelector((state: RootState) => state.files.filters.ftype);
   const range = useSelector((state: RootState) => state.files.filters.range);
@@ -100,14 +102,20 @@ export function TopNav() {
     setAnchorEl(null);
   };
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    handleUserMenuClose();
+    // Invalidate session on backend first
+    try {
+      await logoutCurrentUser();
+    } catch {
+      // Continue with client-side cleanup even if backend call fails
+    }
     // Clear cookie
     Cookies.remove('uuid');
     // Clear localStorage
     localStorage.removeItem('uuid');
     // Clear auth state
     dispatch(clearAuth());
-    handleUserMenuClose();
     navigate('/login');
   };
 
@@ -262,6 +270,21 @@ export function TopNav() {
           >
             Multi-Cluster
           </Button>
+          {isAdmin && (
+            <Button
+              color="inherit"
+              onClick={() => navigate('/admin')}
+              startIcon={<AdminIcon sx={{ color: '#EF4444' }} />}
+              sx={{
+                fontWeight: isActive('/admin') ? 'bold' : 'normal',
+                borderBottom: isActive('/admin') ? '2px solid white' : 'none',
+                borderRadius: 0,
+                px: 2,
+              }}
+            >
+              Admin
+            </Button>
+          )}
         </Box>
 
         {/* Center: Search */}

@@ -373,9 +373,44 @@ export const fetchDeviceInfo = async (): Promise<DeviceInfo[]> => {
 /**
  * Fetch remote folders
  */
-export const fetchFolders = async (sFolder: string = 'scanfolders'): Promise<Folder[]> => {
+export const fetchFolders = async (sFolder: string = 'scanfolders', options?: { browse?: boolean }): Promise<Folder[]> => {
+  const params: Record<string, string> = { sFolder };
+  if (options?.browse) {
+    params.bFolderSel = 'browse';
+  }
   const response = await api.get('/cass/getfolders-json.fn', {
-    params: { sFolder }
+    params,
+    // Request as text to handle backend JSON with unescaped backslashes in filenames.
+    // Backend may write raw filenames like "..\rtserver\id_sec" into JSON without escaping,
+    // producing invalid sequences like \r (ambiguous with carriage return).
+    // Fix: escape all backslashes between JSON string delimiters before parsing.
+    responseType: 'text',
+    transformResponse: [(data: string) => {
+      try {
+        return JSON.parse(data);
+      } catch {
+        try {
+          // Process character by character to properly escape backslashes inside strings
+          let result = '';
+          let inString = false;
+          for (let i = 0; i < data.length; i++) {
+            const ch = data[i];
+            if (ch === '"' && (i === 0 || data[i - 1] !== '\\')) {
+              inString = !inString;
+              result += ch;
+            } else if (inString && ch === '\\') {
+              // Always double the backslash inside strings
+              result += '\\\\';
+            } else {
+              result += ch;
+            }
+          }
+          return JSON.parse(result);
+        } catch {
+          return [];
+        }
+      }
+    }],
   });
 
   // Backend returns array of folder names or objects with folder info
@@ -399,6 +434,32 @@ export const fetchFolders = async (sFolder: string = 'scanfolders'): Promise<Fol
       md5: typeof folder === 'object' ? folder.md5 : undefined,
     }))
     .filter((folder: Folder) => !folder.name.startsWith('.')); // Filter out hidden files/folders
+};
+
+/**
+ * Save scan folder paths to backend (admin only)
+ * Writes URL-encoded semicolon-separated paths to scan1.txt via setfolder-json.fn
+ */
+export const setScanFolders = async (folders: string[]): Promise<{ success: boolean; error?: string }> => {
+  // URL-encode each path and join with semicolons
+  const encoded = folders
+    .map((f) => encodeURIComponent(f))
+    .join(';');
+  const response = await api.get('/cass/setfolder-json.fn', {
+    params: { sFolder: encoded }
+  });
+  return response.data;
+};
+
+/**
+ * Fetch available volumes/drives (for folder browser)
+ * Returns raw volume paths from getfolders-json.fn?sFolder=units
+ */
+export const fetchVolumes = async (): Promise<string[]> => {
+  const response = await api.get('/cass/getfolders-json.fn', {
+    params: { sFolder: 'units' }
+  });
+  return Array.isArray(response.data) ? response.data : [];
 };
 
 /**
@@ -462,4 +523,60 @@ export const fetchFileInfo = async (md5: string): Promise<FileInfo> => {
     video_url_webapp: data.video_url_webapp,
     audio_url_webapp: data.audio_url_webapp,
   };
+};
+
+/**
+ * Login session info returned by getlogins.fn
+ */
+export interface LoginSession {
+  username: string;
+  uuid: string;
+  loginTime: number;
+  isRemote: boolean;
+}
+
+/**
+ * Fetch all active login sessions (admin only)
+ */
+export const fetchLogins = async (): Promise<LoginSession[]> => {
+  const response = await api.get('/cass/getlogins.fn');
+  return Array.isArray(response.data) ? response.data : [];
+};
+
+/**
+ * Remove a specific auth token (admin removing another user's session)
+ */
+export const removeAuthToken = async (targetUuid: string): Promise<{ status: string }> => {
+  const response = await api.get('/cass/logout.fn', {
+    params: { targetUuid }
+  });
+  return response.data;
+};
+
+/**
+ * Logout current user (invalidate own session on backend)
+ */
+export const logoutCurrentUser = async (): Promise<{ status: string }> => {
+  const response = await api.get('/cass/logout.fn');
+  return response.data;
+};
+
+/**
+ * Generate a public link auth token for a given user (admin only)
+ */
+export const generatePublicToken = async (username: string): Promise<{ uuid?: string; username?: string; error?: string }> => {
+  const response = await api.get('/cass/gen_public.fn', {
+    params: { boxuser: username }
+  });
+  return response.data;
+};
+
+/**
+ * Fetch list of non-admin users (for public link user selection)
+ * Uses existing getusersandemail.fn endpoint
+ */
+export const fetchUsersAndEmail = async (): Promise<{ username: string; email: string }[]> => {
+  const response = await api.get('/cass/getusersandemail.fn');
+  const data = response.data;
+  return Array.isArray(data?.users) ? data.users : [];
 };
