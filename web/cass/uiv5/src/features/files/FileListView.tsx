@@ -21,10 +21,9 @@ import { ImageViewer } from '../media/ImageViewer';
 import { VideoPlayer } from '../media/VideoPlayer';
 import { PdfViewer } from '../media/PdfViewer';
 import { DocumentViewer } from '../media/DocumentViewer';
-import { DownloadProgressModal } from '../../components/download/DownloadProgressModal';
 import { useFileSelection } from '../../hooks/useFileSelection';
 import { useMediaViewer } from '../../hooks/useMediaViewer';
-import { useFileDownload } from '../../hooks/useFileDownload';
+import { useDownloadManager } from '../../contexts/DownloadManagerContext';
 import type { File } from '../../types/models';
 import type { RootState } from '../../store/store';
 
@@ -156,8 +155,7 @@ export function FileListView({ files, hasMore, onLoadMore }: FileListViewProps) 
     openDocumentViewer,
     closeDocumentViewer,
   } = useMediaViewer();
-  const { isDownloading, downloadProgress, isComplete, currentFile, startDownload, cancelDownload, closeModal } =
-    useFileDownload();
+  const { addToQueue } = useDownloadManager();
 
   // Filter only image files for the viewer
   const imageFiles = files.filter(f => f.file_group === 'photo');
@@ -333,19 +331,12 @@ export function FileListView({ files, hasMore, onLoadMore }: FileListViewProps) 
           </TableHead>
           <TableBody>
             {sortedFiles.map((file) => (
-              <FileListItem key={file.nickname} file={file} onRowClick={handleRowClick} onDownload={startDownload} listSize={listSize} columnWidths={columnWidths} />
+              <FileListItem key={file.nickname} file={file} onRowClick={handleRowClick} onDownload={addToQueue} listSize={listSize} columnWidths={columnWidths} />
             ))}
           </TableBody>
         </Table>
       </TableContainer>
 
-      <DownloadProgressModal
-        open={isDownloading || isComplete}
-        fileName={currentFile?.name || ''}
-        progress={downloadProgress}
-        onCancel={isComplete ? closeModal : cancelDownload}
-        isComplete={isComplete}
-      />
     </>
   );
 }

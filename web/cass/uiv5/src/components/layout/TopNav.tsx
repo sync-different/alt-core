@@ -19,6 +19,7 @@ import {
   MenuItem,
   Avatar,
   Tooltip,
+  Badge,
 } from '@mui/material';
 import {
   Search as SearchIcon,
@@ -34,6 +35,7 @@ import {
   Cloud as CloudIcon,
   InsertDriveFile as FileIcon,
   AdminPanelSettings as AdminIcon,
+  Download as DownloadIcon,
 } from '@mui/icons-material';
 import { clearAuth, selectUsername, selectIsAdmin } from '../../store/slices/authSlice';
 import { setFilters } from '../../store/slices/filesSlice';
@@ -42,6 +44,7 @@ import type { RootState } from '../../store/store';
 import Cookies from 'js-cookie';
 import { UploadZone } from '../upload/UploadZone';
 import { useFolderUpload } from '../../contexts/FolderUploadContext';
+import { useDownloadManager } from '../../contexts/DownloadManagerContext';
 
 // Inline SVG logo
 const HivebotLogo = () => (
@@ -84,6 +87,10 @@ export function TopNav() {
 
   // Folder upload context - for permission-aware upload button
   const { currentFolder, canUpload, uploadDisabledReason, isOnFoldersPage } = useFolderUpload();
+
+  // Download manager context
+  const { openModal: openDownloadManager, queue } = useDownloadManager();
+  const activeDownloads = queue.filter(q => q.status === 'queued' || q.status === 'downloading').length;
 
   // Determine if upload button should be disabled
   const isUploadDisabled = isOnFoldersPage && !canUpload;
@@ -403,6 +410,24 @@ export function TopNav() {
                 <UploadIcon />
               </IconButton>
             </span>
+          </Tooltip>
+
+          {/* Download Manager Button */}
+          <Tooltip title="Download Manager" arrow>
+            <IconButton
+              color="inherit"
+              onClick={() => openDownloadManager()}
+              sx={{
+                backgroundColor: 'rgba(255, 255, 255, 0.15)',
+                '&:hover': {
+                  backgroundColor: 'rgba(255, 255, 255, 0.25)',
+                },
+              }}
+            >
+              <Badge badgeContent={activeDownloads} color="error" invisible={activeDownloads === 0}>
+                <DownloadIcon />
+              </Badge>
+            </IconButton>
           </Tooltip>
 
           {/* User Menu */}

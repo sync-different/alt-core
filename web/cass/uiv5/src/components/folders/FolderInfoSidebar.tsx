@@ -57,8 +57,7 @@ import { RIGHT_SIDEBAR_WIDTH } from '../layout/RightSidebar';
 import { useSidebarContext } from '../../contexts/SidebarContext';
 import { formatFileSize, formatDate } from '../../utils/formatters';
 import { addTags, fetchTags } from '../../services/fileApi';
-import { useFileDownload } from '../../hooks/useFileDownload';
-import { DownloadProgressModal } from '../download/DownloadProgressModal';
+import { useDownloadManager } from '../../contexts/DownloadManagerContext';
 import type { File } from '../../types/models';
 
 const SIDEBAR_WIDTH = 320;
@@ -83,16 +82,8 @@ export function FolderInfoSidebar() {
   const [tagSuccess, setTagSuccess] = useState<string | null>(null);
   const [availableTags, setAvailableTags] = useState<string[]>([]);
 
-  // Download manager hook
-  const {
-    isDownloading,
-    downloadProgress,
-    isComplete,
-    currentFile: downloadingFile,
-    startDownload,
-    cancelDownload,
-    closeModal,
-  } = useFileDownload();
+  // Download manager
+  const { addToQueue } = useDownloadManager();
 
   // Load permissions when folder is selected (admin only, folders only)
   useEffect(() => {
@@ -215,7 +206,7 @@ export function FolderInfoSidebar() {
       video_url_webapp: fileInfo.video_url_webapp,
     };
 
-    startDownload(fileForDownload);
+    addToQueue(fileForDownload);
   };
 
   const itemName = selectedFolder?.name || 'Unknown';
@@ -430,10 +421,9 @@ export function FolderInfoSidebar() {
                       fullWidth
                       startIcon={<DownloadIcon />}
                       onClick={handleDownload}
-                      disabled={isDownloading}
                       sx={{ mt: 2 }}
                     >
-                      {isDownloading ? 'Downloading...' : 'Download'}
+                      Download
                     </Button>
                   </>
                 )}
@@ -544,14 +534,6 @@ export function FolderInfoSidebar() {
         </Alert>
       </Snackbar>
 
-      {/* Download Progress Modal */}
-      <DownloadProgressModal
-        open={isDownloading || isComplete}
-        fileName={downloadingFile?.name || fileInfo?.name || ''}
-        progress={downloadProgress}
-        onCancel={isComplete ? closeModal : cancelDownload}
-        isComplete={isComplete}
-      />
     </>
   );
 }

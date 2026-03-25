@@ -6,8 +6,7 @@
 import { useEffect, useState } from 'react';
 import { useDispatch } from 'react-redux';
 import { Box, IconButton, Typography, Paper } from '@mui/material';
-import { useFileDownload } from '../../hooks/useFileDownload';
-import { DownloadProgressModal } from '../../components/download/DownloadProgressModal';
+import { useDownloadManager } from '../../contexts/DownloadManagerContext';
 import {
   Close as CloseIcon,
   Download as DownloadIcon,
@@ -30,16 +29,8 @@ export function PdfViewer({ onClose, file }: PdfViewerProps) {
   const dispatch = useDispatch();
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
-  // Download manager hook
-  const {
-    isDownloading,
-    downloadProgress,
-    isComplete,
-    currentFile: downloadingFile,
-    startDownload,
-    cancelDownload,
-    closeModal,
-  } = useFileDownload();
+  // Download manager
+  const { addToQueue } = useDownloadManager();
 
   // Set current file for context-aware chat
   useEffect(() => {
@@ -66,7 +57,7 @@ export function PdfViewer({ onClose, file }: PdfViewerProps) {
   // Handle download - use Download Manager modal
   const handleDownload = () => {
     if (file) {
-      startDownload(file);
+      addToQueue(file);
     }
   };
 
@@ -167,14 +158,6 @@ export function PdfViewer({ onClose, file }: PdfViewerProps) {
       <RightSidebar fullscreen={true} externalOpen={sidebarOpen} onOpenChange={setSidebarOpen} />
     </Box>
 
-    {/* Download Progress Modal */}
-    <DownloadProgressModal
-      open={isDownloading || isComplete}
-      fileName={downloadingFile?.name || file.name}
-      progress={downloadProgress}
-      onCancel={isComplete ? closeModal : cancelDownload}
-      isComplete={isComplete}
-    />
     </>
   );
 }

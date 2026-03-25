@@ -6,8 +6,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { Paper, Box, IconButton, Typography, Chip, Stack } from '@mui/material';
-import { useFileDownload } from '../../hooks/useFileDownload';
-import { DownloadProgressModal } from '../../components/download/DownloadProgressModal';
+import { useDownloadManager } from '../../contexts/DownloadManagerContext';
 import {
   Close as CloseIcon,
   Download as DownloadIcon,
@@ -37,16 +36,8 @@ export function VideoPlayer({ open, onClose, file }: VideoPlayerProps) {
   const [duration, setDuration] = useState(0);
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
-  // Download manager hook
-  const {
-    isDownloading,
-    downloadProgress,
-    isComplete,
-    currentFile: downloadingFile,
-    startDownload,
-    cancelDownload,
-    closeModal,
-  } = useFileDownload();
+  // Download manager
+  const { addToQueue } = useDownloadManager();
 
   // Listen for seek requests from chat timestamp clicks
   const seekToTime = useSelector((state: RootState) => selectSeekToTime(state));
@@ -96,7 +87,7 @@ export function VideoPlayer({ open, onClose, file }: VideoPlayerProps) {
   // Handle download - use Download Manager modal
   const handleDownload = () => {
     if (file) {
-      startDownload(file);
+      addToQueue(file);
     }
   };
 
@@ -391,14 +382,6 @@ export function VideoPlayer({ open, onClose, file }: VideoPlayerProps) {
       <RightSidebar fullscreen={true} externalOpen={sidebarOpen} onOpenChange={setSidebarOpen} />
     </Box>
 
-    {/* Download Progress Modal */}
-    <DownloadProgressModal
-      open={isDownloading || isComplete}
-      fileName={downloadingFile?.name || file.name}
-      progress={downloadProgress}
-      onCancel={isComplete ? closeModal : cancelDownload}
-      isComplete={isComplete}
-    />
     </>
   );
 }

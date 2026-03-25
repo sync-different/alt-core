@@ -10,9 +10,8 @@ import { ImageViewer } from '../media/ImageViewer';
 import { VideoPlayer } from '../media/VideoPlayer';
 import { PdfViewer } from '../media/PdfViewer';
 import { DocumentViewer } from '../media/DocumentViewer';
-import { DownloadProgressModal } from '../../components/download/DownloadProgressModal';
 import { useMediaViewer } from '../../hooks/useMediaViewer';
-import { useFileDownload } from '../../hooks/useFileDownload';
+import { useDownloadManager } from '../../contexts/DownloadManagerContext';
 import type { File } from '../../types/models';
 import type { RootState } from '../../store/store';
 
@@ -43,8 +42,7 @@ export function FileGridView({ files, hasMore, onLoadMore }: FileGridViewProps) 
     openDocumentViewer,
     closeDocumentViewer,
   } = useMediaViewer();
-  const { isDownloading, downloadProgress, isComplete, currentFile, startDownload, cancelDownload, closeModal } =
-    useFileDownload();
+  const { addToQueue } = useDownloadManager();
 
   // Filter only image files for the viewer
   const imageFiles = files.filter(f => f.file_group === 'photo');
@@ -133,19 +131,12 @@ export function FileGridView({ files, hasMore, onLoadMore }: FileGridViewProps) 
         <Grid container spacing={0}>
           {files.map((file) => (
             <Grid size={getGridSize()} key={file.nickname}>
-              <FileCard file={file} onCardClick={handleCardClick} onDownload={startDownload} showDetails={showGridDetails} gridSize={gridSize} />
+              <FileCard file={file} onCardClick={handleCardClick} onDownload={addToQueue} showDetails={showGridDetails} gridSize={gridSize} />
             </Grid>
           ))}
         </Grid>
       </Box>
 
-      <DownloadProgressModal
-        open={isDownloading || isComplete}
-        fileName={currentFile?.name || ''}
-        progress={downloadProgress}
-        onCancel={isComplete ? closeModal : cancelDownload}
-        isComplete={isComplete}
-      />
     </>
   );
 }

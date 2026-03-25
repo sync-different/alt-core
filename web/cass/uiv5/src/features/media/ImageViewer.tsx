@@ -7,8 +7,7 @@
 import { useState, useEffect } from 'react';
 import { useDispatch } from 'react-redux';
 import { Paper, Box, IconButton, Typography, Chip, Stack } from '@mui/material';
-import { useFileDownload } from '../../hooks/useFileDownload';
-import { DownloadProgressModal } from '../../components/download/DownloadProgressModal';
+import { useDownloadManager } from '../../contexts/DownloadManagerContext';
 import {
   Close as CloseIcon,
   Download as DownloadIcon,
@@ -58,16 +57,8 @@ export function ImageViewer({
   const [slideshowInterval, setSlideshowInterval] = useState<number | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
-  // Download manager hook
-  const {
-    isDownloading,
-    downloadProgress,
-    isComplete,
-    currentFile: downloadingFile,
-    startDownload,
-    cancelDownload,
-    closeModal,
-  } = useFileDownload();
+  // Download manager
+  const { addToQueue } = useDownloadManager();
 
   const currentFile = files[activeIndex];
 
@@ -159,7 +150,7 @@ export function ImageViewer({
   // Handle download - use Download Manager modal
   const handleDownload = () => {
     if (currentFile) {
-      startDownload(currentFile);
+      addToQueue(currentFile);
     }
   };
 
@@ -400,14 +391,6 @@ export function ImageViewer({
       <RightSidebar fullscreen={true} externalOpen={sidebarOpen} onOpenChange={setSidebarOpen} />
     </Box>
 
-    {/* Download Progress Modal */}
-    <DownloadProgressModal
-      open={isDownloading || isComplete}
-      fileName={downloadingFile?.name || currentFile?.name || ''}
-      progress={downloadProgress}
-      onCancel={isComplete ? closeModal : cancelDownload}
-      isComplete={isComplete}
-    />
     </>
   );
 }

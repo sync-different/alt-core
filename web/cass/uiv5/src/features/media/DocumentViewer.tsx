@@ -6,8 +6,7 @@
 import { useEffect } from 'react';
 import { useDispatch } from 'react-redux';
 import { Dialog, Box, IconButton, Typography, Paper } from '@mui/material';
-import { useFileDownload } from '../../hooks/useFileDownload';
-import { DownloadProgressModal } from '../../components/download/DownloadProgressModal';
+import { useDownloadManager } from '../../contexts/DownloadManagerContext';
 import {
   Close as CloseIcon,
   Download as DownloadIcon,
@@ -26,16 +25,8 @@ interface DocumentViewerProps {
 export function DocumentViewer({ open, onClose, file }: DocumentViewerProps) {
   const dispatch = useDispatch();
 
-  // Download manager hook
-  const {
-    isDownloading,
-    downloadProgress,
-    isComplete,
-    currentFile: downloadingFile,
-    startDownload,
-    cancelDownload,
-    closeModal,
-  } = useFileDownload();
+  // Download manager
+  const { addToQueue } = useDownloadManager();
 
   // Set current file for context-aware chat
   useEffect(() => {
@@ -49,7 +40,7 @@ export function DocumentViewer({ open, onClose, file }: DocumentViewerProps) {
   // Handle download - use Download Manager modal
   const handleDownload = () => {
     if (file) {
-      startDownload(file);
+      addToQueue(file);
     }
   };
 
@@ -148,14 +139,6 @@ export function DocumentViewer({ open, onClose, file }: DocumentViewerProps) {
         </Paper>
       </Box>
 
-      {/* Download Progress Modal */}
-      <DownloadProgressModal
-        open={isDownloading || isComplete}
-        fileName={downloadingFile?.name || file.name}
-        progress={downloadProgress}
-        onCancel={isComplete ? closeModal : cancelDownload}
-        isComplete={isComplete}
-      />
     </Dialog>
   );
 }

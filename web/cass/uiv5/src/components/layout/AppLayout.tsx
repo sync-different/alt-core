@@ -12,6 +12,8 @@ import { LeftSidebar } from './LeftSidebar';
 import { RightSidebar, RIGHT_SIDEBAR_WIDTH } from './RightSidebar';
 import { SidebarContext } from '../../contexts/SidebarContext';
 import { FolderUploadProvider } from '../../contexts/FolderUploadContext';
+import { DownloadManagerProvider } from '../../contexts/DownloadManagerContext';
+import { DownloadManagerModal } from '../download/DownloadManagerModal';
 import { fetchUserSessionInfo } from '../../services/fileApi';
 import { setIsAdmin } from '../../store/slices/authSlice';
 import type { AppDispatch } from '../../store/store';
@@ -36,6 +38,7 @@ export function AppLayout() {
   }, [dispatch]);
 
   return (
+    <DownloadManagerProvider>
     <FolderUploadProvider>
       <SidebarContext.Provider value={{ rightSidebarOpen }}>
         <Box sx={{ display: 'flex', flexDirection: 'column', height: '100vh' }}>
@@ -76,7 +79,9 @@ export function AppLayout() {
           <RightSidebar onOpenChange={setRightSidebarOpen} />
         </Box>
       </Box>
+      <DownloadManagerModal />
       </SidebarContext.Provider>
     </FolderUploadProvider>
+    </DownloadManagerProvider>
   );
 }

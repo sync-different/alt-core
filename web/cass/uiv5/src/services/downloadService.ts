@@ -6,8 +6,8 @@
 import type { File } from '../types/models';
 import { buildUrl } from '../utils/urlHelper';
 
-const CHUNK_SIZE = 10 * 1024 * 1024; // 10MB
-const MAX_RETRIES = 3; // Maximum retry attempts per chunk
+const DEFAULT_CHUNK_SIZE = 10 * 1024 * 1024; // 10MB
+const DEFAULT_MAX_RETRIES = 3; // Maximum retry attempts per chunk
 const RETRY_DELAY = 1000; // Initial retry delay in ms (will increase exponentially)
 
 export interface DownloadProgress {
@@ -16,17 +16,30 @@ export interface DownloadProgress {
   totalBytes: number;
   speedKBps: number;
   estimatedTimeRemaining: number;
+  elapsedTime: number;
   errorCount: number;
   retryCount: number;
   lastError?: string;
   currentStatus?: string;
+  averageSpeedKBps?: number;
+}
+
+export interface DownloadLogEntry {
+  type: 'info' | 'warning' | 'error' | 'success';
+  message: string;
+  timestamp: number;
 }
 
 export interface DownloadOptions {
   onProgress?: (progress: DownloadProgress) => void;
   onComplete?: () => void;
   onError?: (error: Error) => void;
+  onLog?: (entry: DownloadLogEntry) => void;
   signal?: AbortSignal;
+  chunkSize?: number;
+  maxRetries?: number;
+  saveAs?: boolean; // true = show file picker, false = save to default downloads folder
+  directoryHandle?: FileSystemDirectoryHandle | null; // pre-selected download folder
 }
 
 /**
@@ -44,13 +57,14 @@ async function downloadChunk(
   offset: number,
   chunkSize: number,
   chunkIndex: number,
+  maxRetries: number,
   signal?: AbortSignal,
   onRetry?: (attempt: number, error: string) => void
 ): Promise<Blob> {
   const chunkUrl = `${url}&filechunk_size=${chunkSize}&filechunk_offset=${offset}`;
   let lastError: Error | null = null;
 
-  for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
     try {
       const response = await fetch(chunkUrl, {
         method: 'GET',
@@ -64,7 +78,7 @@ async function downloadChunk(
           lastError = new Error(`HTTP 502 Bad Gateway for chunk ${chunkIndex + 1}`);
 
           // If we haven't exhausted retries, wait and retry
-          if (attempt < MAX_RETRIES) {
+          if (attempt < maxRetries) {
             const delay = RETRY_DELAY * Math.pow(2, attempt); // Exponential backoff
             onRetry?.(attempt + 1, `HTTP 502 - Retrying chunk ${chunkIndex + 1} in ${delay}ms...`);
             await sleep(delay);
@@ -87,7 +101,7 @@ async function downloadChunk(
       // Network error or other fetch error
       lastError = error as Error;
 
-      if (attempt < MAX_RETRIES) {
+      if (attempt < maxRetries) {
         const delay = RETRY_DELAY * Math.pow(2, attempt);
         onRetry?.(attempt + 1, `Network error on chunk ${chunkIndex + 1} - Retrying in ${delay}ms...`);
         await sleep(delay);
@@ -97,7 +111,7 @@ async function downloadChunk(
   }
 
   // If we get here, all retries failed
-  throw lastError || new Error(`Failed to download chunk ${chunkIndex + 1} after ${MAX_RETRIES} retries`);
+  throw lastError || new Error(`Failed to download chunk ${chunkIndex + 1} after ${maxRetries} retries`);
 }
 
 /**
@@ -111,10 +125,20 @@ async function downloadFileDirect(
   const url = buildUrl(`${file.file_path_webapp}&uuid=${uuid}`);
 
   try {
-    // Try to use File System Access API if available
+    // Determine how to write the file
     let writable: FileSystemWritableFileStream | null = null;
+    const useSaveAs = options.saveAs !== false; // default true
 
-    if ('showSaveFilePicker' in window) {
+    if (options.directoryHandle) {
+      // Write directly to pre-selected folder
+      try {
+        const fileHandle = await options.directoryHandle.getFileHandle(file.name, { create: true });
+        writable = await fileHandle.createWritable();
+      } catch (err) {
+        options.onError?.(new Error(`Cannot write to folder: ${(err as Error).message}`));
+        return;
+      }
+    } else if (useSaveAs && 'showSaveFilePicker' in window) {
       try {
         const fileExtension = file.name.split('.').pop();
         const handle = await (window as any).showSaveFilePicker({
@@ -134,70 +158,96 @@ async function downloadFileDirect(
       }
     }
 
-    const xhr = new XMLHttpRequest();
-    xhr.open('GET', url, true);
-    xhr.responseType = 'blob';
+    await new Promise<void>((resolve, reject) => {
+      const xhr = new XMLHttpRequest();
+      xhr.open('GET', url, true);
+      xhr.responseType = 'blob';
 
-    const startTime = Date.now();
+      const startTime = Date.now();
 
-    xhr.onprogress = (event) => {
-      if (event.lengthComputable && options.onProgress) {
-        const elapsedTimeSec = (Date.now() - startTime) / 1000;
-        const speedKBps = (event.loaded / 1024) / elapsedTimeSec;
-        const remainingBytes = event.total - event.loaded;
-        const estimatedTimeSec = remainingBytes / (speedKBps * 1024);
+      xhr.onprogress = (event) => {
+        if (event.lengthComputable && options.onProgress) {
+          const elapsedTimeSec = (Date.now() - startTime) / 1000;
+          const speedKBps = (event.loaded / 1024) / elapsedTimeSec;
+          const remainingBytes = event.total - event.loaded;
+          const estimatedTimeSec = remainingBytes / (speedKBps * 1024);
 
-        options.onProgress({
-          percentage: Math.round((event.loaded / event.total) * 100),
-          downloadedBytes: event.loaded,
-          totalBytes: event.total,
-          speedKBps,
-          estimatedTimeRemaining: estimatedTimeSec,
-          errorCount: 0,
-          retryCount: 0,
-          currentStatus: 'Downloading...',
+          options.onProgress({
+            percentage: Math.round((event.loaded / event.total) * 100),
+            downloadedBytes: event.loaded,
+            totalBytes: event.total,
+            speedKBps,
+            estimatedTimeRemaining: estimatedTimeSec,
+            elapsedTime: elapsedTimeSec,
+            errorCount: 0,
+            retryCount: 0,
+            currentStatus: 'Downloading...',
+          });
+        }
+      };
+
+      xhr.onload = async () => {
+        if (xhr.status === 200) {
+          const blob = xhr.response;
+
+          if (writable) {
+            await writable.write(blob);
+            await writable.close();
+          } else {
+            const blobUrl = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = blobUrl;
+            a.download = file.name;
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+            window.URL.revokeObjectURL(blobUrl);
+          }
+
+          // Report final progress with average speed
+          const totalElapsedSec = (Date.now() - startTime) / 1000;
+          const avgSpeedKBps = totalElapsedSec > 0 ? (file.file_size / 1024) / totalElapsedSec : 0;
+          options.onProgress?.({
+            percentage: 100,
+            downloadedBytes: file.file_size,
+            totalBytes: file.file_size,
+            speedKBps: avgSpeedKBps,
+            estimatedTimeRemaining: 0,
+            elapsedTime: totalElapsedSec,
+            errorCount: 0,
+            retryCount: 0,
+            currentStatus: 'Complete',
+            averageSpeedKBps: avgSpeedKBps,
+          });
+
+          options.onComplete?.();
+          resolve();
+        } else {
+          const error = new Error(`Download failed with status: ${xhr.status}`);
+          options.onError?.(error);
+          reject(error);
+        }
+      };
+
+      xhr.onerror = () => {
+        const error = new Error('Network error while downloading');
+        options.onError?.(error);
+        reject(error);
+      };
+
+      // Handle abort signal
+      if (options.signal) {
+        options.signal.addEventListener('abort', () => {
+          xhr.abort();
+          writable?.abort();
+          const error = new Error('Download cancelled');
+          options.onError?.(error);
+          reject(error);
         });
       }
-    };
 
-    xhr.onload = async () => {
-      if (xhr.status === 200) {
-        const blob = xhr.response;
-
-        if (writable) {
-          await writable.write(blob);
-          await writable.close();
-        } else {
-          const blobUrl = window.URL.createObjectURL(blob);
-          const a = document.createElement('a');
-          a.href = blobUrl;
-          a.download = file.name;
-          document.body.appendChild(a);
-          a.click();
-          a.remove();
-          window.URL.revokeObjectURL(blobUrl);
-        }
-
-        options.onComplete?.();
-      } else {
-        options.onError?.(new Error(`Download failed with status: ${xhr.status}`));
-      }
-    };
-
-    xhr.onerror = () => {
-      options.onError?.(new Error('Network error while downloading'));
-    };
-
-    // Handle abort signal
-    if (options.signal) {
-      options.signal.addEventListener('abort', () => {
-        xhr.abort();
-        writable?.abort();
-        options.onError?.(new Error('Download cancelled'));
-      });
-    }
-
-    xhr.send();
+      xhr.send();
+    });
   } catch (err) {
     options.onError?.(err as Error);
   }
@@ -213,18 +263,31 @@ async function downloadFileByChunks(
   const uuid = localStorage.getItem('uuid');
   const baseUrl = buildUrl(`${file.file_path_webapp}&uuid=${uuid}`);
 
+  const chunkSize = options.chunkSize || DEFAULT_CHUNK_SIZE;
+  const maxRetries = options.maxRetries ?? DEFAULT_MAX_RETRIES;
   const totalSize = file.file_size;
-  const totalChunks = Math.ceil(totalSize / CHUNK_SIZE);
+  const totalChunks = Math.ceil(totalSize / chunkSize);
   const downloadedChunks: Blob[] = [];
   let downloadedBytes = 0;
   let totalErrors = 0;
   let totalRetries = 0;
+  const log = options.onLog;
 
   try {
-    // Try to use File System Access API if available
+    // Determine how to write the file
     let writable: FileSystemWritableFileStream | null = null;
+    const useSaveAs = options.saveAs !== false; // default true
 
-    if ('showSaveFilePicker' in window) {
+    if (options.directoryHandle) {
+      // Write directly to pre-selected folder
+      try {
+        const fileHandle = await options.directoryHandle.getFileHandle(file.name, { create: true });
+        writable = await fileHandle.createWritable();
+      } catch (err) {
+        options.onError?.(new Error(`Cannot write to folder: ${(err as Error).message}`));
+        return;
+      }
+    } else if (useSaveAs && 'showSaveFilePicker' in window) {
       try {
         const fileExtension = file.name.split('.').pop();
         const handle = await (window as any).showSaveFilePicker({
@@ -245,6 +308,7 @@ async function downloadFileByChunks(
     }
 
     const startTime = Date.now();
+    log?.({ type: 'info', message: `Starting chunked download: ${totalChunks} chunks of ${chunkSize / (1024 * 1024)} MB`, timestamp: Date.now() });
 
     // Download each chunk
     for (let i = 0; i < totalChunks; i++) {
@@ -256,20 +320,22 @@ async function downloadFileByChunks(
         return;
       }
 
-      const offset = i * CHUNK_SIZE;
+      const offset = i * chunkSize;
 
       // Download chunk with retry logic
       try {
         const chunk = await downloadChunk(
           baseUrl,
           offset,
-          CHUNK_SIZE,
+          chunkSize,
           i,
+          maxRetries,
           options.signal,
           (retryAttempt, errorMsg) => {
             // Report retry attempt
             totalErrors++;
             totalRetries++;
+            log?.({ type: 'warning', message: errorMsg, timestamp: Date.now() });
 
             const elapsedTimeSec = (Date.now() - startTime) / 1000;
             const speedKBps = downloadedBytes > 0 ? (downloadedBytes / 1024) / elapsedTimeSec : 0;
@@ -284,10 +350,11 @@ async function downloadFileByChunks(
                 totalBytes: totalSize,
                 speedKBps,
                 estimatedTimeRemaining: estimatedTimeSec,
+                elapsedTime: elapsedTimeSec,
                 errorCount: totalErrors,
                 retryCount: totalRetries,
                 lastError: errorMsg,
-                currentStatus: `Retrying (attempt ${retryAttempt}/${MAX_RETRIES})...`,
+                currentStatus: `Retrying (attempt ${retryAttempt}/${maxRetries})...`,
               });
             }
           }
@@ -295,6 +362,7 @@ async function downloadFileByChunks(
 
         downloadedChunks.push(chunk);
         downloadedBytes += chunk.size;
+        log?.({ type: 'info', message: `Chunk ${i + 1}/${totalChunks} downloaded (${(chunk.size / 1024).toFixed(0)} KB)`, timestamp: Date.now() });
 
         // Calculate progress
         const elapsedTimeSec = (Date.now() - startTime) / 1000;
@@ -311,6 +379,7 @@ async function downloadFileByChunks(
             totalBytes: totalSize,
             speedKBps,
             estimatedTimeRemaining: estimatedTimeSec,
+            elapsedTime: elapsedTimeSec,
             errorCount: totalErrors,
             retryCount: totalRetries,
             currentStatus: `Downloading chunk ${i + 1}/${totalChunks}...`,
@@ -322,6 +391,7 @@ async function downloadFileByChunks(
       } catch (chunkError) {
         // Chunk download failed after all retries
         totalErrors++;
+        log?.({ type: 'error', message: `Chunk ${i + 1}/${totalChunks} failed after ${maxRetries} retries: ${(chunkError as Error).message}`, timestamp: Date.now() });
         throw chunkError;
       }
     }
@@ -343,8 +413,27 @@ async function downloadFileByChunks(
       URL.revokeObjectURL(blobUrl);
     }
 
+    // Report final progress with average speed
+    const totalElapsedSec = (Date.now() - startTime) / 1000;
+    const avgSpeedKBps = totalElapsedSec > 0 ? (totalSize / 1024) / totalElapsedSec : 0;
+    options.onProgress?.({
+      percentage: 100,
+      downloadedBytes: totalSize,
+      totalBytes: totalSize,
+      speedKBps: avgSpeedKBps,
+      estimatedTimeRemaining: 0,
+      elapsedTime: totalElapsedSec,
+      errorCount: totalErrors,
+      retryCount: totalRetries,
+      currentStatus: 'Complete',
+      averageSpeedKBps: avgSpeedKBps,
+    });
+
+    log?.({ type: 'success', message: `Download complete: ${(totalSize / (1024 * 1024)).toFixed(1)} MB in ${formatTimeRemaining(totalElapsedSec)}`, timestamp: Date.now() });
+
     options.onComplete?.();
   } catch (err) {
+    log?.({ type: 'error', message: `Download failed: ${(err as Error).message}`, timestamp: Date.now() });
     options.onError?.(err as Error);
   }
 }
@@ -356,7 +445,8 @@ export async function downloadFile(
   file: File,
   options: DownloadOptions = {}
 ): Promise<void> {
-  if (file.file_size > CHUNK_SIZE) {
+  const chunkSize = options.chunkSize || DEFAULT_CHUNK_SIZE;
+  if (file.file_size > chunkSize) {
     // Large file - download in chunks
     await downloadFileByChunks(file, options);
   } else {

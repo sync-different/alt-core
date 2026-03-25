@@ -23,11 +23,10 @@ import { ImageViewer } from '../features/media/ImageViewer';
 import { VideoPlayer } from '../features/media/VideoPlayer';
 import { PdfViewer } from '../features/media/PdfViewer';
 import { DocumentViewer } from '../features/media/DocumentViewer';
-import { DownloadProgressModal } from '../components/download/DownloadProgressModal';
 import { FolderInfoSidebar } from '../components/folders/FolderInfoSidebar';
 import { FolderTreeSidebar } from '../components/folders/FolderTreeSidebar';
 import { useMediaViewer } from '../hooks/useMediaViewer';
-import { useFileDownload } from '../hooks/useFileDownload';
+import { useDownloadManager } from '../contexts/DownloadManagerContext';
 import { useFolderUpload } from '../contexts/FolderUploadContext';
 import { selectFolder, selectSelectedFolder, selectIsSidebarOpen } from '../store/slices/folderPermissionsSlice';
 import type { AppDispatch } from '../store/store';
@@ -97,7 +96,7 @@ export function FoldersPage() {
     closeDocumentViewer,
   } = useMediaViewer();
 
-  const { isDownloading, downloadProgress, isComplete, currentFile, startDownload, cancelDownload, closeModal } = useFileDownload();
+  const { addToQueue } = useDownloadManager();
 
   useEffect(() => {
     loadFolders(currentFolder);
@@ -218,7 +217,7 @@ export function FoldersPage() {
         openDocumentViewer(file);
       } else {
         // For other files, download
-        startDownload(file);
+        addToQueue(file);
       }
     } else {
       // If it's a folder (or no type specified), navigate into it
@@ -629,13 +628,6 @@ export function FoldersPage() {
         />
       )}
 
-      <DownloadProgressModal
-        open={isDownloading || isComplete}
-        fileName={currentFile?.name || ''}
-        progress={downloadProgress}
-        onCancel={isComplete ? closeModal : cancelDownload}
-        isComplete={isComplete}
-      />
       </Box>
 
       {/* Menu Dropdowns */}

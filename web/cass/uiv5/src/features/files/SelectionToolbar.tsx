@@ -22,9 +22,10 @@ import {
   Delete as DeleteIcon,
 } from '@mui/icons-material';
 import { useFileSelection } from '../../hooks/useFileSelection';
+import { useDownloadManager } from '../../contexts/DownloadManagerContext';
 import { TagDialog } from '../tags/TagDialog';
 import { ShareDialog } from '../share/ShareDialog';
-import { addTags, downloadMultipleFiles } from '../../services/fileApi';
+import { addTags } from '../../services/fileApi';
 import { resetFiles } from '../../store/slices/filesSlice';
 import type { AppDispatch } from '../../store/store';
 
@@ -34,7 +35,8 @@ interface SelectionToolbarProps {
 
 export function SelectionToolbar({ inline = false }: SelectionToolbarProps) {
   const dispatch = useDispatch<AppDispatch>();
-  const { selectedCount, selectedFileIds, deselectAll } = useFileSelection();
+  const { selectedCount, selectedFiles, selectedFileIds, deselectAll } = useFileSelection();
+  const { addToQueue } = useDownloadManager();
   const [tagDialogOpen, setTagDialogOpen] = useState(false);
   const [shareDialogOpen, setShareDialogOpen] = useState(false);
   const [snackbar, setSnackbar] = useState<{ open: boolean; message: string; severity: 'success' | 'error' }>({
@@ -64,22 +66,13 @@ export function SelectionToolbar({ inline = false }: SelectionToolbarProps) {
     }
   };
 
-  const handleDownload = async () => {
-    try {
-      await downloadMultipleFiles(selectedFileIds);
-      setSnackbar({
-        open: true,
-        message: `Downloading ${selectedFileIds.length} file${selectedFileIds.length !== 1 ? 's' : ''}`,
-        severity: 'success',
-      });
-    } catch (error) {
-      console.error('Failed to download files:', error);
-      setSnackbar({
-        open: true,
-        message: 'Failed to download files',
-        severity: 'error',
-      });
-    }
+  const handleDownload = () => {
+    selectedFiles.forEach(file => addToQueue(file));
+    setSnackbar({
+      open: true,
+      message: `Added ${selectedFiles.length} file${selectedFiles.length !== 1 ? 's' : ''} to download queue`,
+      severity: 'success',
+    });
   };
 
   if (selectedCount === 0) {
