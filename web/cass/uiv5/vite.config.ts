@@ -5,6 +5,11 @@ import react from '@vitejs/plugin-react'
 export default defineConfig({
   plugins: [react()],
   base: '/cass/uiv5/dist/',
+  build: {
+    rollupOptions: {
+      input: 'i.html',
+    },
+  },
   server: {
     proxy: {
       '/cass': {

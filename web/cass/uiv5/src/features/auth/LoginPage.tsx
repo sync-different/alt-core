@@ -180,8 +180,9 @@ export function LoginPage() {
         console.warn('Generated client-side UUID (DEV MODE ONLY):', backendUuid);
       }
 
-      // Store UUID in localStorage (we use query params for auth, not cookies)
+      // Store UUID and username in localStorage (we use query params for auth, not cookies)
       localStorage.setItem('uuid', backendUuid);
+      localStorage.setItem('username', username);
 
       console.log('Stored UUID in localStorage:', backendUuid);
       console.log('Backend should have set cookie via Set-Cookie header');

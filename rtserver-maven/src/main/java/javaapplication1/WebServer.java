@@ -23,6 +23,7 @@ import utils.ShareController;
 import utils.Stopwatch;
 
 import java.io.*;
+import java.security.MessageDigest;
 import java.net.*;
 import java.nio.file.Files;
 import java.nio.file.Paths;
@@ -241,6 +242,60 @@ public class WebServer extends AbstractService {
             System.err.println("SECURITY: Path validation failed - " + e.getMessage());
             return false;
         }
+    }
+
+    /**
+     * Validates that a decoded file path is within allowed directories:
+     * the web root or any configured scan folder.
+     * Prevents path traversal via Base64-encoded requests.
+     *
+     * @param decodedPath The decoded filesystem path to validate
+     * @return true if the path is within an allowed directory
+     */
+    protected boolean isPathWithinAllowedDirs(String decodedPath) {
+        try {
+            String canonicalPath = new File(decodedPath).getCanonicalPath();
+
+            // Check against web root
+            if (root != null) {
+                String canonicalRoot = root.getCanonicalPath();
+                if (canonicalPath.startsWith(canonicalRoot + File.separator) || canonicalPath.equals(canonicalRoot)) {
+                    return true;
+                }
+            }
+
+            // Check against configured scan folders
+            File scanConfigFile = new File(appendage + "../scrubber/config/www-rtbackup.properties");
+            if (scanConfigFile.exists()) {
+                Properties scanProps = new Properties();
+                InputStream scanStream = new BufferedInputStream(new FileInputStream(scanConfigFile));
+                scanProps.load(scanStream);
+                scanStream.close();
+                String scanDirPath = scanProps.getProperty("scandir");
+                if (scanDirPath != null) {
+                    File scanFile = new File(appendage + scanDirPath);
+                    if (scanFile.exists()) {
+                        Properties scanDirProps = new Properties();
+                        InputStream scanDirStream = new BufferedInputStream(new FileInputStream(scanFile));
+                        scanDirProps.load(scanDirStream);
+                        scanDirStream.close();
+                        String scanDirs = scanDirProps.getProperty("scandir", "");
+                        for (String dir : scanDirs.split(";")) {
+                            if (!dir.isEmpty()) {
+                                String decodedDir = java.net.URLDecoder.decode(dir.trim(), "UTF-8");
+                                String canonicalScanRoot = new File(decodedDir).getCanonicalPath();
+                                if (canonicalPath.startsWith(canonicalScanRoot + File.separator) || canonicalPath.equals(canonicalScanRoot)) {
+                                    return true;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        } catch (Exception e) {
+            System.err.println("SECURITY: Path validation error - " + e.getMessage());
+        }
+        return false;
     }
 
     /* static class data/methods */
@@ -1295,6 +1350,7 @@ class Worker extends WebServer implements HttpConstants, Runnable {
         String sGetFileExt = "";
         String sFileExt = "";
         String sGetFileName = "";
+        String sChunkMD5 = "";
         bRedirectBulker = false;
 
         //Agregados para no usar redirectbolker porque usa variables globales que pueden ser modificadas
@@ -1551,12 +1607,18 @@ class Worker extends WebServer implements HttpConstants, Runnable {
 
                 if (fname.contains("fileexist.fn")||fname.contains("cass") && !fname.contains("cassvault")) {
 
-                    if (!fname.contains(".") && !fname.contains("backup")) {
+                    if (!fname.contains(".") && !fname.contains("backup") && !fname.contains("uiv5" + File.separator + "dist")) {
                         String fname2 = fname.substring(5,fname.length());
                         p("fname2: '" + fname2 + "'");
                         byte[] s2 = Base64.decode(fname2.toCharArray());
                         sPathDec = new String(s2);
                         p("req_decrypted: '" + sPathDec + "'");
+
+                        // Security: validate decoded path is within allowed directories
+                        if (!isPathWithinAllowedDirs(sPathDec)) {
+                            log("SECURITY: Base64 path traversal blocked: " + sPathDec + " from " + s.getInetAddress().getHostAddress(), 0);
+                            sPathDec = ""; // Clear path so file won't be found/served
+                        }
                     } else {
                         fname = root + File.separator + fname;
                         int nPos = fname.indexOf("?");
@@ -2666,6 +2728,22 @@ class Worker extends WebServer implements HttpConstants, Runnable {
                     p("FILE NOT EXISTS getCan() : " + targ.getCanonicalPath());
                     p("FILE NOT EXISTS getPath(): " + targ.getPath());
                     p("FILE NOT EXISTS getName(): " + targ.getName());
+
+                    // SPA fallback: if path is under uiv5/dist/ and file doesn't exist,
+                    // serve i.html (or index.html) so React Router can handle the route client-side
+                    if (sPathDec2.contains("cass" + File.separator + "uiv5" + File.separator + "dist" + File.separator)) {
+                        String spaDir = root + File.separator + "cass" + File.separator + "uiv5" + File.separator + "dist" + File.separator;
+                        File spaFile = new File(spaDir + "i.html");
+                        if (!spaFile.exists()) {
+                            spaFile = new File(spaDir + "index.html");
+                        }
+                        if (spaFile.exists()) {
+                            p("SPA fallback: serving " + spaFile.getName() + " for route: " + sPathDec2);
+                            targ = spaFile;
+                            sPathDec = spaFile.getPath();
+                            sPathDec2 = spaFile.getPath();
+                        }
+                    }
                 }
 
                 bPasswordValid = false;
@@ -6829,6 +6907,7 @@ class Worker extends WebServer implements HttpConstants, Runnable {
                                                 int bytesReadTotal = 0;
                                                 int bytesToRead;
                                                 int bytesRead;
+                                                MessageDigest chunkDigest = MessageDigest.getInstance("MD5");
 
                                                 while (bytesReadTotal < chunk_size) {
                                                     bytesToRead = (int)Math.min(buffer.length, chunk_size - bytesReadTotal);
@@ -6840,8 +6919,18 @@ class Worker extends WebServer implements HttpConstants, Runnable {
 
                                                     bytesReadTotal += bytesRead;
                                                     outFile.write(buffer, 0, bytesRead);
+                                                    chunkDigest.update(buffer, 0, bytesRead);
                                                     p("[getfile.fn] bytesRead: " + bytesRead + " totalread: " + bytesReadTotal);
                                                 }
+
+                                                // Compute chunk MD5 for F6 integrity verification
+                                                byte[] md5Bytes = chunkDigest.digest();
+                                                StringBuilder sb = new StringBuilder();
+                                                for (byte b : md5Bytes) {
+                                                    sb.append(String.format("%02x", b));
+                                                }
+                                                sChunkMD5 = sb.toString();
+                                                p("[getfile.fn] Chunk MD5: " + sChunkMD5);
 
                                                 p("[getfile.fn] Chunk complete. Total bytes read: " + bytesReadTotal);
                                             } finally {
@@ -6853,14 +6942,24 @@ class Worker extends WebServer implements HttpConstants, Runnable {
                                             p("[getfile.fn] FULL FILE CASE...");
                                             //full file case
                                             is = new FileInputStream(sTmpFileName);
+                                            MessageDigest fileDigest = MessageDigest.getInstance("MD5");
                                             try {
                                                 int n;
                                                 while ((n = is.read(buf)) > 0) {
                                                     outFile.write(buf, 0, n);
+                                                    fileDigest.update(buf, 0, n);
                                                 }
                                             } finally {
                                                 is.close();
                                             }
+                                            // Compute full file MD5 for F6 integrity verification
+                                            byte[] md5Bytes = fileDigest.digest();
+                                            StringBuilder sb = new StringBuilder();
+                                            for (byte b : md5Bytes) {
+                                                sb.append(String.format("%02x", b));
+                                            }
+                                            sChunkMD5 = sb.toString();
+                                            p("[getfile.fn] File MD5: " + sChunkMD5);
                                         }
 
                                         outFile.close();
@@ -8661,6 +8760,12 @@ class Worker extends WebServer implements HttpConstants, Runnable {
 
                     OK= printHeaders(targ, ps, bFull, sFileRange, false, sPathDec, bAuth, sBoxUser, sGetFileExt, failMobile, sKeyPassword, sIV, uuid, cluster, aesEncryptSession, aesSizeSession, sNamer, sGetFileName);
 
+                    // F6: Add chunk MD5 header for download integrity verification
+                    if (!sChunkMD5.isEmpty()) {
+                        ps.print("X-Chunk-MD5: " + sChunkMD5);
+                        ps.write(EOL);
+                    }
+
                     if (OK) {
                         if (bFull) {
                             sendFile(targ, ps);
@@ -9586,6 +9691,8 @@ class Worker extends WebServer implements HttpConstants, Runnable {
             ps.print("Access-Control-Allow-Headers: Cache-Control, X-Requested-With, Content-Type");
             ps.write(EOL);
             ps.print("Access-Control-Allow-Credentials: true");
+            ps.write(EOL);
+            ps.print("Access-Control-Expose-Headers: X-Chunk-MD5, Content-Disposition");
             ps.write(EOL);
 
         } else {

@@ -55,10 +55,11 @@ api.interceptors.response.use(
     if (error.response && error.response.status === 401) {
       // Clear authentication
       localStorage.removeItem('uuid');
+      localStorage.removeItem('username');
       document.cookie = 'uuid=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
 
       // Redirect to login page
-      window.location.href = '/login';
+      window.location.href = '/cass/uiv5/dist/login';
     }
 
     return Promise.reject(error);

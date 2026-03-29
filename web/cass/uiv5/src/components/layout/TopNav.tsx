@@ -121,6 +121,7 @@ export function TopNav() {
     Cookies.remove('uuid');
     // Clear localStorage
     localStorage.removeItem('uuid');
+    localStorage.removeItem('username');
     // Clear auth state
     dispatch(clearAuth());
     navigate('/login');
