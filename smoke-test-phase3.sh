@@ -2,8 +2,8 @@
 #
 # SMOKE TEST — Phase 3: Security Hardening
 #
-# Tests: Shutdown, config, fileexist, folders, nodes, extensions, email, invitation, shares
-# Total: 11 tests
+# Tests: Shutdown, config, fileexist, folders, nodes, extensions, email, invitation, shares, Base64 path traversal
+# Total: 15 tests
 #
 
 source "$(cd "$(dirname "$0")" && pwd)/smoke-common.sh"
@@ -112,6 +112,63 @@ if [ -z "$RESP" ]; then
     pass "3.11 getsharesettingstag.fn --noauth — blocked"
 else
     fail "3.11 getsharesettingstag.fn --noauth" "returned content without auth"
+fi
+
+# ─── Base64 Path Traversal (CVE-style) ────────────────────
+
+# 3.12 Base64 path traversal — /etc/passwd (noauth)
+test_start
+B64_PASSWD=$(echo -n "/etc/passwd" | base64)
+RESP=$(curl_noauth "$SERVER/cass${B64_PASSWD}" || true)
+if [ -z "$RESP" ] || echo "$RESP" | grep -q "not found\|404"; then
+    pass "3.12 Base64 path traversal /etc/passwd --noauth — blocked"
+else
+    if echo "$RESP" | grep -q "root:"; then
+        fail "3.12 Base64 path traversal /etc/passwd --noauth" "CRITICAL: file contents returned"
+    else
+        pass "3.12 Base64 path traversal /etc/passwd --noauth — blocked"
+    fi
+fi
+
+# 3.13 Base64 path traversal — /etc/passwd (with auth)
+test_start
+RESP=$(curl_auth "$SERVER/cass${B64_PASSWD}" || true)
+if [ -z "$RESP" ] || echo "$RESP" | grep -q "not found\|404"; then
+    pass "3.13 Base64 path traversal /etc/passwd --auth — blocked"
+else
+    if echo "$RESP" | grep -q "root:"; then
+        fail "3.13 Base64 path traversal /etc/passwd --auth" "CRITICAL: file contents returned"
+    else
+        pass "3.13 Base64 path traversal /etc/passwd --auth — blocked"
+    fi
+fi
+
+# 3.14 Base64 path traversal — relative path ../../etc/passwd (with auth)
+test_start
+B64_RELATIVE=$(echo -n "../../etc/passwd" | base64)
+RESP=$(curl_auth "$SERVER/cass${B64_RELATIVE}" || true)
+if [ -z "$RESP" ] || echo "$RESP" | grep -q "not found\|404"; then
+    pass "3.14 Base64 relative traversal ../../etc/passwd --auth — blocked"
+else
+    if echo "$RESP" | grep -q "root:"; then
+        fail "3.14 Base64 relative traversal ../../etc/passwd --auth" "CRITICAL: file contents returned"
+    else
+        pass "3.14 Base64 relative traversal ../../etc/passwd --auth — blocked"
+    fi
+fi
+
+# 3.15 Base64 path traversal — config file with passwords (with auth)
+test_start
+B64_CONFIG=$(echo -n "../scrubber/config/users.txt" | base64)
+RESP=$(curl_auth "$SERVER/cass${B64_CONFIG}" || true)
+if [ -z "$RESP" ] || echo "$RESP" | grep -q "not found\|404"; then
+    pass "3.15 Base64 traversal to config/users.txt --auth — blocked"
+else
+    if echo "$RESP" | grep -q "admin\|password\|valid"; then
+        fail "3.15 Base64 traversal to config/users.txt --auth" "CRITICAL: config file contents returned"
+    else
+        pass "3.15 Base64 traversal to config/users.txt --auth — blocked"
+    fi
 fi
 
 # ─── SUMMARY ──────────────────────────────────────────────

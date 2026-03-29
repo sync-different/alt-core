@@ -19,13 +19,13 @@ Automated regression test for all core API endpoints. Run this after any code ch
 ## Usage
 
 ```bash
-# Run all 112 tests across all 7 phases
+# Run all 116 tests across all 7 phases
 ./smoke-test.sh
 
 # Run individual phases
 ./smoke-test-phase1.sh       # Core API endpoints (26 tests)
 ./smoke-test-phase2.sh       # Security + uiv5 API (24 tests)
-./smoke-test-phase3.sh       # Security hardening (11 tests)
+./smoke-test-phase3.sh       # Security hardening (15 tests)
 ./smoke-test-phase4.sh       # Upload security (10 tests)
 ./smoke-test-phase5.sh       # Fuzz testing (15 tests)
 ./smoke-test-phase6.sh       # Upload/download functional (14 tests)
@@ -50,7 +50,7 @@ Automated regression test for all core API endpoints. Run this after any code ch
 | `smoke-test-phase6.sh` | Phase 6: Upload/download functional |
 | `smoke-test-phase7.sh` | Phase 7: Index tests |
 
-## Test Summary — 112 Tests
+## Test Summary — 116 Tests
 
 ### Phase 1: Core API Endpoints (26 tests)
 | Section | Tests | Description |
@@ -71,9 +71,15 @@ Automated regression test for all core API endpoints. Run this after any code ch
 | Security | 11 | Transcript auth/traversal, config write, sharing noauth, folder traversal, UUID probe |
 | uiv5 API | 13 | Chat clear, folder perms, user admin, sharing auth, ShareTypes crash |
 
-### Phase 3: Security Hardening (11 tests)
+### Phase 3: Security Hardening (15 tests)
 Tests 11 admin-only endpoints to verify they block unauthenticated requests:
 `shutdown.fn`, `setconfig.htm`, `fileexist.fn`, `getfolders.fn`, `getnodes.fn`, `getextensions.fn`, `getfileextensions.fn`, `getemailandgroups.fn`, `getinvitationmodal.fn`, `getsharesettingstag.fn`
+
+Plus 4 Base64 path traversal tests (3.12–3.15):
+- `/etc/passwd` via Base64 without auth — blocked
+- `/etc/passwd` via Base64 with auth — blocked
+- `../../etc/passwd` relative traversal with auth — blocked
+- `../scrubber/config/users.txt` config file access with auth — blocked
 
 ### Phase 4: Upload Security (10 tests)
 Tests upload endpoints on ports 8087 (Netty multipart) and 8081 (WebServer POST):
@@ -156,6 +162,7 @@ Tests the full file lifecycle: upload → verify indexed → delete → verify r
 
 | Environment | Date | Result | Notes |
 |-------------|------|--------|-------|
+| DEV (localhost) | 2026-03-28 | 116/116 PASS | Added Base64 path traversal tests (3.12–3.15) |
 | DEV (localhost) | 2026-02-21 | 112/112 PASS | Full suite including Phase 7 index lifecycle |
 | PROD (Application Support) | 2026-02-21 | 112/112 PASS | Phase 7 standalone: 12/12 in 1m 03s |
 
