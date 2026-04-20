@@ -41,7 +41,7 @@ angular.module('app.controllers').controller('FilterController', function (Conf,
 
    	var chunkSize=1024 * 1024*10;
 	var fileupload=new Dropzone("#my-dropzone",
-		{	
+		{
 			url:'/cass/file',
 			previewTemplate: previewTemplate,
 			clickable: ".fileinput-button",
@@ -53,6 +53,10 @@ angular.module('app.controllers').controller('FilterController', function (Conf,
             parallelChunkUploads: false,
             retryChunks: true,
             retryChunksLimit: 3,
+            // Send session cookie on cross-origin uploads (HTTP mode posts
+            // to port 8087 which is a different origin from the UI on 8081).
+            // Required by the upload auth gate (AUDIT Issues #2/#3, 2026-04-16).
+            withCredentials: true,
             init: function() {
                 let startTime = 0;
                 let lastLoaded = 0;
