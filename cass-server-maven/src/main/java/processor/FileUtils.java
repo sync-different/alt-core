@@ -519,7 +519,7 @@ public class FileUtils {
 
                         if (f.isDirectory()) {
                             if (!isBlacklistedContains(f.getCanonicalPath().toLowerCase()) && !isBlacklisted(f.getCanonicalPath().toLowerCase(), true)) {
-                                p("evaluating: '" + f.getName() + "'");
+                                //p("evaluating: '" + f.getName() + "'");
                                 if (f.getName().startsWith(".") || f.isHidden()) {
                                     p("Hidden folder found: " + f.getName());
                                     if (bSkipHidden) {
@@ -533,7 +533,7 @@ public class FileUtils {
                                         }                                                                    
                                     } 
                                 } else {
-                                    p("Found a directory to scan: " + f.getPath() + " " + f.getCanonicalPath());
+                                    //p("Found a directory to scan: " + f.getPath() + " " + f.getCanonicalPath());
                                     int nres = ScanDirectory(f.getPath(), _checkMD5);                            
                                     if (nres < 0) {
                                         log("WARNING: There was an error processing subdirectory: " + f.getPath(), 0);
@@ -546,7 +546,7 @@ public class FileUtils {
                         }
                         
                         if (f.isFile()) {
-                                p("[!!!] Found a file: " + f.getPath() + " " + f.getCanonicalPath());
+                                //p("[!!!] Found a file: " + f.getPath() + " " + f.getCanonicalPath());
                                 count++;
                                 
                                 //p("ZZZzzz...[scannerservice10ms]");
@@ -571,7 +571,7 @@ public class FileUtils {
                                     String sFileEncoded = URLEncoder.encode(f.getAbsolutePath(),"UTF-8");
                                     //String sFileEncoded = f.getAbsolutePath();
 
-                                    p("MD5Check: " + _checkMD5);
+                                    //p("MD5Check: " + _checkMD5);
                                     if (!_checkMD5) {
                                         pdebug(
                                                 f.getAbsolutePath() + "," + 
@@ -718,9 +718,9 @@ public class FileUtils {
                                             projectsFolderPath = "../";
                                         }
                                     }
-                                    p("PROJECTS PATH: " + projectsFolderPath);
+                                    //p("PROJECTS PATH: " + projectsFolderPath);
                                     File altfolder = new File(projectsFolderPath);
-                                    p("ALT_PATH: " + altfolder.getCanonicalPath());
+                                    //p("ALT_PATH: " + altfolder.getCanonicalPath());
                                     String filename = f.getName();
                                     String filetype = filename.substring(filename.lastIndexOf(".") + 1, filename.length());
                                     if (is_video(filetype.toLowerCase())){
@@ -779,7 +779,7 @@ public class FileUtils {
                                     }
                                                            
                         } else {
-                            pw("*** Skipping non-file entry: " + f.getAbsolutePath());
+                            //pw("*** Skipping non-file entry: " + f.getAbsolutePath());
                         }
 
                         f = null;
@@ -1243,7 +1243,7 @@ public class FileUtils {
             if (ct != null) {
                 //valid extension, check if file is hidden
                 String realfilename = _filename.substring(_filename.lastIndexOf(File.separator) + 1, _filename.length());
-                pw("realfilename='" + realfilename + "'");
+                //pw("realfilename='" + realfilename + "'");
                 if (realfilename.startsWith(".")) {
                     pw("Skipping hidden file: " + _filename);
                     bRes = false;

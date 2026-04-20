@@ -24,6 +24,7 @@ import io.netty.handler.logging.LogLevel;
 import io.netty.handler.logging.LoggingHandler;
 import io.netty.handler.ssl.SslContext;
 import io.netty.handler.ssl.util.SelfSignedCertificate;
+import java.util.Hashtable;
 
 /**
  * A HTTP server showing how to use the HTTP multipart package for file uploads and decoding post data.
@@ -32,9 +33,17 @@ public final class HttpUploadServer implements Runnable {
 
     static final boolean SSL = System.getProperty("ssl") != null;
     int PORT = Integer.parseInt(System.getProperty("port", SSL? "8443" : "8085"));
+    // Shared session map (populated by WebServer). Used by HttpUploadServerHandler
+    // to validate session cookies on incoming uploads (AUDIT Issue #2).
+    static Hashtable uuidmap;
 
-     public HttpUploadServer(int port) {
+    public HttpUploadServer(int port) {
         this.PORT = port;
+    }
+
+    public HttpUploadServer(int port, Hashtable uuidmap) {
+        this.PORT = port;
+        this.uuidmap = uuidmap;
     }
      
     @Override

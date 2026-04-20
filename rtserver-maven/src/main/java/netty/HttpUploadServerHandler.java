@@ -195,6 +195,56 @@ public class HttpUploadServerHandler extends SimpleChannelInboundHandler<HttpObj
             }
             responseContent.append("\r\n\r\n");
 
+            // Determine CORS Access-Control-Allow-Origin value using the
+            // allowlist helper. See computeAllowedOrigin() below for the rules.
+            String allowedOrigin = computeAllowedOrigin(request);
+
+            // CORS preflight: OPTIONS requests must succeed without auth so the
+            // browser learns that subsequent POST will be allowed. Return 200
+            // with CORS headers and stop further processing.
+            if (request.getMethod().equals(HttpMethod.OPTIONS)) {
+                FullHttpResponse preflight = new DefaultFullHttpResponse(
+                    HttpVersion.HTTP_1_1, HttpResponseStatus.OK);
+                preflight.headers().set(Names.ACCESS_CONTROL_ALLOW_ORIGIN, allowedOrigin);
+                preflight.headers().set(Names.ACCESS_CONTROL_ALLOW_METHODS, "POST, GET, PUT, OPTIONS, DELETE");
+                preflight.headers().set(Names.ACCESS_CONTROL_ALLOW_HEADERS, "Cache-Control, X-Requested-With, Content-Type, Cookie");
+                preflight.headers().set(Names.ACCESS_CONTROL_ALLOW_CREDENTIALS, "true");
+                preflight.headers().set(Names.ACCESS_CONTROL_MAX_AGE, "3600");
+                preflight.headers().set(Names.CONTENT_LENGTH, 0);
+                ctx.channel().writeAndFlush(preflight).addListener(ChannelFutureListener.CLOSE);
+                return;
+            }
+
+            // AUTH GATE (AUDIT Issue #2): reject POST uploads without a valid
+            // session cookie. GET requests (e.g., the /formpost welcome page)
+            // are allowed through — only POST/multipart triggers the check.
+            if (request.getMethod().equals(HttpMethod.POST)) {
+                String authUuid = null;
+                for (Cookie cookie : cookies) {
+                    if ("uuid".equals(cookie.getName())) {
+                        authUuid = cookie.getValue();
+                        break;
+                    }
+                }
+                boolean authenticated = false;
+                if (authUuid != null && HttpUploadServer.uuidmap != null) {
+                    authenticated = HttpUploadServer.uuidmap.get(authUuid) != null;
+                }
+                if (!authenticated) {
+                    FullHttpResponse resp = new DefaultFullHttpResponse(
+                        HttpVersion.HTTP_1_1, HttpResponseStatus.UNAUTHORIZED);
+                    resp.headers().set(Names.CONTENT_TYPE, "text/plain; charset=UTF-8");
+                    resp.headers().set(Names.CONTENT_LENGTH, 0);
+                    // CORS headers required so browser exposes the 401 to JS
+                    // (otherwise browser blocks and reports "No ACAO header").
+                    resp.headers().set(Names.ACCESS_CONTROL_ALLOW_ORIGIN, allowedOrigin);
+                    resp.headers().set(Names.ACCESS_CONTROL_ALLOW_CREDENTIALS, "true");
+                    ChannelFuture future = ctx.channel().writeAndFlush(resp);
+                    future.addListener(ChannelFutureListener.CLOSE);
+                    return;
+                }
+            }
+
             QueryStringDecoder decoderQuery = new QueryStringDecoder(request.getUri());
             Map<String, List<String>> uriAttributes = decoderQuery.parameters();
             for (Entry<String, List<String>> attr: uriAttributes.entrySet()) {
@@ -447,6 +497,50 @@ public class HttpUploadServerHandler extends SimpleChannelInboundHandler<HttpObj
         }
     }
 
+    // Decide the Access-Control-Allow-Origin value for a response.
+    //
+    // SECURITY: With Access-Control-Allow-Credentials: true (which we set so
+    // cookie-based auth works for cross-origin uploads from the UI), blindly
+    // reflecting any request Origin is equivalent to `Allow-Origin: *` and
+    // lets any website make authenticated cross-origin uploads. So we only
+    // mirror allowlisted origins:
+    //   1. Same host as the server (Host header matches Origin host[:port])
+    //   2. Same hostname, different port (UI on 8081 → Netty on 8087)
+    //   3. Well-known local dev origins (Vite 5173, localhost 8081, 127.0.0.1)
+    // For non-browser clients (no Origin header) we fall back to a same-Host
+    // mirror, which keeps curl/CLI working without opening CORS to arbitrary sites.
+    private static String computeAllowedOrigin(HttpRequest request) {
+        if (request == null) return "*";
+        String reqOrigin = request.headers().get("Origin");
+        String reqHost = request.headers().get("Host");
+        if (reqOrigin != null && !reqOrigin.isEmpty()) {
+            String originHostPort = reqOrigin.replaceFirst("^https?://", "");
+            // Same host as the server (e.g., demo3.hivebot.cc)
+            if (reqHost != null && originHostPort.equals(reqHost)) {
+                return reqOrigin;
+            }
+            // Same hostname, different port (UI on 8081 → Netty on 8087)
+            if (reqHost != null && reqHost.contains(":")) {
+                String hostname = reqHost.substring(0, reqHost.indexOf(':'));
+                if (originHostPort.startsWith(hostname + ":") || originHostPort.equals(hostname)) {
+                    return reqOrigin;
+                }
+            }
+            // Well-known local dev origins
+            if (reqOrigin.equals("http://localhost:5173")
+                    || reqOrigin.equals("http://localhost:8081")
+                    || reqOrigin.equals("http://127.0.0.1:8081")
+                    || reqOrigin.equals("https://localhost:8081")) {
+                return reqOrigin;
+            }
+        }
+        // No Origin header (curl, CLI) — fall back to same-Host mirror
+        if (reqHost != null && !reqHost.isEmpty()) {
+            return "http://" + reqHost;
+        }
+        return "*";
+    }
+
     private void writeResponse(Channel channel) {
         
         
@@ -467,9 +561,14 @@ public class HttpUploadServerHandler extends SimpleChannelInboundHandler<HttpObj
         FullHttpResponse response = new DefaultFullHttpResponse(
                 HttpVersion.HTTP_1_1, HttpResponseStatus.OK, buf);
         response.headers().set(CONTENT_TYPE, "text/plain; charset=UTF-8");
-        response.headers().set(HttpHeaders.Names.ACCESS_CONTROL_ALLOW_ORIGIN, "*");
-        response.headers().set(HttpHeaders.Names.ACCESS_CONTROL_ALLOW_METHODS,"POST, GET, PUT, OPTIONS, DELETE" );
-        response.headers().set(HttpHeaders.Names.ACCESS_CONTROL_ALLOW_HEADERS,"Cache-Control,X-Requested-With,Content-Type" );                
+        // Use the same allowlist logic as channelRead0() — mirror only
+        // same-host + known dev origins with Allow-Credentials:true to prevent
+        // CSRF via credentialed cross-origin uploads.
+        String respOrigin = computeAllowedOrigin(request);
+        response.headers().set(HttpHeaders.Names.ACCESS_CONTROL_ALLOW_ORIGIN, respOrigin);
+        response.headers().set(HttpHeaders.Names.ACCESS_CONTROL_ALLOW_METHODS, "POST, GET, PUT, OPTIONS, DELETE");
+        response.headers().set(HttpHeaders.Names.ACCESS_CONTROL_ALLOW_HEADERS, "Cache-Control, X-Requested-With, Content-Type, Cookie");
+        response.headers().set(HttpHeaders.Names.ACCESS_CONTROL_ALLOW_CREDENTIALS, "true");
         if (!close) {
             // There's no need to add 'Content-Length' header
             // if this is the last response.

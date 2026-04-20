@@ -227,5 +227,19 @@ public class UserCollection {
         }
         return -1;
     }
-    
+
+    // Return codes: 1=removed, 0=not found, -2=admin user protected
+    public int deleteUser(String username){
+        User user = getUsersByName(username);
+        if (user == null) {
+            return 0;
+        }
+        if ("admin".equals(user.getRole())) {
+            return -2;
+        }
+        users.remove(user);
+        saveUserCollection();
+        return 1;
+    }
+
 }
