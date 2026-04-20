@@ -1,6 +1,6 @@
 # Smoke Test — alt-core API Regression Suite
 
-Automated regression test for all core API endpoints. Run this after any code change to confirm nothing is broken.
+Automated regression suite for alt-core's HTTP API. Run after any code change to confirm nothing is broken. 12 phases, 168 tests, ~4 minutes end-to-end on DEV.
 
 ## Quick Start
 
@@ -9,7 +9,7 @@ Automated regression test for all core API endpoints. Run this after any code ch
 ./run.sh &                 # Start server (if not already running)
 ./build-cli.sh             # Build CLI (if not already built)
 
-# Run all tests
+# Run all phases
 ./smoke-test.sh
 
 # Run a single phase (faster for targeted testing)
@@ -19,85 +19,100 @@ Automated regression test for all core API endpoints. Run this after any code ch
 ## Usage
 
 ```bash
-# Run all 116 tests across all 7 phases
+# Run all 168 tests across 12 phases
 ./smoke-test.sh
 
-# Run individual phases
+# Individual phases (counts shown match what each script contains)
 ./smoke-test-phase1.sh       # Core API endpoints (26 tests)
 ./smoke-test-phase2.sh       # Security + uiv5 API (24 tests)
 ./smoke-test-phase3.sh       # Security hardening (15 tests)
 ./smoke-test-phase4.sh       # Upload security (10 tests)
 ./smoke-test-phase5.sh       # Fuzz testing (15 tests)
 ./smoke-test-phase6.sh       # Upload/download functional (14 tests)
-./smoke-test-phase7.sh       # Index tests (12 tests)
+./smoke-test-phase7.sh       # Index lifecycle (12 tests)
+./smoke-test-phase8.sh       # Upload content & policy (12 tests)
+./smoke-test-phase9.sh       # Session & auth lifecycle (14 tests)
+./smoke-test-phase10.sh      # HTTP protocol hardening (13 tests)
+./smoke-test-phase11.sh      # DoS resistance (7 tests)
+./smoke-test-phase12.sh      # Scanner regression corpus (10 tests)
 
 # Flags (work with all scripts)
 ./smoke-test-phase1.sh --verbose    # Show response body snippets
 ./smoke-test-phase1.sh --no-color   # Plain output (for CI/logs)
+
+# REMOTE mode — target a non-local server
+SMOKE_URL=https://alt.example.com SMOKE_USER=admin SMOKE_PASS='...' ./smoke-test.sh
+
+# Skip the test that locks out the IP for 5 minutes
+PHASE9_SKIP_RATELIMIT=1 ./smoke-test.sh
 ```
+
+**Phase 9 runs last.** Test 9.14 exercises the login rate limiter which per-IP-locks the host for 5 minutes after N failed attempts. Running Phase 9 last means earlier phases get fresh auth; restart the server after the suite completes to clear the lockout.
+
+## Phase Inventory
+
+| Phase | Tests | Scope | Runtime |
+|------:|------:|-------|---------|
+| 1 | 26 | Core API endpoints — auth, search, files, tags, folders, chat, NPE regression | ~5s |
+| 2 | 24 | Security gates + uiv5 API — sharing, transcript, folder traversal, UUID probing | ~15s |
+| 3 | 15 | Security hardening — shutdown, config, file oracle, info disclosure, Base64 path traversal | ~5s |
+| 4 | 10 | Upload security — path traversal, null bytes, empty filenames, dotfiles, chunked metadata | ~3s |
+| 5 | 15 | Fuzz / malformed inputs — oversized params, malformed JSON, XSS, null bytes, unicode | ~5s |
+| 6 | 14 | Upload/download functional — 3 upload paths, content integrity, chunked download, X-Chunk-MD5 | ~2 min |
+| 7 | 12 | Index lifecycle — upload → index → query → delete | ~2 min |
+| 8 | 12 | Upload content & policy validation — auth gates, scanner payloads, extension tricks, header injection | ~90s |
+| 9 | 14 | Session & authentication lifecycle — UUID entropy, logout invalidation, cookie flags, rate limit | ~60s (+5min IP lockout) |
+| 10 | 13 | HTTP protocol & response hardening — CRLF, CORS, smuggling, security headers | ~10s |
+| 11 | 7 | DoS resistance — concurrent load, parser DoS, orphan cleanup, unbounded result sets | ~45s |
+| 12 | 10 | Scanner regression corpus — replay real-world attack payloads | ~5s |
+| **Total** | **168** | | **~4 min** |
+
+Phase 11 shows 7 (not 8) because test 11.7 was removed 2026-04-17 after being superseded by 9.14.
 
 ## File Structure
 
 | File | Purpose |
 |------|---------|
-| `smoke-test.sh` | Master runner — executes all phases sequentially |
-| `smoke-common.sh` | Shared infrastructure: helpers, colors, preflight checks, auth |
-| `smoke-test-phase1.sh` | Phase 1: Core API endpoints |
-| `smoke-test-phase2.sh` | Phase 2: Security + uiv5 API coverage |
-| `smoke-test-phase3.sh` | Phase 3: Security hardening |
-| `smoke-test-phase4.sh` | Phase 4: Upload security |
-| `smoke-test-phase5.sh` | Phase 5: Fuzz testing |
-| `smoke-test-phase6.sh` | Phase 6: Upload/download functional |
-| `smoke-test-phase7.sh` | Phase 7: Index tests |
+| `smoke-test.sh` | Master runner — sequences phases 1-8, 10, 11, 12, 9 (Phase 9 runs last) |
+| `smoke-common.sh` | Shared helpers: auth, env detection (DEV/PROD/REMOTE), WAF awareness, colored output |
+| `smoke-test-phase<N>.sh` | One script per phase, runnable standalone |
 
-## Test Summary — 116 Tests
+## Environment Variables
 
-### Phase 1: Core API Endpoints (26 tests)
-| Section | Tests | Description |
-|---------|-------|-------------|
-| Auth | 2 | Login, session |
-| Search | 3 | query.fn, sidebar.fn, suggest.fn |
-| Files | 3 | File info, path traversal, no-param crash |
-| Tags | 2 | Tag list, XSS tag |
-| Folders | 2 | Folder list, permissions |
-| Chat | 2 | Pull, push |
-| System | 4 | Node info, property, cluster, users |
-| NPE checks | 7 | 7 endpoints without auth — must return 200 |
-| Param parsing | 1 | Parameter collision regression |
+Runtime is configured via env vars — nothing hardcoded beyond sensible defaults.
 
-### Phase 2: Security + uiv5 API Coverage (24 tests)
-| Section | Tests | Description |
-|---------|-------|-------------|
-| Security | 11 | Transcript auth/traversal, config write, sharing noauth, folder traversal, UUID probe |
-| uiv5 API | 13 | Chat clear, folder perms, user admin, sharing auth, ShareTypes crash |
+| Var | Default | Effect |
+|-----|---------|--------|
+| `SMOKE_URL` | `http://localhost:8081` | Target server. Non-localhost URL enables REMOTE mode |
+| `SMOKE_USER` | `admin` | Admin username |
+| `SMOKE_PASS` | `valid` | Admin password |
+| `SMOKE_NONADMIN_USER` | `user1` | Non-admin user for test 9.12 (role-check) |
+| `SMOKE_KNOWN_MD5` | — | Pin a specific file MD5 for test 11.5 instead of discovering via `query.fn` |
+| `PHASE9_SKIP_RATELIMIT` | `0` | Skip test 9.14 so running the suite doesn't lock the IP for 5 min |
+| `PHASE11_RATELIMIT` | `0` | Enable deprecated 11.7 (superseded by 9.14; left for history) |
+| `SMOKE_MIN_SIZE` | `1048576` | Min file size (bytes) for Phase 11.5 test-file discovery |
+| `SMOKE_MAX_SIZE` | `524288000` | Max file size for Phase 11.5 — avoids multi-GB files |
+| `SMOKE_FORCE_PHASE` | `0` | Force-run phases 4/6/7/8 in REMOTE mode (disabled by default since they need local FS) |
 
-### Phase 3: Security Hardening (15 tests)
-Tests 11 admin-only endpoints to verify they block unauthenticated requests:
-`shutdown.fn`, `setconfig.htm`, `fileexist.fn`, `getfolders.fn`, `getnodes.fn`, `getextensions.fn`, `getfileextensions.fn`, `getemailandgroups.fn`, `getinvitationmodal.fn`, `getsharesettingstag.fn`
+Flags:
 
-Plus 4 Base64 path traversal tests (3.12–3.15):
-- `/etc/passwd` via Base64 without auth — blocked
-- `/etc/passwd` via Base64 with auth — blocked
-- `../../etc/passwd` relative traversal with auth — blocked
-- `../scrubber/config/users.txt` config file access with auth — blocked
+| Flag | Effect |
+|------|--------|
+| `--verbose` | Print extra debug on select tests (JSON response bodies on SKIP, etc.) |
+| `--no-color` | Plain output (for CI/logs) |
+| `--long` | Phase 11: doubles concurrency and orphan counts for stress testing |
 
-### Phase 4: Upload Security (10 tests)
-Tests upload endpoints on ports 8087 (Netty multipart) and 8081 (WebServer POST):
-- Path traversal in filename and targetFolder
-- Null bytes, empty filenames, dotfiles
-- POST path traversal
-- Newline injection in targetFolder
-- Chunked upload metadata handling
+## REMOTE / WAF Mode
 
-### Phase 5: Fuzz Testing (15 tests)
-Sends malformed, oversized, or unexpected input to verify the server doesn't crash:
-- 2000-char search strings, 1000-char MD5s, 500-char tags, 10KB messages
-- Empty params, malformed JSON, deeply nested JSON
-- Negative/non-numeric values, null bytes, unicode/emoji
-- Server alive check after all fuzz tests
+When `SMOKE_URL` points to a non-localhost target, the suite enters REMOTE mode:
 
-### Phase 6: Upload/Download Functional (14 tests)
-End-to-end upload-to-download round trip verification:
+- **Phases 4, 6, 7, 8 are skipped by default** — they depend on local filesystem checks (incoming folder, direct port 8087 access). Force-run with `SMOKE_FORCE_PHASE=1` if the target is a LAN box you control.
+- **Phase 5 becomes WAF-aware** — `check_fuzz_status()` treats HTTP 400/403/406 as pass. If Cloudflare/AWS WAF blocks a malicious payload before it reaches the origin, that's a safe outcome. LOCAL mode still requires HTTP 200.
+- **Phase 12 payloads trigger WAF rules too** — those tests use HTTP-level safety checks (404 or no code execution) that work whether or not a WAF intercepted.
+
+## Phase 6: Upload/Download Functional — detail
+
+End-to-end round-trip verification across three upload paths:
 
 | # | Test | What It Verifies |
 |---|------|-----------------|
@@ -109,66 +124,60 @@ End-to-end upload-to-download round trip verification:
 | P6-006 | Chunked content integrity | Merged chunks match original concatenated content |
 | P6-007 | Full upload getfile.fn download | FileScanner indexes file, getfile.fn serves correct content |
 | P6-008 | Chunked getfile.fn download | Reassembled file downloadable with correct content |
-| P6-009 | Full upload chunked download | Download in 2 chunks via `filechunk_size`/`filechunk_offset`, reassemble, verify |
-| P6-010 | Chunked upload chunked download | Download in 3 chunks via `filechunk_size`/`filechunk_offset`, reassemble, verify |
-| P6-011 | uiv5-style upload (Netty 8087) | 3 chunks via form field name `upload.<name>.<total>.<idx>.p` — HTTP 200 |
-| P6-012 | uiv5-style Netty reassembly | ProcessorService reassembles .p files, content integrity verified |
+| P6-009 | Full upload chunked download | 2-chunk download via `filechunk_size`/`filechunk_offset`, X-Chunk-MD5 verified |
+| P6-010 | Chunked upload chunked download | 3-chunk download via `filechunk_size`/`filechunk_offset`, X-Chunk-MD5 verified |
+| P6-011 | uiv5-style upload (Netty 8087) | 3 chunks via form field name `upload.<name>.<total>.<idx>.p` |
+| P6-012 | uiv5-style Netty reassembly | ProcessorService reassembles .p files, integrity verified |
 | P6-013 | uiv5-style upload (8081→Netty) | 3 chunks via multipart POST to port 8081, forwarded to Netty via `connectToNetty()` |
-| P6-014 | 8081→Netty reassembly | ProcessorService reassembles .p files, content integrity verified |
+| P6-014 | 8081→Netty reassembly | ProcessorService reassembles .p files, integrity verified |
 
-**Timing notes:** Phase 6 tests poll for ProcessorService (~10-20s) and FileScanner (~30-45s) to process files. Total phase runtime: ~2-3 minutes.
-
-**Key implementation details:**
-- Chunk metadata fields (`dzchunkindex`, `dztotalchunkcount`) must be sent BEFORE the file field in multipart form data — Netty processes fields in order
-- Single-chunk mode (`dztotalchunkcount=1`) uses the chunked code path which correctly uses `getFilename()` instead of `getName()`
-- Download verification computes MD5 from the destination file, then polls `getfile.fn` until the content matches
-- Chunked download uses the server's custom `filechunk_size`/`filechunk_offset` query parameters (same protocol as `alt-core-cli`)
+**Timing:** Phase 6 polls for ProcessorService (~10-20s) and FileScanner (~30-45s). Total runtime: ~2-3 min.
 
 **Three upload paths tested:**
-- **Dropzone-style via Netty** (P6-001 to P6-008): Uses `dzchunkindex`/`dztotalchunkcount` metadata fields with `file` as the form field name. Netty takes the chunked code path
-- **uiv5-style direct to Netty** (P6-011/012): Form field name IS the chunk filename (`upload.<name>.<total>.<idx>.p`). Netty takes the non-chunked path where `getName()` returns the field name — this is how the React frontend uploads in HTTP mode
-- **uiv5-style via 8081→Netty** (P6-013/014): Same uiv5 multipart protocol, but POSTed to port 8081. `processPost()` detects the `.p` extension and forwards the entire HTTP request to Netty via `connectToNetty()` — this is the HTTPS production path where a reverse proxy only exposes port 8081
+- **Dropzone-style via Netty** (P6-001 to P6-008) — `dzchunkindex`/`dztotalchunkcount` metadata fields with `file` as the form field name. Netty chunked code path
+- **uiv5-style direct to Netty** (P6-011/012) — form field name IS the chunk filename (`upload.<name>.<total>.<idx>.p`). Non-chunked path where `getName()` returns the field name — the React frontend's HTTP-mode upload
+- **uiv5-style via 8081→Netty** (P6-013/014) — same uiv5 protocol, POSTed to 8081. `processPost()` detects `.p` and forwards to Netty. This is the HTTPS production path when a reverse proxy only exposes 8081
 
-### Phase 7: Index Tests (12 tests)
-Tests the full file lifecycle: upload → verify indexed → delete → verify removed. Confirms files appear in `getfile.fn`, `getfileinfo.fn`, and `query.fn` after indexing, and disappear from `getfile.fn` and `query.fn` after deletion. Phase 7 is fully self-contained.
+## Phase 7: Index Lifecycle — detail
 
-**Part A — Verify files are in the index after upload:**
+Upload → verify indexed → delete → verify removed.
 
 | # | Test | What It Verifies |
 |---|------|-----------------|
-| P7-001 | Full upload — getfile.fn serves content | Uploaded file is downloadable with correct content |
+| P7-001 | Full upload — getfile.fn serves content | Uploaded file downloadable with correct content |
 | P7-002 | Full upload — getfileinfo.fn returns metadata | `getfileinfo.fn?md5=` returns file metadata from index |
-| P7-003 | Full upload — query.fn returns MD5 | File's MD5 appears in `query.fn` JSON results |
-| P7-004 | Chunked upload — getfile.fn serves content | Reassembled chunked file is downloadable with correct content |
-| P7-005 | Chunked upload — getfileinfo.fn returns metadata | `getfileinfo.fn?md5=` returns file metadata from index |
-| P7-006 | Chunked upload — query.fn returns MD5 | Chunked file's MD5 appears in `query.fn` JSON results |
-
-**Part B — Delete files and verify removal from index:**
-
-| # | Test | What It Verifies |
-|---|------|-----------------|
-| P7-007 | Full upload deletion — notification created | `.D_` notification created and placed in `incoming/` |
-| P7-008 | Full upload deletion — getfile.fn stops serving | `getfile.fn` no longer serves the deleted file |
-| P7-009 | Full upload deletion — query.fn no longer returns | `query.fn` no longer returns deleted file's MD5 |
-| P7-010 | Chunked upload deletion — notification created | `.D_` notification created and placed in `incoming/` |
-| P7-011 | Chunked upload deletion — getfile.fn stops serving | `getfile.fn` no longer serves the deleted file |
-| P7-012 | Chunked upload deletion — query.fn no longer returns | `query.fn` no longer returns deleted file's MD5 |
+| P7-003 | Full upload — query.fn returns MD5 | File MD5 appears in `query.fn` results |
+| P7-004 | Chunked upload — getfile.fn serves content | Reassembled chunked file downloadable |
+| P7-005 | Chunked upload — getfileinfo.fn returns metadata | Metadata present in index |
+| P7-006 | Chunked upload — query.fn returns MD5 | Chunked file MD5 in search results |
+| P7-007 | Full upload deletion — notification created | `.D_` notification placed in `incoming/` |
+| P7-008 | Full upload deletion — getfile.fn stops serving | Download no longer serves deleted file |
+| P7-009 | Full upload deletion — query.fn no longer returns | Search no longer returns deleted MD5 |
+| P7-010 | Chunked upload deletion — notification created | `.D_` notification placed in `incoming/` |
+| P7-011 | Chunked upload deletion — getfile.fn stops serving | Download no longer serves deleted file |
+| P7-012 | Chunked upload deletion — query.fn no longer returns | Search no longer returns deleted MD5 |
 
 **Requirements:** Uber JAR must be built (`scrubber/target/my-app-1.0-SNAPSHOT.jar`) for compiling the `CreateDeleteNotification` helper.
 
-**Timing notes:** Phase 7 uploads files and waits for indexing (~60s), then deletion is typically processed within ~10s. Total phase runtime: ~2-3 minutes.
+**Timing:** uploads + indexing ~60s, deletion ~10s. Total runtime: ~2-3 min.
+
+## Phase 8–12: Security Hardening (added 2026-04)
+
+Phases 8-12 were added 2026-04-12 through 2026-04-17 in response to a demo-server incident where automated scanners landed 22 exploit payloads over 48 hours. The tests pair with backend fixes landed in the same commits (upload auth gates, HttpOnly/SameSite cookies, X-Content-Type-Options, X-Frame-Options).
+
+- **Phase 8** — Upload auth gates (AUDIT #2/#3), magic-byte / polyglot validation, extension tricks (`photo.jpg.exe`), header injection in filenames, scanner-payload regression
+- **Phase 9** — UUID entropy, session invalidation on logout, cookie flags (HttpOnly, SameSite), query-param UUID precedence, concurrent sessions, privilege escalation, stale tokens, login rate limit (5 attempts / 5 min)
+- **Phase 10** — CRLF / header injection, CORS origin validation, request smuggling, oversized headers, error-message info disclosure, fingerprinting surface, security response headers
+- **Phase 11** — High concurrent requests (connection exhaustion), parser DoS (deep JSON, amplifying inputs), orphan chunk cleanup (disk-fill), result-set DoS. Phase 11.5 exposed a real server concurrency bug and led to nine WebServer performance fixes — see AUDIT.md
+- **Phase 12** — Real-world scanner corpus: Next.js prototype-pollution (CVE-2025-29927 variant), VMware vSphere SOAP, Sonatype Nexus JEXL, Log4Shell, Spring4Shell, Struts OGNL, PHP / WordPress / cgi-bin probes. Payloads are inlined as heredocs — when a new payload shows up in logs, add a test here directly
 
 ## Verification Status
 
 | Environment | Date | Result | Notes |
 |-------------|------|--------|-------|
-| DEV (localhost) | 2026-03-28 | 116/116 PASS | Added Base64 path traversal tests (3.12–3.15) |
-| DEV (localhost) | 2026-02-21 | 112/112 PASS | Full suite including Phase 7 index lifecycle |
+| DEV (localhost) | 2026-04-17 | 168/168 PASS | 12 phases, full suite, REMOTE-mode aware |
+| DEV (localhost) | 2026-03-28 | 116/116 PASS | 7 phases, pre-security-expansion baseline |
 | PROD (Application Support) | 2026-02-21 | 112/112 PASS | Phase 7 standalone: 12/12 in 1m 03s |
-
-**Processor logs (both environments):** Zero errors across all cycles. Phase 7 files indexed (40 inserts, 24 hashes per upload pair) and deleted (2 deletions) cleanly.
-
-**Error logs (both environments):** Only "Error log started" initialization messages — no real errors.
 
 ## Exit Codes
 
@@ -179,11 +188,11 @@ Tests the full file lifecycle: upload → verify indexed → delete → verify r
 
 ## Requirements
 
-- Server running on `localhost:8081`
-- Upload server running on port `8087`
+- Server running on `localhost:8081` (or `SMOKE_URL`)
+- Upload server on port `8087` (DEV only — skipped in REMOTE mode)
 - `alt-core-cli` built (`alt-core-cli/target/alt-core-cli.jar`)
 - Default credentials: `admin` / `valid`
-- `curl`, `java`, `lsof`, `python3` available in PATH
+- `curl`, `java`, `lsof`, `python3` in PATH
 
 ## When to Run
 
@@ -191,7 +200,7 @@ Tests the full file lifecycle: upload → verify indexed → delete → verify r
 - After rebuilding the uber JAR
 - Before committing bug fixes
 - After merging branches
-- Anytime you want confidence the APIs are healthy
+- When onboarding a new environment (REMOTE mode against a staging target)
 
 ## Typical Workflow
 
@@ -216,7 +225,7 @@ sleep 5
 
 ## Adding New Tests
 
-Add tests to the appropriate phase script (e.g., `smoke-test-phase2.sh`):
+Add tests to the appropriate phase script. Phase 12 is the right home for any new scanner/exploit payload observed in logs:
 
 ```bash
 # Authenticated endpoint
@@ -229,9 +238,11 @@ fi
 ```
 
 All phase scripts source `smoke-common.sh` which provides:
-- `pass()`, `fail()`, `skip()` — test result functions
+- `pass()`, `fail()`, `skip()` — result functions
 - `curl_auth()`, `curl_noauth()` — authenticated/unauthenticated curl
 - `cli()` — alt-core-cli wrapper
+- `check_fuzz_status()` — WAF-aware HTTP status check for Phase 5
+- `skip_phase_if_remote()` — skip FS-dependent phases in REMOTE mode
 - `$UUID`, `$SERVER`, `$SCRIPT_DIR` — shared variables
 - `print_summary()` — per-phase summary output
 
@@ -239,6 +250,9 @@ All phase scripts source `smoke-common.sh` which provides:
 
 | File | Description |
 |------|-------------|
-| `INDEXING_PIPELINE.md` | Complete technical reference for the upload → index → query → download → delete pipeline |
-| `AUDIT.md` | Security audit summary covering all phases |
-| `AUDIT_ISSUES.md` | Open issues tracker with severity and fix status |
+| `INDEXING_PIPELINE.md` | Upload → index → query → download → delete pipeline reference |
+| `internal/SMOKE-TEST-IMPLEMENTED.md` | Full per-test detail, all 168 tests across 12 phases |
+| `internal/SMOKE-TEST-HISTORY.md` | How the suite grew from 116 → 168 tests, incident-driven timeline |
+| `internal/SMOKE-TEST-PLAN.md` | Open coverage gaps (symlinks/TOCTOU, etc.) — candidate Phase 13 |
+| `internal/AUDIT.md` | Security audit summary across all phases |
+| `internal/AUDIT_ISSUES.md` | Open issues tracker with severity and fix status |
