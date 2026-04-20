@@ -363,7 +363,9 @@ export function UploadZone({ open, onClose, targetFolder }: UploadZoneProps) {
           method: 'POST',
           body: formData,
           signal: abortController.signal,
-          credentials: isDevelopment ? 'include' : 'omit',
+          // Always include credentials. Port 8087 (Netty upload) requires
+          // a valid session cookie — AUDIT Issues #2/#3 closed 2026-04-16.
+          credentials: 'include',
         });
 
         if (!response.ok) {

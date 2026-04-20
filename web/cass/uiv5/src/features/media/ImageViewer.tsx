@@ -56,6 +56,9 @@ export function ImageViewer({
   const [isSlideshow, setIsSlideshow] = useState(false);
   const [slideshowInterval, setSlideshowInterval] = useState<number | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  // Per-slide cache-buster bumped on load error; forces the <img> to retry
+  // with a different URL rather than using the browser's cached failure.
+  const [reloadKey, setReloadKey] = useState<Record<string, number>>({});
 
   // Download manager
   const { addToQueue } = useDownloadManager();
@@ -66,6 +69,11 @@ export function ImageViewer({
   const LOAD_WINDOW = 3;
 
   const shouldLoadImage = (index: number) => {
+    // Always load the slide we're initially opening to. Swiper's onSlideChange
+    // can briefly report activeIndex=0 while it jumps to initialSlide, which
+    // would skip loading the target slide's <img> and leave it blank until the
+    // user clicks again. Anchoring on initialIndex avoids that race.
+    if (index === initialIndex) return true;
     return Math.abs(index - activeIndex) <= LOAD_WINDOW;
   };
 
@@ -292,12 +300,46 @@ export function ImageViewer({
               >
                 {shouldLoadImage(index) ? (
                   <img
-                    src={getImageUrlWithUuid(file)}
+                    src={(() => {
+                      const base = getImageUrlWithUuid(file);
+                      const bust = reloadKey[file.nickname];
+                      if (!bust) return base;
+                      // Append a cache-buster so the browser refetches
+                      // instead of returning its cached error/partial response.
+                      return `${base}${base.includes('?') ? '&' : '?'}_r=${bust}`;
+                    })()}
                     alt={decodeFilename(file.name)}
                     style={{
                       maxWidth: '100%',
                       maxHeight: '100%',
                       objectFit: 'contain',
+                    }}
+                    onError={() => {
+                      // Auto-retry once — this covers transient browser-cache
+                      // or network blips that sometimes leave the image blank.
+                      const current = reloadKey[file.nickname] || 0;
+                      if (current < 1) {
+                        console.warn('[ImageViewer] load failed, retrying once:', file.nickname);
+                        setReloadKey((prev) => ({ ...prev, [file.nickname]: Date.now() }));
+                      } else {
+                        console.error('[ImageViewer] load failed after retry:', file.nickname);
+                      }
+                    }}
+                    onLoad={(e) => {
+                      // Empty-body HTTP 200 is possible when the server briefly
+                      // returns no content (MapDB tx state, not-yet-indexed file,
+                      // etc.). That fires onLoad — NOT onError — but the image
+                      // has zero dimensions. Treat as a failure and retry once.
+                      const img = e.currentTarget;
+                      if (img.naturalWidth === 0 || img.naturalHeight === 0) {
+                        const current = reloadKey[file.nickname] || 0;
+                        if (current < 1) {
+                          console.warn('[ImageViewer] zero-dimension response, retrying once:', file.nickname);
+                          setReloadKey((prev) => ({ ...prev, [file.nickname]: Date.now() }));
+                        } else {
+                          console.error('[ImageViewer] zero-dimension after retry:', file.nickname);
+                        }
+                      }
                     }}
                   />
                 ) : (
