@@ -188,7 +188,7 @@ com.alterante.cli/
 
 ## Usage with Smoke Test
 
-The smoke test (`smoke-test.sh`) uses this CLI for login and some endpoint calls:
+The smoke test (`test-smoke/smoke-test.sh`) uses this CLI for login and some endpoint calls:
 
 ```bash
 # The smoke test calls the CLI like this:

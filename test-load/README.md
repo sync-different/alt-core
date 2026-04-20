@@ -87,7 +87,7 @@ t= 170s users=  4 ops=  0.4/s GET p50=  12 p95=  76ms | POST p50= 523 p95= 523ms
 Python 3.10+.
 
 ```bash
-cd load-test
+cd test-load
 python -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt

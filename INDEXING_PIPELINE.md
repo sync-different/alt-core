@@ -511,7 +511,7 @@ String sRtPath = sAppend + appendageRW + "../rtserver/";
 
 ## End-to-End Verification
 
-The complete indexing and deletion pipeline is verified by smoke test Phases 6 and 7 (`smoke-test-phase6.sh`, `smoke-test-phase7.sh`).
+The complete indexing and deletion pipeline is verified by smoke test Phases 6 and 7 (`test-smoke/smoke-test-phase6.sh`, `test-smoke/smoke-test-phase7.sh`).
 
 ### Phase 6 — Upload/Download Functional (14 tests)
 Tests the upload → ProcessorService → FileScanner → download round trip:

@@ -2,12 +2,17 @@
 
 Automated regression suite for alt-core's HTTP API. Run after any code change to confirm nothing is broken. 12 phases, 168 tests, ~4 minutes end-to-end on DEV.
 
+**Location:** all scripts live in `test-smoke/`. The examples below assume you run them from inside that directory. From the repo root, prefix with `test-smoke/` (e.g. `./test-smoke/smoke-test.sh`).
+
 ## Quick Start
 
 ```bash
-# Prerequisites: server running, CLI built
+# Prerequisites: server running, CLI built (run from repo root)
 ./run.sh &                 # Start server (if not already running)
 ./build-cli.sh             # Build CLI (if not already built)
+
+# Enter the smoke-test directory
+cd test-smoke
 
 # Run all phases
 ./smoke-test.sh
