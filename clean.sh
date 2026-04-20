@@ -9,6 +9,7 @@ rm -r ./rtserver/logs/*
 rm -r ./rtserver/streaming/*
 rm -r ./rtserver/tmp/*
 rm -r ./rtserver/batch*.idx
+rm -r ./rtserver/batch*.bad
 rm -r ./rtserver/config/*-multicluster.properties
 
 rm -r ./scrubber/testdb*
@@ -34,4 +35,7 @@ rm -r ./scrubber/data/localdb/Standard1/.*
 
 rm -r ./scrubber/mobilebackup/upload
 rm -r ./scrubber/mobilebackup
+
+cp ./scrubber/config/users.txt.clean ./scrubber/config/users.txt
+cp ./scrubber/config/scan1.txt.clean ./scrubber/config/scan1.txt
 
