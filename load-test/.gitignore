@@ -1,0 +1,10 @@
+sessions.json
+reports/
+# load-test/test-files/ is no longer used (real corpus lives at ../test-files/).
+# Leaving rules here just in case it comes back.
+test-files/*
+!test-files/.gitkeep
+**/__pycache__/
+*.pyc
+.venv/
+venv/
