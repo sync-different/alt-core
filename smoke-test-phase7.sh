@@ -18,6 +18,8 @@ printf "\n${BOLD}${CYAN}══════════════════�
 printf "${BOLD}${CYAN}  PHASE 7: Index Tests${RESET}\n"
 printf "${BOLD}${CYAN}═══════════════════════════════════════════════════${RESET}\n\n"
 
+skip_phase_if_remote "requires direct port 8087 access and local \$INCOMING/\$MOBILEBACKUP polling" "PHASE 7"
+
 printf "${BOLD}── Phase 7: Index Tests ──${RESET}\n"
 
 UPLOAD_PORT=8087
@@ -29,20 +31,26 @@ DELETE_HELPER_CLASS="$SCRIPT_DIR/test-files"
 if ! lsof -ti:$UPLOAD_PORT > /dev/null 2>&1; then
     skip "Index tests" "port $UPLOAD_PORT not running — skipping Phase 7 tests"
 elif [ ! -f "$UBER_JAR" ]; then
-    skip "Index tests" "uber JAR not found — skipping Phase 7 tests"
+    # Missing build artifact is a real problem, not an environment state — FAIL.
+    fail "Phase 7 setup" "uber JAR not found at $UBER_JAR — run ./build-uber.sh"
+    print_summary "PHASE 7"
+    exit 1
 elif [ ! -f "$DELETE_HELPER_SRC" ]; then
-    skip "Index tests" "CreateDeleteNotification.java not found — skipping Phase 7 tests"
+    fail "Phase 7 setup" "CreateDeleteNotification.java not found at $DELETE_HELPER_SRC — test repo incomplete"
+    print_summary "PHASE 7"
+    exit 1
 elif ! $MOBILEBACKUP_SCANNABLE; then
-    skip "Index tests" "mobilebackup not in scan config — skipping Phase 7 tests"
+    skip "Index tests" "mobilebackup not in scan config — skipping Phase 7 tests (legitimate env gap)"
 else
 
 # Compile the deletion helper if not already compiled
 if [ ! -f "$DELETE_HELPER_CLASS/CreateDeleteNotification.class" ]; then
-    javac -cp "$UBER_JAR" -d "$DELETE_HELPER_CLASS" "$DELETE_HELPER_SRC" 2>/dev/null
+    COMPILE_ERR=$(javac -cp "$UBER_JAR" -d "$DELETE_HELPER_CLASS" "$DELETE_HELPER_SRC" 2>&1)
     if [ $? -ne 0 ]; then
-        skip "Index tests" "failed to compile CreateDeleteNotification.java"
+        # Compilation failure is a real error — FAIL so it's visible.
+        fail "Phase 7 setup" "failed to compile CreateDeleteNotification.java: $(echo "$COMPILE_ERR" | head -c 200)"
         print_summary "PHASE 7"
-        exit $?
+        exit 1
     fi
 fi
 
@@ -71,6 +79,7 @@ printf "  ${CYAN}Uploading test files...${RESET}\n"
 
 # Upload full file (single-chunk mode)
 curl -s -o /dev/null --max-time 5 \
+    -H "Cookie: uuid=$UUID" \
     -F "dzchunkindex=0" \
     -F "dztotalchunkcount=1" \
     -F "file=@$IDX_TEST_DIR/idxfull-${IDX_TEST_ID}.txt;filename=${FULL_FNAME}" \
@@ -79,6 +88,7 @@ curl -s -o /dev/null --max-time 5 \
 # Upload chunked file (3 chunks)
 for CIDX in 0 1 2; do
     curl -s -o /dev/null --max-time 5 \
+        -H "Cookie: uuid=$UUID" \
         -F "dzchunkindex=$CIDX" \
         -F "dztotalchunkcount=3" \
         -F "file=@$IDX_TEST_DIR/idxchunk$((CIDX+1)).dat;filename=${CHUNKED_FNAME}" \
@@ -156,7 +166,7 @@ printf "  ${CYAN}Setup complete — full:%s chunked:%s${RESET}\n" \
 # ═════════════════════════════════════════════════════════════════════════
 
 # ── P7-001: Full upload — getfile.fn serves correct content ──────────────
-test_start
+test_start "7.1 full upload — getfile.fn serves correct content"
 
 if $FULL_INDEXED; then
     ENDPOINT="$SERVER/cass/getfile.fn?sNamer=$FULL_MD5"
@@ -172,7 +182,7 @@ else
 fi
 
 # ── P7-002: Full upload — getfileinfo.fn returns file metadata ────────────
-test_start
+test_start "7.2 full upload — getfileinfo.fn returns file in index"
 
 if $FULL_INDEXED; then
     ENDPOINT="$SERVER/cass/getfileinfo.fn?md5=$FULL_MD5"
@@ -188,7 +198,7 @@ else
 fi
 
 # ── P7-003: Full upload — query.fn returns MD5 in JSON array ──────────────
-test_start
+test_start "7.3 full upload — query.fn returns MD5 in results"
 
 if $FULL_INDEXED; then
     ENDPOINT="$SERVER/cass/query.fn?view=json&ftype=.all&foo=$FULL_FNAME&days=0&numobj=10"
@@ -214,7 +224,7 @@ else
 fi
 
 # ── P7-004: Chunked upload — getfile.fn serves correct content ───────────
-test_start
+test_start "7.4 chunked upload — getfile.fn serves correct content"
 
 if $CHUNKED_INDEXED; then
     ENDPOINT="$SERVER/cass/getfile.fn?sNamer=$CHUNKED_MD5"
@@ -230,7 +240,7 @@ else
 fi
 
 # ── P7-005: Chunked upload — getfileinfo.fn returns file metadata ─────────
-test_start
+test_start "7.5 chunked upload — getfileinfo.fn returns file in index"
 
 if $CHUNKED_INDEXED; then
     ENDPOINT="$SERVER/cass/getfileinfo.fn?md5=$CHUNKED_MD5"
@@ -246,7 +256,7 @@ else
 fi
 
 # ── P7-006: Chunked upload — query.fn returns MD5 in JSON array ──────────
-test_start
+test_start "7.6 chunked upload — query.fn returns MD5 in results"
 
 if $CHUNKED_INDEXED; then
     ENDPOINT="$SERVER/cass/query.fn?view=json&ftype=.all&foo=$CHUNKED_FNAME&days=0&numobj=10"
@@ -276,7 +286,7 @@ fi
 # ═════════════════════════════════════════════════════════════════════════
 
 # ── P7-007: Full upload deletion — .D_ notification created ──────────────
-test_start
+test_start "7.7 full upload deletion — .D_ notification created"
 
 if $FULL_INDEXED; then
     FULL_PATH="$FULL_DEST"
@@ -295,7 +305,7 @@ else
 fi
 
 # ── P7-008: Full upload deletion — getfile.fn stops serving ──────────────
-test_start
+test_start "7.8 full upload deletion — getfile.fn no longer serves co"
 
 if $FULL_INDEXED; then
     ENDPOINT="$SERVER/cass/getfile.fn?sNamer=$FULL_MD5"
@@ -324,7 +334,7 @@ fi
 # After deletion, getfile.fn stops serving the original file content.  The response
 # may be empty (len=0) or contain a short residual (e.g. 32-byte MD5 hash) before
 # fully flushing.  This test verifies the response is NOT the original file content.
-test_start
+test_start "7.9 full upload deletion — getfile.fn response differs fr"
 
 if $FULL_INDEXED && ${FULL_REMOVED:-false}; then
     ENDPOINT="$SERVER/cass/getfile.fn?sNamer=$FULL_MD5"
@@ -342,7 +352,7 @@ else
 fi
 
 # ── P7-010: Chunked upload deletion — .D_ notification created ───────────
-test_start
+test_start "7.10 chunked upload deletion — .D_ notification created"
 
 if $CHUNKED_INDEXED; then
     CHUNKED_PATH="$CHUNKED_DEST"
@@ -361,7 +371,7 @@ else
 fi
 
 # ── P7-011: Chunked upload deletion — getfile.fn stops serving ───────────
-test_start
+test_start "7.11 chunked upload deletion — getfile.fn no longer serve"
 
 if $CHUNKED_INDEXED; then
     ENDPOINT="$SERVER/cass/getfile.fn?sNamer=$CHUNKED_MD5"
@@ -388,7 +398,7 @@ fi
 
 # ── P7-012: Chunked upload deletion — getfile.fn response differs from original
 # Same verification as 7.9 but for the chunked upload.
-test_start
+test_start "7.12 chunked upload deletion — getfile.fn response differ"
 
 if $CHUNKED_INDEXED && ${CHUNKED_REMOVED:-false}; then
     ENDPOINT="$SERVER/cass/getfile.fn?sNamer=$CHUNKED_MD5"
