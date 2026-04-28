@@ -51,6 +51,7 @@ export function LoginPage() {
   const [rememberMe, setRememberMe] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [version, setVersion] = useState('');
   const navigate = useNavigate();
   const dispatch = useDispatch();
 
@@ -63,6 +64,20 @@ export function LoginPage() {
       setPassword(savedPassword);
       setRememberMe(true);
     }
+  }, []);
+
+  // Fetch server version for display under the logo
+  useEffect(() => {
+    let cancelled = false;
+    fetch(buildUrl('/cass/getsession.fn'), { credentials: 'include' })
+      .then((r) => (r.ok ? r.text() : ''))
+      .then((text) => {
+        if (cancelled) return;
+        const m = text.match(/"version"\s*:\s*"([^"]+)"/);
+        if (m && m[1] && m[1] !== '??') setVersion(m[1]);
+      })
+      .catch(() => { /* ignore — version is decorative */ });
+    return () => { cancelled = true; };
   }, []);
 
   const handleLogin = async (e: React.FormEvent) => {
@@ -217,9 +232,23 @@ export function LoginPage() {
     >
       <Box sx={{ textAlign: 'center', mt: 5 }}>
         {/* Logo */}
-        <Box sx={{ mb: 4 }}>
+        <Box sx={{ mb: 1 }}>
           <HivebotLogo />
         </Box>
+
+        {/* Version badge */}
+        <Typography
+          variant="caption"
+          sx={{
+            display: 'block',
+            mb: 3,
+            color: 'rgba(255, 255, 255, 0.6)',
+            fontFamily: 'monospace',
+            letterSpacing: '0.05em',
+          }}
+        >
+          {version ? `v${version}` : ' '}
+        </Typography>
 
         {/* Login Card */}
         <Card

@@ -1217,6 +1217,21 @@ public class WebServer extends AbstractService {
         Runtime.getRuntime().addShutdownHook(new Thread() {
             public void run() {
                 log("*** SHUTDOWN DETECTED ***", 0);
+                // Guarantee termination: several non-daemon threads (Netty
+                // event loops, RT worker pool, Scanner, Processor) can block
+                // clean JVM exit even after shutdown hooks complete. If we're
+                // still alive 5s after this hook fires, force-halt. Daemon so
+                // it doesn't block shutdown on its own.
+                Thread killer = new Thread(() -> {
+                    try {
+                        Thread.sleep(5000);
+                        log("*** SHUTDOWN TIMED OUT — FORCING HALT ***", 0);
+                        Runtime.getRuntime().halt(0);
+                    } catch (InterruptedException ignored) {
+                    }
+                }, "shutdown-killer");
+                killer.setDaemon(true);
+                killer.start();
                 wf.closeDB();
             }
         });
@@ -9093,15 +9108,53 @@ class Worker extends WebServer implements HttpConstants, Runnable {
 
     private String getVersion() throws IOException {
         String sBuild = "??";
-        String sFileB = "../../update.new";
-        if (!bWindowsServer) {
-            sFileB = "../../update.last";
+        // Historically this only checked "../../update.last" which was
+        // CWD-relative and only worked in one specific DEV layout. PROD from
+        // /Applications/ failed: jpackage sets CWD to "/" at launch and the
+        // file lives at Contents/app/update.last. Now try several strategies:
+        //   1. Bundle-relative via the JAR location (PROD-jpackage reliable)
+        //   2. Legacy CWD-relative paths (DEV compatibility)
+        String fname = bWindowsServer ? "update.new" : "update.last";
+        java.util.List<String> candidates = new java.util.ArrayList<>();
+
+        // 1. Resolve from the running JAR's location. In PROD jpackage builds,
+        //    the uber JAR lives at .../alt-core.app/Contents/app/scrubber/target/
+        //    and update.last sits at .../alt-core.app/Contents/app/update.last.
+        try {
+            java.net.URL jarUrl = WebServer.class.getProtectionDomain()
+                    .getCodeSource().getLocation();
+            File jar = new File(jarUrl.toURI());
+            // Walk up until we find the file; caps at 6 levels to avoid scanning the whole FS.
+            File dir = jar.getParentFile();
+            for (int i = 0; i < 6 && dir != null; i++) {
+                File candidate = new File(dir, fname);
+                if (candidate.exists()) {
+                    candidates.add(candidate.getAbsolutePath());
+                    break;
+                }
+                dir = dir.getParentFile();
+            }
+        } catch (Exception ignored) {
+            // Fall through to CWD-relative strategies below
         }
-        File fb = new File (sFileB);
-        if (fb.exists()) {
-            FileReader fr = new FileReader(fb);
-            BufferedReader br = new BufferedReader(fr);
-            sBuild = br.readLine();
+
+        // 2. Legacy DEV candidates (CWD-relative, for ./run.sh which cd's into scrubber/)
+        candidates.add("../" + fname);
+        candidates.add("../../" + fname);
+        candidates.add(fname);
+
+        for (String path : candidates) {
+            File fb = new File(path);
+            if (fb.exists()) {
+                try (FileReader fr = new FileReader(fb);
+                     BufferedReader br = new BufferedReader(fr)) {
+                    String line = br.readLine();
+                    if (line != null && !line.trim().isEmpty()) {
+                        sBuild = line.trim();
+                        break;
+                    }
+                }
+            }
         }
         return sBuild;
     }
