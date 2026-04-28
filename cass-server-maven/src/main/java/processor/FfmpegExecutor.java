@@ -120,13 +120,13 @@ public class FfmpegExecutor {
 
                 
                 if (_isWindows) {
-                    String ffmpegexePath = _projectsFolderPath + "..\\ffmpeg.exe";
+                    String ffmpegexePath = _projectsFolderPath + "ffmpeg.exe";
 
                     File ffmpegexeFile = new File(ffmpegexePath);
-                    
+
                     File _outputthumbFile = new File(_outputfolderPath + "/thumbnail.jpg");
 
-                    List<String> arguments = getCommandWin("\\..\\ffmpeg_win.txt", _projectsFolderPath, ffmpegexeFile, _input, outputm3u8File, _md5, outputtsFile, _outputthumbFile);
+                    List<String> arguments = getCommandWin("\\ffmpeg_win.txt", _projectsFolderPath, ffmpegexeFile, _input, outputm3u8File, _md5, outputtsFile, _outputthumbFile);
                     
                     p("----calling ffmpeg------");
                     p(arguments.toString());
@@ -149,7 +149,7 @@ public class FfmpegExecutor {
                         p("[E]" + s2);
                     }
                     
-                    List<String> arguments2 = getCommandWin("\\..\\ffmpeg_win_thumb.txt", _projectsFolderPath, ffmpegexeFile, _input, outputm3u8File, _md5, outputtsFile, _outputthumbFile);
+                    List<String> arguments2 = getCommandWin("\\ffmpeg_win_thumb.txt", _projectsFolderPath, ffmpegexeFile, _input, outputm3u8File, _md5, outputtsFile, _outputthumbFile);
                     
                     p("----calling ffmpeg--thumbnail----");
                     p(arguments2.toString());

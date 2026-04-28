@@ -1858,6 +1858,7 @@ public class LocalFuncs {
     }
     
     public String getCurrentMapDBVersion() {
+        // DEV: scan dist/lib/ for the MapDB jar filename.
         File dir = new File(appendage + "./dist/lib");
         FilenameFilter filter = new FilenameFilter() {
             public boolean accept (File dir, String name) {
@@ -1865,10 +1866,7 @@ public class LocalFuncs {
             }
         };
         String [] children = dir.list(filter);
-        if (children == null) {
-            pw("WARNING : could not find lib dir");
-            return "";
-        } else {
+        if (children != null && children.length > 0) {
             String version = "";
             for (int i = 0; i<children.length;i++) {
                 String filename = children[i];
@@ -1878,7 +1876,15 @@ public class LocalFuncs {
             }
             return version;
         }
-        
+        // PROD: jpackage shades MapDB into the uber JAR; there's no dist/lib/
+        // directory at runtime. Falling back to "" used to flow into a buggy
+        // path where sDBCurrent was set to sDBVersion (= "0.9.8" by default),
+        // causing isBackwardCompatible() to always return false and the DB
+        // to be recreated on every launch (dbver.txt stuck at "0.9.8").
+        // Hardcode the bundled version. Keep this in sync with the
+        // mapdb.version property in cass-server-maven/pom.xml.
+        pw("WARNING: dist/lib not found; using bundled MapDB version");
+        return "1.0.9";
     }
     
     public boolean isBackwardCompatible(String sDBCurrent, String sDBVersion) {

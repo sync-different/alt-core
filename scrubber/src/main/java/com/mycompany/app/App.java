@@ -37,6 +37,7 @@ public class App {
             Pattern.compile("\"version\"\\s*:\\s*\"([^\"]+)\"");
 
     public static void main(String[] args) {
+        redirectStdioToFile();
         ensureFirstRunSetup();
         installTrayIcon();
 
@@ -68,57 +69,120 @@ public class App {
         }
     }
 
+    private static boolean isWindows() {
+        return System.getProperty("os.name").toLowerCase().contains("win");
+    }
+
+    /**
+     * Windows-only: jpackage's launcher is a Windows-subsystem .exe that has no
+     * console attached, so System.out / System.err are silently discarded. Mirror
+     * stdout+stderr into a file in TEMP so first-run failures are diagnosable
+     * without rebuilding with --win-console.
+     *
+     * No-op on Mac — macOS launchd captures stdout/stderr from .app bundles
+     * (visible via Console.app), and redirecting would break ./run.sh terminal
+     * output for DEV use.
+     */
+    private static void redirectStdioToFile() {
+        if (!isWindows()) return;
+        try {
+            String tempDir = System.getenv("TEMP");
+            if (tempDir == null) tempDir = System.getProperty("java.io.tmpdir");
+            File logFile = new File(tempDir, "alt-core-jvm.log");
+            java.io.PrintStream ps = new java.io.PrintStream(
+                    new java.io.FileOutputStream(logFile, true), true);
+            System.setOut(ps);
+            System.setErr(ps);
+            System.out.println("=== alt-core JVM started " + new java.util.Date() + " ===");
+        } catch (Exception ignored) {
+            // Already silent without a console — keep going.
+        }
+    }
+
+    private static String getAppDataDir() {
+        if (isWindows()) {
+            String appdata = System.getenv("APPDATA");
+            if (appdata == null) {
+                appdata = System.getProperty("user.home") + "\\AppData\\Roaming";
+            }
+            return appdata + File.separator + "hivebot";
+        }
+        return System.getProperty("user.home") + "/Library/Application Support/hivebot";
+    }
+
     /**
      * First-run bootstrap: on packaged PROD installs, if the appendage
      * directory doesn't have scrubber/ populated yet, run the bundled
-     * install_mac.sh to copy scrubber/, rtserver/, web/, and ffmpeg from
-     * the app bundle to ~/Library/Application Support/hivebot/.
+     * install_mac.sh / install_win.bat to copy scrubber/, rtserver/, web/
+     * (and ffmpeg on Mac) from the app bundle into the platform's app-data
+     * dir (~/Library/Application Support/hivebot/ on Mac, %APPDATA%\hivebot\
+     * on Windows).
      *
-     * No-op in DEV (not running from a .app) and no-op on subsequent launches
-     * (once scrubber/ exists at the appendage path).
+     * No-op in DEV (not running from a packaged install) and no-op on
+     * subsequent launches (once scrubber/ exists at the appendage path).
      */
     private static void ensureFirstRunSetup() {
-        // DEV check: skip if we're not running from a packaged .app
+        final boolean win = isWindows();
+
+        // Resolve the bundle's app dir. The JAR can be at a nested location inside app/
+        // (jpackage with --main-jar scrubber/target/foo.jar preserves the nesting), so we
+        // can't just use jarFile.getParentFile(). Use java.home on Windows (jpackage points
+        // it at <install>/runtime) and the legacy hardcoded path on Mac.
+        File appDir;
         try {
-            java.net.URI jarUri = App.class.getProtectionDomain()
-                    .getCodeSource().getLocation().toURI();
-            String jarPath = jarUri.getPath();
-            if (jarPath == null || !jarPath.contains(".app/Contents/")) {
-                return;  // DEV — nothing to set up
+            if (win) {
+                File runtimeDir = new File(System.getProperty("java.home"));
+                File installRoot = runtimeDir.getParentFile();
+                if (installRoot == null) return;
+                File launcher = new File(installRoot, "alt-core.exe");
+                if (!launcher.isFile()) return;  // DEV — not running from a packaged install
+                appDir = new File(installRoot, "app");
+            } else {
+                // Mac: DEV check via jarPath; hardcode the bundle's app dir as before.
+                java.net.URI jarUri = App.class.getProtectionDomain()
+                        .getCodeSource().getLocation().toURI();
+                String jarPath = jarUri.getPath();
+                if (jarPath == null || !jarPath.contains(".app/Contents/")) {
+                    return;  // DEV
+                }
+                appDir = new File("/Applications/alt-core.app/Contents/app");
             }
         } catch (Exception e) {
-            return;  // can't determine — play it safe, skip
+            return;
         }
 
         // Already initialized?
-        File scrubberDir = new File(System.getProperty("user.home"),
-                "Library/Application Support/hivebot/scrubber");
+        File scrubberDir = new File(getAppDataDir(), "scrubber");
         if (scrubberDir.isDirectory()) {
             return;
         }
 
-        System.out.println("first-run: hivebot/ not populated, running install_mac.sh");
-        File contentsApp = new File("/Applications/alt-core.app/Contents/app");
-        File installScript = new File(contentsApp, "install_mac.sh");
+        String scriptName = win ? "install_win.bat" : "install_mac.sh";
+        File installScript = new File(appDir, scriptName);
         if (!installScript.isFile()) {
-            System.err.println("first-run: install_mac.sh not found at "
+            System.err.println("first-run: " + scriptName + " not found at "
                     + installScript + " — continuing anyway (server may fail)");
             return;
         }
+
+        System.out.println("first-run: hivebot/ not populated, running " + scriptName);
         try {
-            File logFile = new File("/tmp/alt-core-first-run.log");
-            ProcessBuilder pb = new ProcessBuilder(
-                    "/bin/bash", installScript.getAbsolutePath());
-            pb.directory(contentsApp);  // script uses relative paths
+            File logFile = win
+                    ? new File(System.getenv("TEMP"), "alt-core-first-run.log")
+                    : new File("/tmp/alt-core-first-run.log");
+            ProcessBuilder pb = win
+                    ? new ProcessBuilder("cmd", "/c", installScript.getAbsolutePath())
+                    : new ProcessBuilder("/bin/bash", installScript.getAbsolutePath());
+            pb.directory(appDir);  // script uses relative paths
             pb.redirectOutput(ProcessBuilder.Redirect.appendTo(logFile));
             pb.redirectError(ProcessBuilder.Redirect.appendTo(logFile));
             Process p = pb.start();
             int rc = p.waitFor();
-            System.out.println("first-run: install_mac.sh exit=" + rc
+            System.out.println("first-run: " + scriptName + " exit=" + rc
                     + " (log at " + logFile + ")");
         } catch (Exception e) {
-            System.err.println("first-run: install_mac.sh failed — "
-                    + e.getClass().getSimpleName() + ": " + e.getMessage());
+            System.err.println("first-run: " + e.getClass().getSimpleName()
+                    + ": " + e.getMessage());
         }
     }
 
@@ -181,7 +245,9 @@ public class App {
 
     // Polls getsession.fn until the server returns a usable version string,
     // then updates the tray menu item in place. Runs on a daemon thread so
-    // it doesn't block JVM exit. Gives up after 60 tries (~60s).
+    // it doesn't block JVM exit. Caps at ~1h of polling — first-run bootstrap
+    // on Windows can take 30-45s before the server even starts, which the
+    // original 60-iteration cap couldn't survive on slower machines.
     private static void startVersionPoller() {
         Thread t = new Thread(() -> {
             HttpClient client = HttpClient.newBuilder()
@@ -195,7 +261,7 @@ public class App {
                     .GET()
                     .build();
 
-            for (int i = 0; i < 60; i++) {
+            for (int i = 0; i < 3600; i++) {
                 try {
                     HttpResponse<String> resp = client.send(
                             req, HttpResponse.BodyHandlers.ofString());
@@ -368,7 +434,7 @@ public class App {
         String[] candidates = {
             "scrubber/config/www-server.properties",
             "../scrubber/config/www-server.properties",
-            System.getProperty("user.home") + "/Library/Application Support/hivebot/scrubber/config/www-server.properties"
+            getAppDataDir() + "/scrubber/config/www-server.properties"
         };
         for (String path : candidates) {
             File f = new File(path);
@@ -400,7 +466,7 @@ public class App {
 
     private static void openLogsFolder() {
         String[] candidates = {
-            System.getProperty("user.home") + "/Library/Application Support/hivebot/scrubber/logs",
+            getAppDataDir() + "/scrubber/logs",
             "scrubber/logs",
             "../scrubber/logs"
         };

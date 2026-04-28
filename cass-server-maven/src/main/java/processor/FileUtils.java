@@ -710,7 +710,11 @@ public class FileUtils {
                                     String OS = System.getProperty("os.name").toLowerCase();
                                     boolean isWin = OS.contains("win");
                                     if (isWin) {
-                                        projectsFolderPath = "..\\";
+                                        if (appendage.length() > 0) {
+                                            projectsFolderPath = appendage + "..\\";
+                                        } else {
+                                            projectsFolderPath = "..\\";
+                                        }
                                     } else {
                                         if (appendage.length()>0){
                                             projectsFolderPath = appendage + "../";

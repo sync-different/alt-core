@@ -29,6 +29,32 @@ public class Appendage {
         boolean result = false;
         String userHome = System.getProperty("user.home");
         String appSupportPath = userHome + "/Library/Application Support/hivebot/scrubber/";
+        String osName = System.getProperty("os.name").toLowerCase();
+
+        // Windows packaged install: jpackage layout has <install>\runtime\, <install>\app\,
+        // and <install>\alt-core.exe. DEV (running from build-uber output) doesn't.
+        if (osName.contains("win")) {
+            File runtimeDir = new File(System.getProperty("java.home"));
+            File installRoot = runtimeDir.getParentFile();
+            if (installRoot != null
+                    && new File(installRoot, "app").isDirectory()
+                    && new File(installRoot, "alt-core.exe").isFile()) {
+                String appdata = System.getenv("APPDATA");
+                if (appdata == null) {
+                    appdata = userHome + "\\AppData\\Roaming";
+                }
+                String winAppendage = appdata.replace('\\', '/') + "/hivebot/scrubber/";
+                p("[CS.Appendage] Found Windows packaged install. Using APPDATA for data.");
+                result = (System.setProperty("user.dir", installRoot.getAbsolutePath()) != null);
+                appendage = winAppendage;
+                appendageRW = winAppendage;
+                p("appendage  = " + appendage);
+                p("appendageRW  = " + appendageRW);
+            } else {
+                p("[CS.Appendage] Windows DEV mode (no packaged install detected).");
+            }
+            return;
+        }
 
         File directory = new File("/Applications/hivebot.localized/hivebot.app/Contents/MacOS").getAbsoluteFile();
         if (directory.exists())
