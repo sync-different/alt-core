@@ -75,3 +75,5 @@ web/cass/setup.htm_*.tmp
 /test-files
 /alt-core-cli/target
 /scrubber/corrupted
+"/scrubber/repo/cass-server.jar" 
+"/scrubber/repo/scrubber.jar" 
