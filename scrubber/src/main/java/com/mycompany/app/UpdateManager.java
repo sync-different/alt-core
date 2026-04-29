@@ -17,8 +17,16 @@ import java.util.regex.Pattern;
  */
 final class UpdateManager {
 
-    static final String MANIFEST_URL =
-            "https://hivebot.co/download/alt-core/latest.json";
+    /**
+     * Manifest URL. Defaults to hivebot's public release feed; overridable
+     * via system property "alt-core.manifest-url" for staging / local QA
+     * (set in alt-core.cfg JavaOptions or via -D... when launching). Useful
+     * for testing the update flow against a local HTTP server without
+     * touching production infrastructure.
+     */
+    static final String MANIFEST_URL = System.getProperty(
+            "alt-core.manifest-url",
+            "https://hivebot.co/download/alt-core/latest.json");
 
     private static final Pattern FIELD_RE =
             Pattern.compile("\"(\\w+)\"\\s*:\\s*\"([^\"]*)\"");
@@ -28,16 +36,21 @@ final class UpdateManager {
     /** Immutable parsed manifest. Any field may be null if absent from JSON. */
     static final class ManifestInfo {
         final String version;
-        final String downloadUrl;
-        final String sha256;
+        final String downloadUrl;       // Mac zip
+        final String sha256;            // Mac zip sha
+        final String downloadUrlMsi;    // Windows MSI
+        final String sha256Msi;         // Windows MSI sha
         final String releaseNotesUrl;
         final String releasedAt;
 
         ManifestInfo(String version, String downloadUrl, String sha256,
+                     String downloadUrlMsi, String sha256Msi,
                      String releaseNotesUrl, String releasedAt) {
             this.version = version;
             this.downloadUrl = downloadUrl;
             this.sha256 = sha256;
+            this.downloadUrlMsi = downloadUrlMsi;
+            this.sha256Msi = sha256Msi;
             this.releaseNotesUrl = releaseNotesUrl;
             this.releasedAt = releasedAt;
         }
@@ -99,6 +112,7 @@ final class UpdateManager {
 
     private static ManifestInfo parse(String json) {
         String version = null, downloadUrl = null, sha256 = null,
+                downloadUrlMsi = null, sha256Msi = null,
                 releaseNotesUrl = null, releasedAt = null;
         Matcher m = FIELD_RE.matcher(json);
         while (m.find()) {
@@ -108,6 +122,8 @@ final class UpdateManager {
                 case "version":           version = v;         break;
                 case "download_url":      downloadUrl = v;     break;
                 case "sha256":            sha256 = v;          break;
+                case "download_url_msi":  downloadUrlMsi = v;  break;
+                case "sha256_msi":        sha256Msi = v;       break;
                 case "release_notes_url": releaseNotesUrl = v; break;
                 case "released_at":       releasedAt = v;      break;
                 default: /* ignore unknown fields (min_macos_version, etc.) */
@@ -117,7 +133,8 @@ final class UpdateManager {
             System.err.println("update: manifest missing 'version' field");
             return null;
         }
-        return new ManifestInfo(version, downloadUrl, sha256, releaseNotesUrl, releasedAt);
+        return new ManifestInfo(version, downloadUrl, sha256,
+                downloadUrlMsi, sha256Msi, releaseNotesUrl, releasedAt);
     }
 
     /**

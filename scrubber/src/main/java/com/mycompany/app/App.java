@@ -37,8 +37,17 @@ public class App {
             Pattern.compile("\"version\"\\s*:\\s*\"([^\"]+)\"");
 
     public static void main(String[] args) {
+        // Updater path: alt-core-updater.exe (manifested requireAdministrator)
+        // invokes us with "--update-from <msi-path>". We're elevated; do the
+        // install + relaunch and exit. No tray, no first-run, no server.
+        // See Installer.launchHelper Windows path + build_msi.bat mt.exe inject.
+        if (args != null && args.length >= 2 && "--update-from".equals(args[0])) {
+            runUpdate(args[1]);
+            return;
+        }
         redirectStdioToFile();
         ensureFirstRunSetup();
+        ensureWebFresh();
         installTrayIcon();
 
         System.out.println("Hello World!1");
@@ -183,6 +192,228 @@ public class App {
         } catch (Exception e) {
             System.err.println("first-run: " + e.getClass().getSimpleName()
                     + ": " + e.getMessage());
+        }
+    }
+
+    /**
+     * Resolve the install's app/ dir, or null if running in DEV (not from a
+     * packaged install). Mac: /Applications/alt-core.app/Contents/app.
+     * Windows: <java.home>/../app (jpackage layout).
+     */
+    private static File resolvePackagedAppDir() {
+        try {
+            if (isWindows()) {
+                File runtimeDir = new File(System.getProperty("java.home"));
+                File installRoot = runtimeDir.getParentFile();
+                if (installRoot == null) return null;
+                File launcher = new File(installRoot, "alt-core.exe");
+                if (!launcher.isFile()) return null;
+                return new File(installRoot, "app");
+            }
+            java.net.URI jarUri = App.class.getProtectionDomain()
+                    .getCodeSource().getLocation().toURI();
+            String jarPath = jarUri.getPath();
+            if (jarPath == null || !jarPath.contains(".app/Contents/")) return null;
+            return new File("/Applications/alt-core.app/Contents/app");
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    /**
+     * If the bundled uiv5 dist (under <install>/app/web/) is newer than the
+     * APPDATA copy, run update_web.{bat,sh} to refresh APPDATA's copy.
+     *
+     * Triggered by: user-clicked-MSI updates (which don't auto-run the helper
+     * after install), and any other path where the install dir is newer than
+     * APPDATA. The helper scripts (update_web.{bat,sh}) handle the actual
+     * swap-and-backup; ensureWebFresh just decides whether to invoke them.
+     *
+     * Version source-of-truth: <install>/app/update.last. APPDATA marker:
+     * <APPDATA>/hivebot/.web-version, written by install_*.* and update_web.*
+     * helpers after they finish. No-op in DEV (resolvePackagedAppDir → null).
+     */
+    private static void ensureWebFresh() {
+        File appDir = resolvePackagedAppDir();
+        if (appDir == null) return;
+
+        File bundledVersionFile = new File(appDir, "update.last");
+        String bundledVersion = readFileTrimmed(bundledVersionFile);
+        if (bundledVersion == null || bundledVersion.isEmpty()) return;
+
+        File appdataVersionFile = new File(getAppDataDir(), ".web-version");
+        String appdataVersion = readFileTrimmed(appdataVersionFile);
+
+        if (appdataVersion != null && appdataVersion.compareTo(bundledVersion) >= 0) {
+            return;  // in sync (or APPDATA is somehow newer — leave alone)
+        }
+
+        String scriptName = isWindows() ? "update_web.bat" : "update_web.sh";
+        File script = new File(appDir, scriptName);
+        if (!script.isFile()) {
+            System.err.println("ensureWebFresh: " + scriptName + " not found at " + script);
+            return;
+        }
+
+        System.out.println("ensureWebFresh: bundled=" + bundledVersion
+                + " appdata=" + appdataVersion + " — running " + scriptName);
+        try {
+            File logFile = isWindows()
+                    ? new File(System.getenv("TEMP"), "alt-core-web-refresh.log")
+                    : new File("/tmp/alt-core-web-refresh.log");
+            ProcessBuilder pb = isWindows()
+                    ? new ProcessBuilder("cmd", "/c", script.getAbsolutePath())
+                    : new ProcessBuilder("/bin/bash", script.getAbsolutePath());
+            pb.directory(appDir);  // script uses ./web/cass/uiv5/dist relative path
+            if (isWindows()) {
+                pb.redirectInput(ProcessBuilder.Redirect.from(new java.io.File("NUL")));
+            }
+            pb.redirectOutput(ProcessBuilder.Redirect.appendTo(logFile));
+            pb.redirectError(ProcessBuilder.Redirect.appendTo(logFile));
+            Process p = pb.start();
+            int rc = p.waitFor();
+            System.out.println("ensureWebFresh: " + scriptName + " exit=" + rc
+                    + " (log at " + logFile + ")");
+        } catch (Exception e) {
+            System.err.println("ensureWebFresh: " + e.getClass().getSimpleName()
+                    + ": " + e.getMessage());
+        }
+    }
+
+    private static String readFileTrimmed(File f) {
+        try {
+            return java.nio.file.Files.readString(f.toPath()).trim();
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    /**
+     * Windows updater entrypoint: invoked as "alt-core-updater.exe --update-from <msi>".
+     * Runs elevated via the requireAdministrator manifest baked into
+     * alt-core-updater.exe at build time.
+     *
+     * Sequence:
+     *   1. Write a self-contained install bat to %TEMP%\alt-core-elevated-install.bat
+     *      (timeout 8s + msiexec /i + update_web.bat + relaunch via explorer + cleanup)
+     *   2. Register the bat as a one-time scheduled task via `schtasks /create /rl HIGHEST`
+     *   3. Trigger it immediately with `schtasks /run`, then exit the JVM
+     *
+     * Why schtasks instead of `cmd /c bat` direct? Empirically, any cmd.exe
+     * child of our elevated JVM dies the moment our JVM exits — likely a Job
+     * Object kill-on-close inherited from the jpackage launcher. Task Scheduler
+     * hosts the bat under its own service (svchost), completely outside our
+     * process tree, so the bat survives the JVM exit and runs to completion.
+     *
+     * Logs to %TEMP%\alt-core-updater.log (Java side) and the same file from
+     * the bat (so both halves of the flow show up in one log). msiexec's
+     * verbose log is at %TEMP%\alt-core-updater-msi.log.
+     */
+    private static void runUpdate(String msiPath) {
+        File logFile = new File(System.getenv("TEMP"), "alt-core-updater.log");
+        try {
+            java.io.PrintStream ps = new java.io.PrintStream(
+                    new java.io.FileOutputStream(logFile, true), true);
+            System.setOut(ps);
+            System.setErr(ps);
+        } catch (Exception ignored) {}
+
+        System.out.println();
+        System.out.println("=== alt-core-updater started " + new java.util.Date() + " ===");
+        System.out.println("msiPath: " + msiPath);
+
+        // Strategy: write a self-contained .bat (sleep + msiexec + relaunch +
+        // cleanup) and spawn it as a detached cmd.exe child, then exit this JVM
+        // immediately. The bat runs in its own process and survives even if
+        // our elevated updater JVM is somehow killed when alt-core.exe dies.
+        // (Empirically the JVM was dying around 5s in — root cause unclear,
+        // possibly a Job Object link between jpackage launchers and AIS-
+        // spawned elevated children. Decoupling via a shell script side-steps it.)
+        try {
+            File installRoot = new File(System.getProperty("java.home")).getParentFile();
+            File launcher = new File(installRoot, "alt-core.exe");
+            File appDir = new File(installRoot, "app");
+            File updateWebBat = new File(appDir, "update_web.bat");
+            File msiLog = new File(System.getenv("TEMP"), "alt-core-updater-msi.log");
+            File lockFile = new File(System.getenv("APPDATA"), "hivebot\\updates\\.install-in-progress");
+            File batFile = new File(System.getenv("TEMP"), "alt-core-elevated-install.bat");
+            String CRLF = "\r\n";
+
+            StringBuilder bat = new StringBuilder();
+            bat.append("@echo off").append(CRLF);
+            bat.append("set LOG=").append(logFile.getAbsolutePath()).append(CRLF);
+            bat.append(">> \"%LOG%\" echo.").append(CRLF);
+            bat.append(">> \"%LOG%\" echo === bat started %date% %time%").append(CRLF);
+            bat.append("REM 8s gives alt-core's System.exit(0) + 5s halt-killer plenty of time.").append(CRLF);
+            bat.append("timeout /t 8 /nobreak >nul").append(CRLF);
+            bat.append(">> \"%LOG%\" echo running msiexec /i ").append(msiPath).append(CRLF);
+            bat.append("msiexec.exe /i \"").append(msiPath).append("\" /qb /norestart /l*v \"")
+                    .append(msiLog.getAbsolutePath()).append("\"").append(CRLF);
+            bat.append("set RC=%errorlevel%").append(CRLF);
+            bat.append(">> \"%LOG%\" echo msiexec exit=%RC%").append(CRLF);
+            bat.append("if not %RC%==0 (").append(CRLF);
+            bat.append("    >> \"%LOG%\" echo msiexec failed; aborting").append(CRLF);
+            bat.append("    del \"").append(lockFile.getAbsolutePath()).append("\" >nul 2>&1").append(CRLF);
+            bat.append("    exit /b %RC%").append(CRLF);
+            bat.append(")").append(CRLF);
+            bat.append("if exist \"").append(updateWebBat.getAbsolutePath()).append("\" (").append(CRLF);
+            bat.append("    >> \"%LOG%\" echo running update_web.bat").append(CRLF);
+            bat.append("    pushd \"").append(appDir.getAbsolutePath()).append("\"").append(CRLF);
+            bat.append("    call \"").append(updateWebBat.getAbsolutePath())
+                    .append("\" >> \"%LOG%\" 2>&1").append(CRLF);
+            bat.append("    popd").append(CRLF);
+            bat.append(")").append(CRLF);
+            bat.append(">> \"%LOG%\" echo relaunching alt-core via explorer.exe").append(CRLF);
+            bat.append("REM Explorer launches as user-level so alt-core drops elevation.").append(CRLF);
+            bat.append("start \"\" explorer.exe \"").append(launcher.getAbsolutePath()).append("\"").append(CRLF);
+            bat.append("del \"").append(lockFile.getAbsolutePath()).append("\" >nul 2>&1").append(CRLF);
+            bat.append(">> \"%LOG%\" echo === bat complete %date% %time%").append(CRLF);
+
+            // Append a final line so the bat removes its own scheduled task.
+            String taskName = "alt-core-update-" + System.currentTimeMillis();
+            bat.append("schtasks /delete /tn \"").append(taskName).append("\" /f >nul 2>&1").append(CRLF);
+
+            try (java.io.FileWriter w = new java.io.FileWriter(batFile)) {
+                w.write(bat.toString());
+            }
+            System.out.println("wrote install bat: " + batFile);
+
+            // Use Task Scheduler to run the bat. This is the reliable way to
+            // escape any Job Object linkage on Windows — schtasks-launched
+            // processes live under the Scheduler service, not in our process
+            // tree, so they survive our JVM exit. ProcessBuilder("cmd /c bat")
+            // empirically dies mid-timeout because cmd is a child of our JVM
+            // and inherits whatever job kills when we exit.
+            //
+            // schtasks /st minimum granularity is 1 minute, so we schedule a
+            // task at 23:59 (placeholder) and immediately /run it.
+            System.out.println("creating scheduled task: " + taskName);
+            Process pCreate = new ProcessBuilder("schtasks",
+                    "/create", "/tn", taskName,
+                    "/tr", batFile.getAbsolutePath(),
+                    "/sc", "once", "/st", "23:59",
+                    "/f", "/rl", "HIGHEST")
+                    .redirectErrorStream(true)
+                    .start();
+            String createOut = new String(pCreate.getInputStream().readAllBytes()).trim();
+            int createRc = pCreate.waitFor();
+            System.out.println("  schtasks /create exit=" + createRc + " out=[" + createOut + "]");
+            if (createRc != 0) {
+                System.err.println("  failed to create task; aborting");
+                return;
+            }
+
+            System.out.println("running scheduled task...");
+            Process pRun = new ProcessBuilder("schtasks", "/run", "/tn", taskName)
+                    .redirectErrorStream(true)
+                    .start();
+            String runOut = new String(pRun.getInputStream().readAllBytes()).trim();
+            int runRc = pRun.waitFor();
+            System.out.println("  schtasks /run exit=" + runRc + " out=[" + runOut + "]");
+            System.out.println("install task launched. updater exiting.");
+        } catch (Exception e) {
+            System.err.println("alt-core-updater failed to spawn install bat: " + e);
+            e.printStackTrace();
         }
     }
 

@@ -31,6 +31,17 @@ final class Installer {
     static final Path APPLICATIONS = Path.of("/Applications");
     static final Path INSTALLED_APP = APPLICATIONS.resolve("alt-core.app");
 
+    // Windows install layout (jpackage --type msi default).
+    // The user can override this in the MSI dialog; for the helper we assume
+    // default. If they installed elsewhere, msiexec /i will still work (matches
+    // by UpgradeCode), but the post-install relaunch via this hardcoded path
+    // would fail — they'd launch from Start Menu instead. Acceptable v1 trade-off.
+    static final Path WIN_PROGRAM_FILES_INSTALL = Path.of("C:\\Program Files\\alt-core");
+
+    private static boolean isWindows() {
+        return System.getProperty("os.name").toLowerCase().contains("win");
+    }
+
     /** Progress / failure callback. Called from the installer thread. */
     interface Callback {
         void onProgress(String message);
@@ -58,18 +69,33 @@ final class Installer {
     private Installer() {}
 
     static Path updatesDir() {
+        if (isWindows()) {
+            String appdata = System.getenv("APPDATA");
+            if (appdata == null) {
+                appdata = System.getProperty("user.home") + "\\AppData\\Roaming";
+            }
+            return Path.of(appdata, "hivebot", "updates");
+        }
         return Path.of(System.getProperty("user.home"),
                 "Library", "Application Support", "hivebot", "updates");
     }
 
     /**
-     * True if we're running from a packaged /Applications/*.app bundle.
-     * False in DEV (running from maven target/). Used to gate the final
-     * mv-and-relaunch step of the install — DEV does a dry-run that stops
-     * after unzip + codesign verify.
+     * True if we're running from a packaged install — Mac /Applications/*.app
+     * bundle or Windows jpackage MSI install. False in DEV (running from
+     * maven target/). Used to gate the final relaunch step of the install —
+     * DEV does a dry-run that stops after verify.
      */
     static boolean isPackagedApp() {
         try {
+            if (isWindows()) {
+                // jpackage Windows: java.home parent has alt-core.exe + app/
+                java.io.File runtimeDir = new java.io.File(System.getProperty("java.home"));
+                java.io.File installRoot = runtimeDir.getParentFile();
+                if (installRoot == null) return false;
+                return new java.io.File(installRoot, "alt-core.exe").isFile()
+                        && new java.io.File(installRoot, "app").isDirectory();
+            }
             URI jarUri = App.class.getProtectionDomain()
                     .getCodeSource().getLocation().toURI();
             String path = jarUri.getPath();
@@ -77,6 +103,17 @@ final class Installer {
         } catch (Exception e) {
             return false;
         }
+    }
+
+    /**
+     * Resolve the Windows install root from java.home (jpackage points it at
+     * <install>/runtime). Returns null if not running from a packaged Windows install.
+     */
+    private static Path winInstallRoot() {
+        java.io.File runtimeDir = new java.io.File(System.getProperty("java.home"));
+        java.io.File installRoot = runtimeDir.getParentFile();
+        if (installRoot == null) return null;
+        return installRoot.toPath();
     }
 
     /**
@@ -122,7 +159,9 @@ final class Installer {
             } catch (IOException ignored) {}
         }
 
-        if (!dryRun) {
+        if (!dryRun && !isWindows()) {
+            // Mac: alt-core.app must be replaceable in /Applications/.
+            // Windows: msiexec elevates via UAC; we don't need pre-flight writability.
             if (!Files.isWritable(APPLICATIONS)) {
                 cb.onFailure("Update requires admin privileges — "
                         + "download manually from hivebot.co");
@@ -152,13 +191,93 @@ final class Installer {
         }
 
         try {
-            return runPrepare(info, updates, lock, logFile, dryRun, cb);
+            return isWindows()
+                    ? runPrepareWindows(info, updates, lock, logFile, dryRun, cb)
+                    : runPrepare(info, updates, lock, logFile, dryRun, cb);
         } catch (Exception e) {
             cb.onFailure("Install failed: " + e.getClass().getSimpleName()
                     + ": " + e.getMessage());
             try { Files.deleteIfExists(lock); } catch (IOException ignored) {}
             return null;
         }
+    }
+
+    /**
+     * Windows install prep: pre-flight → download MSI → verify SHA-256 →
+     * write apply-update.bat. No unzip, no Authenticode verify (v1).
+     *
+     * The bat helper relies on Windows Installer's UpgradeCode mechanism to
+     * auto-uninstall the previous version when msiexec /i runs, so no explicit
+     * /x step. Same --win-upgrade-uuid across releases is what makes this work.
+     */
+    private static PreparedInstall runPrepareWindows(UpdateManager.ManifestInfo info,
+                                                     Path updates, Path lock, Path logFile,
+                                                     boolean dryRun, Installer.Callback cb) throws Exception {
+        String msiName = "alt-core-" + info.version + ".msi";
+        Path msiPath = updates.resolve(msiName);
+
+        logMark(logFile, "=== install prepare started at " + Instant.now()
+                + " (version=" + info.version + ", platform=windows, dryRun=" + dryRun + ") ===");
+
+        String url = info.downloadUrlMsi;
+        String expectedSha = info.sha256Msi;
+        if (url == null || url.isEmpty()) {
+            logMark(logFile, "  FAIL: manifest has no download_url_msi");
+            cb.onFailure("This release has no Windows MSI in the manifest.");
+            try { Files.deleteIfExists(lock); } catch (IOException ignored) {}
+            return null;
+        }
+
+        // --- 2. Download ---
+        cb.onProgress("Downloading alt-core v" + info.version + "…");
+        logMark(logFile, "--- download: " + url + " -> " + msiPath + " ---");
+        downloadTo(url, msiPath);
+        logMark(logFile, "  download OK (" + Files.size(msiPath) + " bytes)");
+
+        // --- 3. Verify SHA-256 ---
+        cb.onProgress("Verifying download…");
+        logMark(logFile, "--- sha256_msi verify ---");
+        String actualSha = sha256(msiPath);
+        logMark(logFile, "  expected: " + expectedSha);
+        logMark(logFile, "  actual:   " + actualSha);
+        if (expectedSha != null && !expectedSha.isEmpty()
+                && !actualSha.equalsIgnoreCase(expectedSha)) {
+            Files.deleteIfExists(msiPath);
+            logMark(logFile, "  FAIL: sha256_msi mismatch, msi deleted");
+            cb.onFailure("Update verification failed (SHA-256 mismatch). "
+                    + "Expected " + expectedSha + ", got " + actualSha);
+            try { Files.deleteIfExists(lock); } catch (IOException ignored) {}
+            return null;
+        }
+        logMark(logFile, "  sha256_msi OK");
+
+        // No ditto unzip on Windows (MSI is the artifact).
+        // No codesign verify on Windows (Authenticode deferred to a later phase).
+
+        if (dryRun) {
+            logMark(logFile, "=== dry run complete ===");
+            cb.onProgress("Dry run complete — real install only runs from a packaged MSI install.");
+            try { Files.deleteIfExists(lock); } catch (IOException ignored) {}
+            return new PreparedInstall(msiPath, null, lock, logFile, true);
+        }
+
+        // --- 6. Write apply-update.bat ---
+        Path helper = updates.resolve("apply-update.bat");
+        logMark(logFile, "--- write helper script: " + helper + " ---");
+        Path installRoot = winInstallRoot();
+        if (installRoot == null) {
+            logMark(logFile, "  FAIL: could not resolve install root from java.home");
+            cb.onFailure("Could not resolve install location.");
+            try { Files.deleteIfExists(lock); } catch (IOException ignored) {}
+            return null;
+        }
+        String script = helperScriptWindows(msiPath, installRoot, logFile, lock);
+        Files.writeString(helper, script);
+        logMark(logFile, "  helper script written");
+
+        logMark(logFile, "=== prepare complete, handing off to helper ===");
+        cb.onProgress("Installing — alt-core will restart…");
+        return new PreparedInstall(msiPath, helper, lock, logFile, false);
     }
 
     private static PreparedInstall runPrepare(UpdateManager.ManifestInfo info,
@@ -274,12 +393,75 @@ final class Installer {
      * for calling System.exit(0) shortly after this returns.
      */
     static boolean launchHelper(PreparedInstall prep, Callback cb) {
-        if (prep == null || prep.dryRun || prep.helperScript == null) {
+        if (prep == null || prep.dryRun) {
             return false;
         }
+
+        if (isWindows()) {
+            // Two-tier install on Windows.
+            //
+            // Primary: spawn alt-core-updater.exe with "--update-from <msi>".
+            // The updater is a sibling launcher built via jpackage --add-launcher
+            // and post-processed with mt.exe to inject a requireAdministrator
+            // manifest. Windows enforces UAC consent at exe-load time via the
+            // manifest, completely bypassing AIS heuristics that suppress
+            // programmatic elevation requests from a JVM-spawned cmd context.
+            //
+            // Fallback: if alt-core-updater.exe is missing (MSI built without
+            // Windows SDK / mt.exe) or its spawn fails, open Explorer with the
+            // MSI selected. User double-clicks → Explorer's interactive shell
+            // triggers UAC → standard MSI install dialog. One extra click vs
+            // the manifested path but always works.
+            Path msi = prep.unzippedApp;  // PreparedInstall.unzippedApp = MSI path on Windows
+            if (msi == null) {
+                cb.onFailure("No MSI to launch.");
+                return false;
+            }
+
+            Path installRoot = winInstallRoot();
+            if (installRoot != null) {
+                java.io.File updater = new java.io.File(installRoot.toFile(), "alt-core-updater.exe");
+                if (updater.isFile()) {
+                    try {
+                        // Use `cmd /c start` — wraps ShellExecute, which reads
+                        // the updater's requireAdministrator manifest and
+                        // triggers UAC consent. ProcessBuilder.start() directly
+                        // uses CreateProcess which fails with error 740
+                        // ("requires elevation") because CreateProcess can't
+                        // elevate from a non-elevated parent.
+                        ProcessBuilder pb = new ProcessBuilder(
+                                "cmd", "/c", "start", "", "/b",
+                                updater.getAbsolutePath(),
+                                "--update-from", msi.toString());
+                        pb.redirectInput(ProcessBuilder.Redirect.from(new java.io.File("NUL")));
+                        pb.redirectOutput(ProcessBuilder.Redirect.DISCARD);
+                        pb.redirectError(ProcessBuilder.Redirect.DISCARD);
+                        pb.start();
+                        cb.onProgress("Installing — accept UAC prompt; alt-core will restart");
+                        return true;
+                    } catch (Exception e) {
+                        System.err.println("alt-core-updater spawn failed, falling back to Explorer: " + e);
+                        // fall through to Explorer fallback
+                    }
+                }
+            }
+
+            // Fallback: Explorer with MSI selected — user double-clicks to install.
+            try {
+                new ProcessBuilder("explorer.exe", "/select," + msi.toString()).start();
+            } catch (Exception e) {
+                cb.onFailure("Could not open Explorer: " + e.getMessage());
+                return false;
+            }
+            cb.onProgress("Update downloaded — double-click " + msi.getFileName()
+                    + " in the open folder to install (alt-core will close)");
+            return true;
+        }
+
+        // Mac: detached bash helper that does mv + relaunch
+        if (prep.helperScript == null) return false;
         try {
-            ProcessBuilder pb = new ProcessBuilder(
-                    "/bin/bash", prep.helperScript.toString());
+            ProcessBuilder pb = new ProcessBuilder("/bin/bash", prep.helperScript.toString());
             pb.redirectOutput(ProcessBuilder.Redirect.appendTo(prep.logFile.toFile()));
             pb.redirectError(ProcessBuilder.Redirect.appendTo(prep.logFile.toFile()));
             pb.start();  // fire-and-forget
@@ -417,5 +599,67 @@ final class Installer {
                 + "\n"
                 + "/bin/rm -f \"" + lock + "\"\n"
                 + "echo \"=== apply-update complete at $(date) ===\"\n";
+    }
+
+    /**
+     * Generate apply-update.bat for Windows. Uses absolute paths baked in at
+     * write time. The msi install relies on Windows Installer's UpgradeCode
+     * (--win-upgrade-uuid) to auto-uninstall the prior version when /i runs;
+     * no explicit /x step.
+     *
+     * /qb is "basic UI" — shows a progress bar and allows the UAC prompt that
+     * /qn would suppress. The user sees a brief progress dialog during install.
+     *
+     * CRLF line endings are required for cmd.exe to parse multi-line files
+     * reliably (a few constructs like multi-line `if` blocks fail on LF-only).
+     */
+    private static String helperScriptWindows(Path newMsi, Path installRoot,
+                                              Path logFile, Path lock) {
+        Path appDir = installRoot.resolve("app");
+        Path launcher = installRoot.resolve("alt-core.exe");
+        Path msiLog = logFile.getParent().resolve("apply-update-msi.log");
+        Path updateWeb = appDir.resolve("update_web.bat");
+        String CRLF = "\r\n";
+        return "@echo off" + CRLF
+                + "REM Generated by alt-core at " + Instant.now() + CRLF
+                + "echo === apply-update started %date% %time% >> \"" + logFile + "\"" + CRLF
+                + CRLF
+                + "REM Let the dying JVM flush file handles before we touch the install." + CRLF
+                + "timeout /t 3 /nobreak >nul" + CRLF
+                + CRLF
+                + "REM Safety net: force-quit any surviving alt-core.exe" + CRLF
+                + "taskkill /F /IM alt-core.exe >nul 2>&1" + CRLF
+                + "timeout /t 1 /nobreak >nul" + CRLF
+                + CRLF
+                + "REM Install the new MSI. Same --win-upgrade-uuid (UpgradeCode) makes Windows" + CRLF
+                + "REM Installer auto-remove the prior version on /i. /qb shows a progress bar." + CRLF
+                + "REM Use PowerShell Start-Process -Verb RunAs to explicitly request UAC" + CRLF
+                + "REM elevation via ShellExecute. Direct `msiexec /i /qb` from a Windows-" + CRLF
+                + "REM subsystem JVM child cmd does NOT reliably trigger the UAC prompt — AIS" + CRLF
+                + "REM (Application Info Service) suppresses the prompt when the caller isn't" + CRLF
+                + "REM deemed interactive. -Verb RunAs forces it." + CRLF
+                + "powershell -NoProfile -Command \"$p = Start-Process -FilePath 'msiexec.exe' -ArgumentList @('/i','" + newMsi + "','/qb','/norestart','/l*v','" + msiLog + "') -Verb RunAs -Wait -PassThru; exit $p.ExitCode\"" + CRLF
+                + "if errorlevel 1 (" + CRLF
+                + "    echo ERROR: msiexec failed (errorlevel=%errorlevel%) >> \"" + logFile + "\"" + CRLF
+                + "    del \"" + lock + "\" >nul 2>&1" + CRLF
+                + "    exit /b 1" + CRLF
+                + ")" + CRLF
+                + "echo msiexec OK >> \"" + logFile + "\"" + CRLF
+                + CRLF
+                + "REM Refresh uiv5 web UI at APPDATA path (analogue of update_web.sh)." + CRLF
+                + "REM Non-fatal: if web update fails, server still runs with prior UI." + CRLF
+                + "if exist \"" + updateWeb + "\" (" + CRLF
+                + "    pushd \"" + appDir + "\"" + CRLF
+                + "    call \"" + updateWeb + "\" >> \"" + logFile + "\" 2>&1" + CRLF
+                + "    popd" + CRLF
+                + ") else (" + CRLF
+                + "    echo WARNING: update_web.bat not found in new bundle >> \"" + logFile + "\"" + CRLF
+                + ")" + CRLF
+                + CRLF
+                + "REM Re-launch the new alt-core.exe" + CRLF
+                + "start \"\" \"" + launcher + "\"" + CRLF
+                + CRLF
+                + "del \"" + lock + "\" >nul 2>&1" + CRLF
+                + "echo === apply-update complete %date% %time% >> \"" + logFile + "\"" + CRLF;
     }
 }
