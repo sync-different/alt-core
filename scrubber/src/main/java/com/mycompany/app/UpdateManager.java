@@ -18,15 +18,17 @@ import java.util.regex.Pattern;
 final class UpdateManager {
 
     /**
-     * Manifest URL. Defaults to hivebot's public release feed; overridable
-     * via system property "alt-core.manifest-url" for staging / local QA
-     * (set in alt-core.cfg JavaOptions or via -D... when launching). Useful
-     * for testing the update flow against a local HTTP server without
-     * touching production infrastructure.
+     * Manifest URL. Per-platform default (Mac and Windows ship on independent
+     * cadences, so they read separate manifests — see
+     * internal/PROJECT_WINDOWS_AUTOUPDATE.md "Per-platform manifest" section).
+     * Overridable via system property "alt-core.manifest-url" for staging /
+     * local QA (set in alt-core.cfg JavaOptions or via -D... when launching).
      */
     static final String MANIFEST_URL = System.getProperty(
             "alt-core.manifest-url",
-            "https://hivebot.co/download/alt-core/latest.json");
+            System.getProperty("os.name", "").toLowerCase().contains("win")
+                    ? "https://hivebot.co/download/alt-core/latest-windows.json"
+                    : "https://hivebot.co/download/alt-core/latest.json");
 
     private static final Pattern FIELD_RE =
             Pattern.compile("\"(\\w+)\"\\s*:\\s*\"([^\"]*)\"");
