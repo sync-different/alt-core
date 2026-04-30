@@ -6,6 +6,11 @@ export default defineConfig({
   plugins: [react()],
   base: '/cass/uiv5/dist/',
   build: {
+    // Clear dist/ before each build so historical content-hashed bundles
+    // don't accumulate. Without this, npm run build keeps adding new
+    // i-<hash>.js alongside old ones, bloating the .app bundle and the
+    // appendage-path web dir on every update.
+    emptyOutDir: true,
     rollupOptions: {
       input: 'i.html',
     },
