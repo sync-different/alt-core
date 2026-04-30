@@ -349,7 +349,7 @@ export function LoginPage() {
             }}
           >
             <Typography variant="caption" color="text.secondary">
-              © and ™ 2013-2025 Alterante Inc. All rights reserved.
+              © and ™ 2013-2026 · Alterante Inc. All rights reserved.
             </Typography>
           </Box>
         </Card>
