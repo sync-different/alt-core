@@ -219,6 +219,104 @@ public class WebServer extends AbstractService {
 
     /**
      * Sanitizes a filename to prevent path traversal attacks.
+     * Extract a JSON string-valued field by name from a hand-built JSON blob
+     * without pulling in a parser. Tolerant of whitespace; returns "" if
+     * not found or malformed. Used by gettranscribestatus.fn and
+     * gettranslate_json.fn to surface LocalAI error details.
+     */
+    protected static String extractJsonStringField(String json, String fieldName) {
+        if (json == null || fieldName == null) return "";
+        String key = "\"" + fieldName + "\"";
+        int keyIdx = json.indexOf(key);
+        if (keyIdx < 0) return "";
+        int colonIdx = json.indexOf(':', keyIdx + key.length());
+        if (colonIdx < 0) return "";
+        int quoteOpen = json.indexOf('"', colonIdx + 1);
+        if (quoteOpen < 0) return "";
+        // Find the closing quote, respecting backslash escapes.
+        int i = quoteOpen + 1;
+        StringBuilder sb = new StringBuilder();
+        while (i < json.length()) {
+            char c = json.charAt(i);
+            if (c == '\\' && i + 1 < json.length()) {
+                sb.append(c).append(json.charAt(i + 1));
+                i += 2;
+            } else if (c == '"') {
+                return sb.toString();
+            } else {
+                sb.append(c);
+                i++;
+            }
+        }
+        return "";
+    }
+
+    /**
+     * Extract a JSON numeric field as a string. Returns "" if not found.
+     */
+    protected static String extractJsonNumberField(String json, String fieldName) {
+        if (json == null || fieldName == null) return "";
+        String key = "\"" + fieldName + "\"";
+        int keyIdx = json.indexOf(key);
+        if (keyIdx < 0) return "";
+        int colonIdx = json.indexOf(':', keyIdx + key.length());
+        if (colonIdx < 0) return "";
+        int i = colonIdx + 1;
+        // Skip whitespace.
+        while (i < json.length() && Character.isWhitespace(json.charAt(i))) i++;
+        StringBuilder sb = new StringBuilder();
+        while (i < json.length()) {
+            char c = json.charAt(i);
+            if (Character.isDigit(c) || c == '-' || c == '.' || c == 'e' || c == 'E' || c == '+') {
+                sb.append(c);
+                i++;
+            } else {
+                break;
+            }
+        }
+        return sb.toString();
+    }
+
+    /**
+     * Parse the most recent occurrence of a "HH:MM:SS.mm" timestamp following
+     * the given marker in an ffmpeg log. Used by gettranscribestatus.fn to
+     * compute encoding progress: "Duration: " gives total, "time=" (last one)
+     * gives current. Returns -1 if no match.
+     */
+    protected static double parseFfmpegTime(String log, String marker) {
+        if (log == null || marker == null) return -1;
+        // Find the LAST occurrence so we get current progress, not the first frame.
+        int idx = log.lastIndexOf(marker);
+        if (idx < 0) return -1;
+        int start = idx + marker.length();
+        // Skip whitespace.
+        while (start < log.length() && Character.isWhitespace(log.charAt(start))) start++;
+        // Read HH:MM:SS or HH:MM:SS.mm until comma, space, or end.
+        StringBuilder sb = new StringBuilder();
+        for (int i = start; i < log.length(); i++) {
+            char c = log.charAt(i);
+            if (Character.isDigit(c) || c == ':' || c == '.') {
+                sb.append(c);
+            } else {
+                break;
+            }
+        }
+        String ts = sb.toString();
+        if (ts.isEmpty()) return -1;
+        String[] parts = ts.split(":");
+        try {
+            if (parts.length == 3) {
+                return Double.parseDouble(parts[0]) * 3600
+                     + Double.parseDouble(parts[1]) * 60
+                     + Double.parseDouble(parts[2]);
+            }
+        } catch (NumberFormatException ex) {
+            return -1;
+        }
+        return -1;
+    }
+
+    /**
      * Removes path separators, parent directory references, and null bytes.
      * @param filename The original filename from the upload
      * @return A safe filename containing only the base name
@@ -1787,6 +1885,7 @@ class Worker extends WebServer implements HttpConstants, Runnable {
                                 fname.contains("startscan.fn")||
                                 fname.contains("getfolders.fn")||
                                 fname.contains("gettranslate_json.fn")||
+                                fname.contains("gettranscribestatus.fn")||
                                 fname.contains("getfolders-json.fn")||
                                 fname.contains("getfolders_json.fn")||
                                 fname.contains("getscannews.fn")||
@@ -3717,14 +3816,116 @@ class Worker extends WebServer implements HttpConstants, Runnable {
                         File audioJsonFile = new File(outputfolderPath + "/audio.json");
                         if(audioJsonFile.exists()) {
                             String result = loadFileStr(audioJsonFile);
-                            outFile.write(result.getBytes());
+                            // Empty file = curl is mid-flight (LocalAI processing).
+                            if (result == null || result.trim().isEmpty()) {
+                                outFile.write("{\"segments\":[],\"status\":\"in_progress\"}".getBytes());
+                            }
+                            // LocalAI error JSON e.g. {"error":{"code":413,"message":"..."}}
+                            else if (result.contains("\"error\"") && result.contains("\"code\"")) {
+                                String errMsg = extractJsonStringField(result, "message");
+                                String errCode = extractJsonNumberField(result, "code");
+                                String escapedMsg = errMsg.replace("\\", "\\\\").replace("\"", "\\\"");
+                                outFile.write(("{\"segments\":[],\"status\":\"error\",\"errorCode\":\"" + errCode +
+                                               "\",\"errorMessage\":\"" + escapedMsg + "\"}").getBytes());
+                            }
+                            // Normal success — pass through unchanged.
+                            else {
+                                outFile.write(result.getBytes());
+                            }
                         } else {
-                            outFile.write("{\"segments\":[]}".getBytes());
+                            outFile.write("{\"segments\":[],\"status\":\"not_available\"}".getBytes());
                         }
                         } else {
                             outFile.write("{\"error\": \"Invalid md5 parameter\"}".getBytes());
                         }
                         } // end bUserAuthenticated
+                    }
+
+// ***************************************************
+// gettranscribestatus.fn - Get the current encoding/transcription status for a video
+// Returns JSON describing where in the pipeline the file is, so the UI can show
+// progress instead of an indistinguishable "no transcript available" message.
+// Status values:
+//   not_started  - streaming dir doesn't exist (encoding hasn't started)
+//   encoding     - HLS segments being produced; includes progress fraction
+//   transcribing - audio.aac extracted, curl-to-LocalAI in flight
+//   complete     - audio.json has segments
+//   error        - audio.json contains an error blob
+// ***************************************************
+                    if (fname.contains("gettranscribestatus.fn")) {
+                        if (bUserAuthenticated) {
+                            String[] urlParts = fname.split("=");
+                            if (urlParts.length >= 2) {
+                                sMD5 = urlParts[1];
+                            } else {
+                                sMD5 = "";
+                            }
+                            if (sMD5 != null && sMD5.matches("[a-fA-F0-9]+")) {
+                                String OS = System.getProperty("os.name").toLowerCase();
+                                boolean isWin = OS.contains("win");
+                                String projectsFolderPath = isWin ? "..\\" : (appendage + "../");
+                                String outputfolderPath = isWin
+                                    ? (projectsFolderPath + "\\rtserver\\streaming\\" + sMD5)
+                                    : (projectsFolderPath + "rtserver/streaming/" + sMD5);
+
+                                File streamDir = new File(outputfolderPath);
+                                File audioAacFile = new File(outputfolderPath + "/audio.aac");
+                                File audioJsonFile = new File(outputfolderPath + "/audio.json");
+                                File logFile = new File(outputfolderPath + "/log.txt");
+
+                                String status = "not_started";
+                                String progressJson = "";
+
+                                if (!streamDir.exists()) {
+                                    status = "not_started";
+                                } else if (audioJsonFile.exists() && audioJsonFile.length() > 0) {
+                                    String content = loadFileStr(audioJsonFile);
+                                    if (content != null && content.contains("\"error\"") && content.contains("\"code\"")) {
+                                        status = "error";
+                                        String errMsg = extractJsonStringField(content, "message");
+                                        String errCode = extractJsonNumberField(content, "code");
+                                        String escapedMsg = errMsg.replace("\\", "\\\\").replace("\"", "\\\"");
+                                        progressJson = ",\"errorCode\":\"" + errCode + "\",\"errorMessage\":\"" + escapedMsg + "\"";
+                                    } else if (content != null && content.contains("\"segments\"")) {
+                                        status = "complete";
+                                    } else {
+                                        // Non-empty but doesn't match either pattern — treat as complete and let the
+                                        // transcript fetcher figure it out. Avoids flagging valid-but-unusual JSON.
+                                        status = "complete";
+                                    }
+                                } else if (audioAacFile.exists()) {
+                                    // audio.aac extracted; audio.json missing or empty -> curl/whisper in flight.
+                                    status = "transcribing";
+                                } else {
+                                    // streamDir exists, no audio.aac yet -> ffmpeg HLS in progress (or just starting).
+                                    status = "encoding";
+                                    // Best-effort progress: scan the tail of log.txt for the most recent
+                                    // "time=HH:MM:SS.mm" emitted by ffmpeg, plus the source duration ffmpeg
+                                    // prints at startup ("Duration: HH:MM:SS.mm,").
+                                    if (logFile.exists()) {
+                                        try {
+                                            String log = loadFileStr(logFile);
+                                            double currentSec = parseFfmpegTime(log, "time=");
+                                            double totalSec = parseFfmpegTime(log, "Duration: ");
+                                            if (totalSec > 0 && currentSec >= 0) {
+                                                double frac = currentSec / totalSec;
+                                                if (frac > 1.0) frac = 1.0;
+                                                if (frac < 0.0) frac = 0.0;
+                                                progressJson = ",\"progress\":" + String.format("%.4f", frac) +
+                                                    ",\"currentSec\":" + String.format("%.1f", currentSec) +
+                                                    ",\"totalSec\":" + String.format("%.1f", totalSec);
+                                            }
+                                        } catch (Exception ex) {
+                                            // Don't fail the status call if log parsing breaks.
+                                        }
+                                    }
+                                }
+
+                                outFile.write(("{\"status\":\"" + status + "\"" + progressJson + "}").getBytes());
+                            } else {
+                                outFile.write("{\"status\":\"error\",\"errorMessage\":\"Invalid md5 parameter\"}".getBytes());
+                            }
+                        }
                     }
 
 // ***************************************************
@@ -8391,14 +8592,24 @@ class Worker extends WebServer implements HttpConstants, Runnable {
                                 }
                             }
                             if (isAdmin) {
-                                int returnCode = UserCollection.getInstance().addUser(sBoxUser, sBoxPassword, useremail);
-                                if(returnCode==1){
-                                    UpdateConfig("allowotherusers", "true", "config/www-server.properties");
-                                    outputString = "success";
-                                }else if(returnCode==0){
-                                    outputString = "alreadyexists";
-                                }else{
+                                // Validate inputs server-side. Frontend AddUserModal validates,
+                                // but a curl/script bypass could otherwise create rows with
+                                // empty username — which corrupts users.txt and renders as
+                                // blank rows in the Admin → Users tab. Reject early.
+                                if (sBoxUser == null || sBoxUser.trim().isEmpty()
+                                        || sBoxPassword == null || sBoxPassword.isEmpty()
+                                        || useremail == null || useremail.trim().isEmpty()) {
                                     outputString = "error";
+                                } else {
+                                    int returnCode = UserCollection.getInstance().addUser(sBoxUser, sBoxPassword, useremail);
+                                    if(returnCode==1){
+                                        UpdateConfig("allowotherusers", "true", "config/www-server.properties");
+                                        outputString = "success";
+                                    }else if(returnCode==0){
+                                        outputString = "alreadyexists";
+                                    }else{
+                                        outputString = "error";
+                                    }
                                 }
                             } else {
                                 outputString = "forbidden";
@@ -8468,6 +8679,150 @@ class Worker extends WebServer implements HttpConstants, Runnable {
                             outFile.close();
                         }
 
+                    }
+
+                    // Admin-only: change a non-admin user's password (admin override —
+                    // no old-password verification). Mirrors deluser.fn admin gate +
+                    // session-invalidation pattern. Per PROJECT_TAB_ADMIN_USERS.md Q5,
+                    // existing sessions for the target user are killed so the credential
+                    // change actually forces re-login.
+                    // Request: ?boxuser=<name>&boxpass=<newPassword>
+                    if (fname.contains("setuserpassword.fn")) {
+                        String outputString;
+                        if (bUserAuthenticated) {
+                            UserSession us = uuidmap.get(sAuthUUID);
+                            boolean isAdmin = false;
+                            if (us != null) {
+                                User caller = UserCollection.getInstance().getUsersByName(us.getUsername());
+                                if (caller != null && caller.getRole().equals("admin")) {
+                                    isAdmin = true;
+                                }
+                            }
+                            if (isAdmin) {
+                                if (sBoxUser == null || sBoxUser.isEmpty()
+                                        || sBoxPassword == null || sBoxPassword.isEmpty()) {
+                                    outputString = "error";
+                                } else {
+                                    int rc = UserCollection.getInstance()
+                                            .adminSetPassword(sBoxUser, sBoxPassword);
+                                    if (rc == 1) {
+                                        // Per Q5: invalidate target user's sessions.
+                                        java.util.Iterator<java.util.Map.Entry<String, UserSession>> it = uuidmap.entrySet().iterator();
+                                        while (it.hasNext()) {
+                                            java.util.Map.Entry<String, UserSession> e = it.next();
+                                            if (e.getValue() != null
+                                                    && sBoxUser.equalsIgnoreCase(e.getValue().getUsername())) {
+                                                it.remove();
+                                            }
+                                        }
+                                        outputString = "success";
+                                    } else if (rc == 0) {
+                                        outputString = "notfound";
+                                    } else if (rc == -2) {
+                                        // Caller targeted the admin user — wrong endpoint.
+                                        outputString = "forbidden";
+                                    } else {
+                                        outputString = "error";
+                                    }
+                                }
+                            } else {
+                                outputString = "forbidden";
+                            }
+                            p("setuserpassword.fn: " + sBoxUser + " -> " + outputString);
+                            outFile.write(outputString.getBytes());
+                            outFile.close();
+                        }
+                    }
+
+                    // Admin-only: change any user's email (including admin's own).
+                    // Email is contact info, not a credential — does NOT invalidate
+                    // sessions (per Q6).
+                    // Request: ?boxuser=<name>&useremail=<newEmail>
+                    if (fname.contains("setuseremail.fn")) {
+                        String outputString;
+                        if (bUserAuthenticated) {
+                            UserSession us = uuidmap.get(sAuthUUID);
+                            boolean isAdmin = false;
+                            if (us != null) {
+                                User caller = UserCollection.getInstance().getUsersByName(us.getUsername());
+                                if (caller != null && caller.getRole().equals("admin")) {
+                                    isAdmin = true;
+                                }
+                            }
+                            if (isAdmin) {
+                                if (sBoxUser == null || sBoxUser.isEmpty()
+                                        || useremail == null || useremail.isEmpty()) {
+                                    outputString = "error";
+                                } else {
+                                    int rc = UserCollection.getInstance()
+                                            .adminSetEmail(sBoxUser, useremail);
+                                    if (rc == 1) {
+                                        outputString = "success";
+                                    } else if (rc == 0) {
+                                        outputString = "notfound";
+                                    } else {
+                                        outputString = "error";
+                                    }
+                                }
+                            } else {
+                                outputString = "forbidden";
+                            }
+                            p("setuseremail.fn: " + sBoxUser + " -> " + outputString);
+                            outFile.write(outputString.getBytes());
+                            outFile.close();
+                        }
+                    }
+
+                    // Admin self-service password change. Wraps the existing
+                    // changeUserAdmin(username, password) — admin override, no
+                    // old-password check (the implicit auth is being already-logged-in
+                    // as admin). Per Q5, also invalidates the admin's other sessions
+                    // so the credential change forces re-login on stale sessions.
+                    // Request: ?boxpass=<newPassword>  (no boxuser — derived from session)
+                    if (fname.contains("setadminpassword.fn")) {
+                        String outputString;
+                        if (bUserAuthenticated) {
+                            UserSession us = uuidmap.get(sAuthUUID);
+                            boolean isAdmin = false;
+                            String callerName = null;
+                            if (us != null) {
+                                callerName = us.getUsername();
+                                User caller = UserCollection.getInstance().getUsersByName(callerName);
+                                if (caller != null && caller.getRole().equals("admin")) {
+                                    isAdmin = true;
+                                }
+                            }
+                            if (isAdmin) {
+                                if (sBoxPassword == null || sBoxPassword.isEmpty()) {
+                                    outputString = "error";
+                                } else {
+                                    // changeUserAdmin's first param is allowed to be empty
+                                    // string when caller only wants to change password —
+                                    // pass empty so the username isn't touched.
+                                    UserCollection.getInstance().changeUserAdmin("", sBoxPassword);
+                                    // Invalidate all OTHER admin sessions (not the current
+                                    // caller's — they get to keep using the UI). The
+                                    // caller's session keeps its uuid; new credentials
+                                    // take effect on next login from anywhere.
+                                    java.util.Iterator<java.util.Map.Entry<String, UserSession>> it = uuidmap.entrySet().iterator();
+                                    while (it.hasNext()) {
+                                        java.util.Map.Entry<String, UserSession> e = it.next();
+                                        if (e.getValue() != null
+                                                && callerName != null
+                                                && callerName.equalsIgnoreCase(e.getValue().getUsername())
+                                                && !e.getKey().equals(sAuthUUID)) {
+                                            it.remove();
+                                        }
+                                    }
+                                    outputString = "success";
+                                }
+                            } else {
+                                outputString = "forbidden";
+                            }
+                            p("setadminpassword.fn -> " + outputString);
+                            outFile.write(outputString.getBytes());
+                            outFile.close();
+                        }
                     }
 
 

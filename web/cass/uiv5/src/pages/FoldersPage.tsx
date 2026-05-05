@@ -2,9 +2,9 @@
  * Folders Page - Desktop-style folder browser
  */
 
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { Box, Typography, Card, CardContent, CircularProgress, IconButton, Button, Menu, MenuItem } from '@mui/material';
+import { Box, Typography, Card, CardContent, CircularProgress, IconButton, Button, Menu, MenuItem, Checkbox } from '@mui/material';
 import {
   Folder as FolderIcon,
   InsertDriveFile as FileIcon,
@@ -17,7 +17,7 @@ import {
   VideoFile as VideoIcon,
   AudioFile as AudioIcon,
 } from '@mui/icons-material';
-import { fetchFolders } from '../services/fileApi';
+import { fetchFolders, fetchFileInfo } from '../services/fileApi';
 import { checkFolderPermission } from '../services/folderPermissionApi';
 import { ImageViewer } from '../features/media/ImageViewer';
 import { VideoPlayer } from '../features/media/VideoPlayer';
@@ -28,6 +28,8 @@ import { FolderTreeSidebar } from '../components/folders/FolderTreeSidebar';
 import { useMediaViewer } from '../hooks/useMediaViewer';
 import { useDownloadManager } from '../contexts/DownloadManagerContext';
 import { useFolderUpload } from '../contexts/FolderUploadContext';
+import { useFolderFileSelection } from '../hooks/useFolderFileSelection';
+import { SelectionToolbar } from '../features/files/SelectionToolbar';
 import { selectFolder, selectSelectedFolder, selectIsSidebarOpen } from '../store/slices/folderPermissionsSlice';
 import type { AppDispatch } from '../store/store';
 import type { Folder } from '../services/fileApi';
@@ -98,9 +100,50 @@ export function FoldersPage() {
 
   const { addToQueue } = useDownloadManager();
 
+  // Multi-select for batch actions on files in the current folder.
+  // See internal/PROJECT_FOLDER_MULTISELECT.md.
+  const folderSelection = useFolderFileSelection(folders);
+
   useEffect(() => {
     loadFolders(currentFolder);
+    // Clear multi-select on folder change (per spec Q2 — selection is tied
+    // to the visible list, like the file view).
+    folderSelection.deselectAll();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentFolder]);
+
+  // Keyboard shortcuts on the FoldersPage:
+  //   Cmd/Ctrl+A   → select all files in the current folder
+  //   Esc          → clear selection (also closes the ribbon)
+  // We skip the handler when focus is in an input/textarea/contenteditable,
+  // so users typing in dialogs / search fields don't accidentally trigger
+  // a select-all.
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement | null;
+      if (target) {
+        const tag = target.tagName;
+        if (
+          tag === 'INPUT' ||
+          tag === 'TEXTAREA' ||
+          tag === 'SELECT' ||
+          target.isContentEditable
+        ) {
+          return;
+        }
+      }
+      const isCmd = e.metaKey || e.ctrlKey;
+      if (isCmd && (e.key === 'a' || e.key === 'A')) {
+        e.preventDefault();
+        folderSelection.selectAll();
+      } else if (e.key === 'Escape' && folderSelection.selectedCount > 0) {
+        folderSelection.deselectAll();
+      }
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [folderSelection.selectedCount, folders]);
 
   const loadFolders = async (sFolder: string) => {
     try {
@@ -159,11 +202,99 @@ export function FoldersPage() {
     }
   };
 
-  const decodeFolderName = (name: string): string => {
+  // function declarations are hoisted; arrow consts aren't. folderToFile
+  // (below) uses these during the first render via useMemo, which would
+  // trigger a temporal-dead-zone ReferenceError if these were const arrows.
+  function decodeFolderName(name: string): string {
     try {
       return decodeURIComponent(name);
     } catch (e) {
       return name;
+    }
+  }
+
+  // Convert a Folder item (file flavor) into the File shape used by viewers,
+  // download manager, and the SelectionToolbar. Returns null for non-file items.
+  // Function declaration (not const arrow) so it's hoisted — the toolbarSelection
+  // useMemo below calls this during the first render.
+  function folderToFile(folder: Folder): File | null {
+    if (folder.type !== 'file' || !folder.md5) return null;
+    const fileGroup = getFileGroup(folder.name);
+    const filePath = `/cass/getfile.fn?sNamer=${folder.md5}`;
+    const videoUrl = fileGroup === 'movie' ? `getvideo.m3u8?md5=${folder.md5}` : undefined;
+    return {
+      nickname: folder.md5,
+      name: decodeFolderName(folder.name),
+      file_ext: folder.name.substring(folder.name.lastIndexOf('.')),
+      file_group: fileGroup,
+      file_date_long: Date.now(),
+      file_size: 0,
+      multiclusterid: folder.md5,
+      file_thumbnail: '',
+      file_tags: '',
+      file_path_webapp: filePath,
+      video_url_webapp: videoUrl,
+      md5hash: folder.md5,
+      file_name: decodeFolderName(folder.name),
+      file_date: new Date().toISOString(),
+      file_path: '',
+    };
+  }
+
+  // SelectionToolbar contract: it expects File[] for selectedFiles. The hook
+  // returns Folder[] (file-flavor only), so map through folderToFile.
+  const toolbarSelection = useMemo(
+    () => ({
+      selectedCount: folderSelection.selectedCount,
+      selectedFiles: folderSelection.selectedFiles
+        .map(folderToFile)
+        .filter((f): f is File => f !== null),
+      selectedFileIds: folderSelection.selectedFileIds,
+      deselectAll: folderSelection.deselectAll,
+    }),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [folderSelection.selectedCount, folderSelection.selectedFileIds, folderSelection.selectedFiles],
+  );
+
+  // Download handler for selected files in the folder view. We can't reuse
+  // the toolbar's default (which does `selectedFiles.forEach(addToQueue)`)
+  // because folderToFile() builds File objects with file_size: 0 (Folder
+  // type from getfolders-json.fn doesn't carry size). The DownloadManager
+  // uses file_size to (a) decide chunked-vs-direct and (b) compute
+  // bytes-left progress. With size=0 it picks the direct path AND shows
+  // negative bytes-left.
+  //
+  // Fix: hydrate via getfileinfo.fn per MD5 in parallel before queueing.
+  const handleMultiDownload = async () => {
+    const ids = folderSelection.selectedFileIds;
+    if (ids.length === 0) return;
+    try {
+      const infos = await Promise.all(ids.map((id) => fetchFileInfo(id)));
+      infos.forEach((info) => {
+        const file: File = {
+          nickname: info.nickname,
+          name: info.name,
+          file_ext: info.file_ext,
+          file_group: info.file_group as File['file_group'],
+          file_date_long: info.file_date_long,
+          file_size: info.file_size,
+          multiclusterid: info.nickname,
+          file_thumbnail: info.file_thumbnail || '',
+          file_tags: info.file_tags,
+          file_path_webapp: info.file_path_webapp,
+          video_url_webapp: info.video_url_webapp,
+          md5hash: info.nickname,
+          file_name: info.name,
+          file_date: info.file_date,
+          file_path: '',
+        };
+        addToQueue(file);
+      });
+    } catch (err) {
+      console.error('handleMultiDownload: failed to hydrate file info', err);
+      // Fall back to the size=0 path so the user at least gets the bytes,
+      // even if the progress display will be off.
+      toolbarSelection.selectedFiles.forEach((f) => addToQueue(f));
     }
   };
 
@@ -171,34 +302,8 @@ export function FoldersPage() {
     console.log('Item clicked:', folder);
 
     if (folder.type === 'file' && folder.md5) {
-      // Determine the appropriate URL based on file type
-      const fileGroup = getFileGroup(folder.name);
-      let filePath = `/cass/getfile.fn?sNamer=${folder.md5}`;
-      let videoUrl = undefined;
-
-      // For video files, use getvideo.m3u8 for HLS streaming
-      if (fileGroup === 'movie') {
-        videoUrl = `getvideo.m3u8?md5=${folder.md5}`;
-      }
-
-      // Convert folder to File object for viewers
-      const file: File = {
-        nickname: folder.md5,
-        name: decodeFolderName(folder.name),
-        file_ext: folder.name.substring(folder.name.lastIndexOf('.')),
-        file_group: fileGroup,
-        file_date_long: Date.now(),
-        file_size: 0,
-        multiclusterid: folder.md5,
-        file_thumbnail: '',
-        file_tags: '',
-        file_path_webapp: filePath,
-        video_url_webapp: videoUrl,
-        md5hash: folder.md5,
-        file_name: decodeFolderName(folder.name),
-        file_date: new Date().toISOString(),
-        file_path: '',
-      };
+      const file = folderToFile(folder);
+      if (!file) return;
 
       // Open appropriate viewer based on file type
       const ext = file.file_ext?.toLowerCase() || '';
@@ -229,7 +334,7 @@ export function FoldersPage() {
     }
   };
 
-  const getFileGroup = (fileName: string): string => {
+  function getFileGroup(fileName: string): string {
     const ext = fileName.substring(fileName.lastIndexOf('.')).toLowerCase();
 
     const imageExts = ['.jpg', '.jpeg', '.png', '.gif', '.bmp', '.webp'];
@@ -244,7 +349,7 @@ export function FoldersPage() {
     if (ext === '.pdf') return 'document';
 
     return 'document';
-  };
+  }
 
   const getFileIcon = (fileName: string) => {
     const ext = fileName.substring(fileName.lastIndexOf('.')).toLowerCase();
@@ -469,8 +574,42 @@ export function FoldersPage() {
         </Typography>
       </Box>
 
-      {/* Content Area */}
-      <Box sx={{ flex: 1, overflow: 'auto', p: 3 }}>
+      {/* Content Area
+          The top of this scroll container is split in two:
+            - A 64px-high "toolbar slot" that's ALWAYS present (sticky, transparent
+              when empty, the blue ribbon when files are selected). Reserving the
+              space unconditionally means the breadcrumb/grid never jump when
+              the ribbon appears or disappears.
+            - The rest scrolls normally below. */}
+      <Box sx={{ flex: 1, overflow: 'auto', p: 3, pt: 0 }}>
+        {/* Sticky toolbar slot — collapses to nothing when 0 files selected,
+            expands smoothly to ribbon height when files are selected. The
+            animated transition prevents the abrupt push-down/pull-up of the
+            grid below. Always rendered (just zero-height when inactive) so
+            the sticky/scroll behavior is consistent. */}
+        <Box
+          sx={{
+            position: 'sticky',
+            top: 0,
+            zIndex: 10,
+            mx: -3,           // span the parent's horizontal padding
+            px: 3,
+            pt: folderSelection.selectedCount > 0 ? 2 : 3,
+            pb: folderSelection.selectedCount > 0 ? 2 : 0,
+            mb: folderSelection.selectedCount > 0 ? 1 : 0,
+            backgroundColor: '#004080',  // match page background; covers content scrolling underneath
+            transition: 'padding-top 0.18s ease, padding-bottom 0.18s ease, margin-bottom 0.18s ease',
+          }}
+        >
+          {folderSelection.selectedCount > 0 && (
+            <SelectionToolbar
+              inline
+              selection={toolbarSelection}
+              onAfterTag={() => loadFolders(currentFolder)}
+              onDownloadOverride={handleMultiDownload}
+            />
+          )}
+        </Box>
         {currentFolder !== 'scanfolders' && (
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 3 }}>
           {breadcrumbs.length > 1 && (
@@ -522,6 +661,8 @@ export function FoldersPage() {
         >
           {folders.map((folder, index) => {
             const { Icon, color } = folder.type === 'file' ? getFileIcon(folder.name) : { Icon: FolderIcon, color: '#FFD700' };
+            const isFile = folder.type === 'file' && !!folder.md5;
+            const isMultiSelected = isFile && folderSelection.isSelected(folder.md5);
 
             return (
               <Card
@@ -529,22 +670,68 @@ export function FoldersPage() {
                 onClick={() => handleFolderSelect(folder)}
                 onDoubleClick={() => handleFolderClick(folder)}
                 sx={{
+                  position: 'relative',
                   cursor: 'pointer',
-                  backgroundColor: selectedFolder?.name === folder.name
-                    ? 'rgba(255, 255, 255, 0.2)'
-                    : 'transparent',
+                  backgroundColor: isMultiSelected
+                    ? 'rgba(33, 150, 243, 0.25)'  // file-view-style blue tint for multi-selected
+                    : selectedFolder?.name === folder.name
+                      ? 'rgba(255, 255, 255, 0.2)'
+                      : 'transparent',
                   boxShadow: 'none',
                   transition: 'all 0.2s ease-in-out',
-                  border: selectedFolder?.name === folder.name
-                    ? '2px solid rgba(255, 255, 255, 0.5)'
-                    : '2px solid transparent',
+                  border: isMultiSelected
+                    ? '2px solid rgba(33, 150, 243, 0.9)'  // distinct blue ring for multi-select
+                    : selectedFolder?.name === folder.name
+                      ? '2px solid rgba(255, 255, 255, 0.5)'
+                      : '2px solid transparent',
                   borderRadius: 2,
                   '&:hover': {
                     transform: 'translateY(-4px)',
-                    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                    backgroundColor: isMultiSelected
+                      ? 'rgba(33, 150, 243, 0.3)'
+                      : 'rgba(255, 255, 255, 0.1)',
                   },
+                  // Reveal the checkbox on hover (or when already selected).
+                  '&:hover .folder-multiselect-checkbox': { opacity: 1 },
                 }}
               >
+                {isFile && (
+                  <Checkbox
+                    className="folder-multiselect-checkbox"
+                    size="small"
+                    checked={isMultiSelected}
+                    onClick={(e) => e.stopPropagation()}
+                    onDoubleClick={(e) => e.stopPropagation()}
+                    onChange={(e) => {
+                      // React's synthetic event for the change is good enough — we only
+                      // need shift/ctrl/meta from a real MouseEvent for range/multi-select.
+                      // Since the change handler can't see modifier keys reliably across
+                      // browsers, route through toggleSelect (plain toggle). Range
+                      // selection via shift-click is wired in P3 / via card-level click.
+                      e.stopPropagation();
+                      folderSelection.toggleSelect(folder.md5 as string);
+                    }}
+                    sx={{
+                      position: 'absolute',
+                      top: 4,
+                      left: 4,
+                      zIndex: 2,
+                      padding: '4px',
+                      color: 'rgba(255, 255, 255, 0.8)',
+                      backgroundColor: 'rgba(0, 0, 0, 0.4)',
+                      borderRadius: '4px',
+                      opacity: isMultiSelected ? 1 : 0,
+                      transition: 'opacity 0.15s ease-in-out',
+                      '&.Mui-checked': {
+                        color: '#2196f3',
+                        backgroundColor: 'rgba(255, 255, 255, 0.95)',
+                      },
+                      '&:hover': {
+                        backgroundColor: 'rgba(0, 0, 0, 0.55)',
+                      },
+                    }}
+                  />
+                )}
                 <CardContent
                   sx={{
                     display: 'flex',

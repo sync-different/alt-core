@@ -9,6 +9,7 @@ import { useSelector } from 'react-redux';
 import { Box, Tabs, Tab, Alert } from '@mui/material';
 import { selectIsAdmin } from '../store/slices/authSlice';
 import { CurrentLoginsTab } from '../components/admin/CurrentLoginsTab';
+import { UsersTab } from '../components/admin/UsersTab';
 
 export function AdminPage() {
   const isAdmin = useSelector(selectIsAdmin);
@@ -34,12 +35,14 @@ export function AdminPage() {
           sx={{ px: 2 }}
         >
           <Tab label="Current Logins" />
+          <Tab label="Users" />
         </Tabs>
       </Box>
 
       {/* Tab content */}
       <Box sx={{ flex: 1, overflow: 'auto' }}>
         {activeTab === 0 && <CurrentLoginsTab />}
+        {activeTab === 1 && <UsersTab />}
       </Box>
     </Box>
   );

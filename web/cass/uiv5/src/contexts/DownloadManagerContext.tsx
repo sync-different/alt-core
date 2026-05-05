@@ -104,6 +104,21 @@ export function DownloadManagerProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const addToQueue = useCallback((file: File) => {
+    // Sanity check: file_size must be set. Callers that synthesize File
+    // objects (e.g. from a Folder via folderToFile) sometimes set file_size=0
+    // because the source API doesn't carry it. file_size=0 silently degrades
+    // download behavior — picks the direct path instead of chunked
+    // (no per-chunk MD5 verify), and produces negative bytes-left in the
+    // progress UI because totalBytes - downloadedBytes underflows.
+    // Guard with a console.error so future regressions are loud + diagnosable.
+    // See FOLDER_MULTISELECT bug 2026-04-30 + chat for the full explanation.
+    if (!file.file_size || file.file_size <= 0) {
+      console.error(
+        '[DownloadManager] addToQueue: file_size missing or 0 — chunked download + progress will misbehave. '
+          + 'Hydrate via getfileinfo.fn before queueing.',
+        { nickname: file.nickname, name: file.name, file_size: file.file_size },
+      );
+    }
     setQueue(prev => {
       // Don't add duplicates (same file nickname) if already downloading/queued
       if (prev.some(item => item.file.nickname === file.nickname && item.status !== 'complete' && item.status !== 'failed' && item.status !== 'cancelled')) {

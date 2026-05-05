@@ -10,6 +10,7 @@ import sidebarReducer from './slices/sidebarSlice';
 import viewerReducer from './slices/viewerSlice';
 import playlistReducer from './slices/playlistSlice';
 import folderPermissionsReducer from './slices/folderPermissionsSlice';
+import folderSelectionReducer from './slices/folderSelectionSlice';
 
 export const store = configureStore({
   reducer: {
@@ -20,6 +21,7 @@ export const store = configureStore({
     viewer: viewerReducer,
     playlist: playlistReducer,
     folderPermissions: folderPermissionsReducer,
+    folderSelection: folderSelectionReducer,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({

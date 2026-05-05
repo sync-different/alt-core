@@ -261,9 +261,13 @@ public class DockerService implements Runnable {
         Ports ports= new Ports();
         ports.bind(port, Ports.Binding.bindPort(8080));
         
-        // Create container
+        // Create container.
+        // LOCALAI_UPLOAD_LIMIT raises LocalAI's default 15MB body cap so large
+        // video AAC tracks can be transcribed (BUG_TRANSCRIPT_LARGEVIDEO).
+        // 2048 = 2 GB ceiling, comfortable headroom for any realistic audio.
         CreateContainerResponse container = dockerClient.createContainerCmd(sImageName)
                 .withCmd("sleep","500000")
+                .withEnv("LOCALAI_UPLOAD_LIMIT=2048")
                 .withExposedPorts(port)
                 .withHostConfig(HostConfig.newHostConfig().withPortBindings(ports).withAutoRemove(true))
                 .exec();

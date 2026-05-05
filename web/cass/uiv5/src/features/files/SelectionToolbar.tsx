@@ -1,6 +1,14 @@
 /**
  * Selection Toolbar
- * Displays actions available for selected files
+ * Displays actions available for selected files.
+ *
+ * Default mode (no props): drives off the file-view's `useFileSelection` hook
+ * and refreshes via `resetFiles` — backwards-compatible with MyFilesPage.
+ *
+ * Custom mode (caller supplies `selection` + optional `onAfterTag`): drives
+ * off any selection-shaped object. Used by the FoldersPage to share the same
+ * UI without coupling to `state.files`. See
+ * internal/PROJECT_FOLDER_MULTISELECT.md.
  */
 
 import { useState } from 'react';
@@ -28,14 +36,49 @@ import { ShareDialog } from '../share/ShareDialog';
 import { addTags } from '../../services/fileApi';
 import { resetFiles } from '../../store/slices/filesSlice';
 import type { AppDispatch } from '../../store/store';
+import type { File } from '../../types/models';
+
+/** Minimal selection contract the toolbar needs. */
+export interface ToolbarSelection {
+  selectedCount: number;
+  selectedFiles: File[];
+  selectedFileIds: string[];
+  deselectAll: () => void;
+}
 
 interface SelectionToolbarProps {
   inline?: boolean;
+  /**
+   * Override the selection source. When omitted, falls back to the file-view's
+   * `useFileSelection` (legacy behavior — MyFilesPage relies on this).
+   */
+  selection?: ToolbarSelection;
+  /**
+   * Called after a successful tag add (e.g. to refresh the underlying list).
+   * When omitted, falls back to dispatching `resetFiles()` for the file view.
+   */
+  onAfterTag?: () => void;
+  /**
+   * Override the Download click. Caller is fully responsible for queueing.
+   * Used by the FoldersPage to hydrate `file_size` (missing from the
+   * getfolders-json.fn response) via getfileinfo.fn before queueing — without
+   * this, the download manager falls back to the direct (non-chunked) path
+   * and reports negative bytes-left because totalBytes is 0.
+   * When omitted, falls back to the legacy per-file `addToQueue` loop.
+   */
+  onDownloadOverride?: () => void;
 }
 
-export function SelectionToolbar({ inline = false }: SelectionToolbarProps) {
+export function SelectionToolbar({
+  inline = false,
+  selection,
+  onAfterTag,
+  onDownloadOverride,
+}: SelectionToolbarProps) {
   const dispatch = useDispatch<AppDispatch>();
-  const { selectedCount, selectedFiles, selectedFileIds, deselectAll } = useFileSelection();
+  const fileViewSelection = useFileSelection();
+  const sel: ToolbarSelection = selection ?? fileViewSelection;
+  const { selectedCount, selectedFiles, selectedFileIds, deselectAll } = sel;
   const { addToQueue } = useDownloadManager();
   const [tagDialogOpen, setTagDialogOpen] = useState(false);
   const [shareDialogOpen, setShareDialogOpen] = useState(false);
@@ -54,8 +97,12 @@ export function SelectionToolbar({ inline = false }: SelectionToolbarProps) {
         severity: 'success',
       });
       deselectAll();
-      // Refresh the file list to show updated tags
-      dispatch(resetFiles());
+      // Refresh the underlying list so tag updates are visible.
+      if (onAfterTag) {
+        onAfterTag();
+      } else {
+        dispatch(resetFiles());
+      }
     } catch (error) {
       console.error('Failed to add tags:', error);
       setSnackbar({
@@ -67,6 +114,10 @@ export function SelectionToolbar({ inline = false }: SelectionToolbarProps) {
   };
 
   const handleDownload = () => {
+    if (onDownloadOverride) {
+      onDownloadOverride();
+      return;
+    }
     selectedFiles.forEach(file => addToQueue(file));
     setSnackbar({
       open: true,
@@ -112,10 +163,13 @@ export function SelectionToolbar({ inline = false }: SelectionToolbarProps) {
         </IconButton>
       </Tooltip>
 
-      <Tooltip title="Delete">
-        <IconButton color="inherit" size={inline ? "small" : "medium"}>
-          <DeleteIcon />
-        </IconButton>
+      <Tooltip title="Delete (coming soon)">
+        {/* Wrap in span so Tooltip works even when the IconButton is disabled. */}
+        <span>
+          <IconButton color="inherit" disabled size={inline ? "small" : "medium"}>
+            <DeleteIcon />
+          </IconButton>
+        </span>
       </Tooltip>
     </>
   );

@@ -351,7 +351,7 @@ public class Main extends AbstractService {
                 if (sMode.equals("server")) {
                     //server
                     p("SERVER+CLIENT MODE");
-                    _flags = "cstbpraz";
+                    _flags = "cstbprazd";
                 }
             }
             
@@ -433,10 +433,16 @@ public class Main extends AbstractService {
             }
 
             if (_flags.contains("d")) {
-                //Docker service
-                p("[spawning docker service]");
-                //new TransferService("outgoing/",_server,_serverport, mDelay, _signature, true);   
-                dl = new DockerLauncher();   
+                // Docker service. Gated by docker.localai.enabled in www-docker.properties.
+                // Default true: missing/empty value preserves prior behavior. Set to "false"
+                // to disable transcription on hosts without Docker.
+                String dockerEnabled = getConfig("docker.localai.enabled", appendage + "../scrubber/config/www-docker.properties");
+                if (dockerEnabled.equalsIgnoreCase("false")) {
+                    p("[docker service disabled — docker.localai.enabled=false]");
+                } else {
+                    p("[spawning docker service]");
+                    dl = new DockerLauncher();
+                }
             }
 
             
