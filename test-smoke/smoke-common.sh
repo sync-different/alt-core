@@ -9,7 +9,11 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-CLI_JAR="$SCRIPT_DIR/alt-core-cli/target/alt-core-cli.jar"
+# Repo root sits one level above the test-smoke/ directory that holds these
+# scripts. All server artifacts (CLI jar, incoming dir, config, etc.) live
+# at the repo root — SCRIPT_DIR is for phase-script siblings only.
+REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+CLI_JAR="$REPO_ROOT/alt-core-cli/target/alt-core-cli.jar"
 
 # Server URL: override with SMOKE_URL env var to run against a remote/prod box.
 #   SMOKE_URL=https://alt.example.com ./smoke-test.sh
@@ -260,7 +264,7 @@ fi
 #            Tests that rely on local filesystem observation are skipped.
 #   PROD   — app bundle at /Applications/alt-core.app with the PROD appendage
 #            (~/Library/Application Support/hivebot/scrubber/).
-#   DEV    — running from the repo; paths relative to SCRIPT_DIR.
+#   DEV    — running from the repo; paths relative to REPO_ROOT.
 #
 # PROD paths reflect the appendage prefix used by Netty/ProcessorService:
 #   incoming:     appendage + "../rtserver/incoming"
@@ -301,9 +305,9 @@ elif [ -d "/Applications/alt-core.app" ] && [ -d "$PROD_APP_SUPPORT/scrubber" ];
     SCAN_CONFIG_DIR="$PROD_APP_SUPPORT/scrubber/config"
 else
     SMOKE_ENV="DEV"
-    INCOMING="$SCRIPT_DIR/rtserver/incoming"
-    MOBILEBACKUP="$SCRIPT_DIR/scrubber/mobilebackup/upload"
-    SCAN_CONFIG_DIR="$SCRIPT_DIR/scrubber/config"
+    INCOMING="$REPO_ROOT/rtserver/incoming"
+    MOBILEBACKUP="$REPO_ROOT/scrubber/mobilebackup/upload"
+    SCAN_CONFIG_DIR="$REPO_ROOT/scrubber/config"
 fi
 
 printf "${BOLD}Mode:${RESET} ${CYAN}%s${RESET}  " "$SMOKE_ENV"

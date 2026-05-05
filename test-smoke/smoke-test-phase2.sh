@@ -140,8 +140,13 @@ else
 fi
 
 # 11.4 adduser.fn — attempt to add existing user (should return alreadyexists)
+# Note: server parses ?boxuser=&boxpass= (lowercase). Earlier sBoxUser/sBoxPassword
+# capitalization here was a typo — server didn't recognize the params, fell through
+# with empty fields, and (pre-2026-05-01) returned a lax response that happened to
+# contain 'alreadyexists'. Phase 13's server-side validation of adduser.fn rejects
+# empty fields with 'error', exposing the typo. Fixed.
 test_start "2.15 adduser.fn — returns expected status"
-RESP=$(curl_auth "$SERVER/cass/adduser.fn?sBoxUser=admin&sBoxPassword=test&useremail=test%40test.com")
+RESP=$(curl_auth "$SERVER/cass/adduser.fn?boxuser=admin&boxpass=test&useremail=test%40test.com")
 if echo "$RESP" | grep -q 'alreadyexists\|success\|forbidden'; then
     pass "2.15 adduser.fn — returns expected status"
     verbose_body "$RESP"
@@ -151,7 +156,7 @@ fi
 
 # 11.5 adduser.fn — noauth blocked
 test_start "2.16 adduser.fn --noauth — blocked"
-RESP=$(curl_noauth "$SERVER/cass/adduser.fn?sBoxUser=hacker&sBoxPassword=pw&useremail=h%40h.com")
+RESP=$(curl_noauth "$SERVER/cass/adduser.fn?boxuser=hacker&boxpass=pw&useremail=h%40h.com")
 if [ -z "$RESP" ]; then
     pass "2.16 adduser.fn --noauth — blocked"
 else

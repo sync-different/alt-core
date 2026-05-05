@@ -24,9 +24,9 @@ printf "${BOLD}── Phase 7: Index Tests ──${RESET}\n"
 
 UPLOAD_PORT=8087
 # INCOMING and MOBILEBACKUP are set by smoke-common.sh (auto-detects dev vs production)
-UBER_JAR="$SCRIPT_DIR/scrubber/target/my-app-1.0-SNAPSHOT.jar"
-DELETE_HELPER_SRC="$SCRIPT_DIR/test-files/CreateDeleteNotification.java"
-DELETE_HELPER_CLASS="$SCRIPT_DIR/test-files"
+UBER_JAR="$REPO_ROOT/scrubber/target/my-app-1.0-SNAPSHOT.jar"
+DELETE_HELPER_SRC="$REPO_ROOT/test-files/CreateDeleteNotification.java"
+DELETE_HELPER_CLASS="$REPO_ROOT/test-files"
 
 if ! lsof -ti:$UPLOAD_PORT > /dev/null 2>&1; then
     skip "Index tests" "port $UPLOAD_PORT not running — skipping Phase 7 tests"

@@ -209,20 +209,33 @@ else
 fi
 
 # ─── 9.12 Admin-only endpoint with valid but non-admin session ──
-# Login as user1 (non-admin). Hit getlogins.fn which is admin-only.
-# On remote targets, user1/pass1 may not exist — override with env vars:
+# Bootstraps a throwaway non-admin user via adduser.fn so the test always runs
+# (no dependency on a pre-seeded user1/pass1). Cleans up via deluser.fn after.
+# Override with env vars to use a pre-existing account on REMOTE targets:
 #   SMOKE_NONADMIN_USER=testuser SMOKE_NONADMIN_PASS=xxx
-# If the non-admin login fails, the test skips cleanly.
 test_start "9.12 non-admin role check"
-NONADMIN_USER="${SMOKE_NONADMIN_USER:-user1}"
-NONADMIN_PASS="${SMOKE_NONADMIN_PASS:-pass1}"
+NA_CREATED=0
+if [ -n "${SMOKE_NONADMIN_USER:-}" ] && [ -n "${SMOKE_NONADMIN_PASS:-}" ]; then
+    NONADMIN_USER="$SMOKE_NONADMIN_USER"
+    NONADMIN_PASS="$SMOKE_NONADMIN_PASS"
+else
+    # Bootstrap a throwaway non-admin via adduser.fn (admin-only endpoint).
+    NA_SUFFIX=$(date +%s)$(printf "%04d" $((RANDOM % 10000)))
+    NONADMIN_USER="phase9_${NA_SUFFIX}"
+    NONADMIN_PASS="P9pass!${NA_SUFFIX}"
+    NA_EMAIL="phase9_${NA_SUFFIX}@test.invalid"
+    ADD_RESP=$(curl_auth "$SERVER/cass/adduser.fn?boxuser=${NONADMIN_USER}&boxpass=${NONADMIN_PASS}&useremail=${NA_EMAIL}" || true)
+    if echo "$ADD_RESP" | grep -qi "success"; then
+        NA_CREATED=1
+    fi
+fi
 # CLI exits 1 on failed login; disable set -e around the capture.
 set +e
 NONADMIN_RESP=$(cli login "$NONADMIN_USER" "$NONADMIN_PASS" 2>/dev/null)
 set -e
 NONADMIN_UUID=$(echo "$NONADMIN_RESP" | grep '"uuid"' | sed 's/.*"uuid": "//;s/".*//' || true)
 if [ -z "$NONADMIN_UUID" ]; then
-    skip "9.12 non-admin role check" "could not log in as $NONADMIN_USER (set SMOKE_NONADMIN_USER/PASS)"
+    skip "9.12 non-admin role check" "could not log in as $NONADMIN_USER (bootstrap add=$ADD_RESP)"
 else
     RESP=$(curl -s --max-time 3 -H "Cookie: uuid=$NONADMIN_UUID" "$SERVER/cass/getlogins.fn" || true)
     if echo "$RESP" | grep -q '"username"'; then
@@ -232,6 +245,10 @@ else
     else
         pass "9.12 non-admin role check — no session list leaked (RESP=$(echo "$RESP" | head -c 80))"
     fi
+fi
+# Clean up the throwaway user (only if we created it).
+if [ "$NA_CREATED" = "1" ]; then
+    curl_auth "$SERVER/cass/deluser.fn?boxuser=${NONADMIN_USER}" > /dev/null 2>&1 || true
 fi
 
 # ─── 9.13 Stale/invalid UUID — graceful 401 (no crash) ─────

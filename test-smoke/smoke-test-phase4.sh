@@ -20,7 +20,7 @@ UPLOAD_PORT=8087
 UPLOAD_TEST_DIR=$(mktemp -d)
 echo "smoke-test-content" > "$UPLOAD_TEST_DIR/test-upload.txt"
 dd if=/dev/zero bs=1024 count=1 of="$UPLOAD_TEST_DIR/test-1kb.bin" 2>/dev/null
-INCOMING="$SCRIPT_DIR/rtserver/incoming"
+# INCOMING is set by smoke-common.sh based on DEV/PROD/REMOTE mode
 
 # Helper: remove any smoke test artifacts from incoming immediately
 # This prevents ProcessorService from picking them up and hanging.

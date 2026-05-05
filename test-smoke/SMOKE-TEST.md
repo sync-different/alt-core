@@ -248,7 +248,7 @@ All phase scripts source `smoke-common.sh` which provides:
 - `cli()` — alt-core-cli wrapper
 - `check_fuzz_status()` — WAF-aware HTTP status check for Phase 5
 - `skip_phase_if_remote()` — skip FS-dependent phases in REMOTE mode
-- `$UUID`, `$SERVER`, `$SCRIPT_DIR` — shared variables
+- `$UUID`, `$SERVER`, `$SCRIPT_DIR` (scripts dir), `$REPO_ROOT` (repo root) — shared variables
 - `print_summary()` — per-phase summary output
 
 ## Related Documentation
