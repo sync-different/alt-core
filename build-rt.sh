@@ -1,6 +1,12 @@
 #!/bin/bash
 # Build rtserver module and propagate to uber JAR
 # Usage: ./build-rt.sh [--no-uber]
+#
+# `set -e` aborts on any failure (including silent mvn compile errors).
+# Without it, a compile error in one module would let the script continue and
+# shade a STALE jar from scrubber/repo/ into the uber JAR, while still printing
+# "BUILD SUCCESS" at the end. See feedback_buildrt_silent_failure memory.
+set -e
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 cd "$SCRIPT_DIR"

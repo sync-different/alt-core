@@ -1,6 +1,11 @@
 #!/bin/bash
 # Build alt-common module and propagate to uber JAR
 # Usage: ./build-common.sh [--no-uber]
+#
+# `set -e` aborts on any failure. Without it, an mvn compile error would let
+# the script continue and shade a STALE jar into the uber JAR while still
+# printing BUILD SUCCESS. See feedback_buildrt_silent_failure memory.
+set -e
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 cd "$SCRIPT_DIR"

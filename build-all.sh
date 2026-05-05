@@ -1,6 +1,11 @@
 #!/bin/bash
 # Build all modules and create uber JAR
 # This builds in dependency order: alt-common → cass-server → rtserver → scrubber-maven → uber JAR
+#
+# `set -e` aborts on any failure. Without it, an mvn compile error would let
+# the script continue and shade a STALE jar into the uber JAR while still
+# printing BUILD SUCCESS. See feedback_buildrt_silent_failure memory.
+set -e
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 cd "$SCRIPT_DIR"
