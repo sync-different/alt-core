@@ -476,6 +476,40 @@ public class WebServer extends AbstractService {
     public static final String ANSI_YELLOW = "\u001B[33m";
     public static final String ANSI_RESET = "\u001B[0m";
 
+    // Lazy-opened static append PrintStream for pw/pe diagnostic file output.
+    // WebServer already has a `log(s, level)` (line 514) that writes to logpath
+    // — but logpath isn't set until after startup config load, so pw/pe calls
+    // during very early bootstrap would be lost. This writeDiagLog uses a
+    // best-effort lazy date-rotated file like the cass-server classes do.
+    // See B12 in TODO_BUGS.md.
+    private static java.io.PrintStream diagLog = null;
+    private static String diagLogDay = "";
+
+    private static void writeDiagLog(String level, String s) {
+        try {
+            java.util.Date now = java.util.Calendar.getInstance().getTime();
+            java.text.SimpleDateFormat daySdf = new java.text.SimpleDateFormat("yyyyMMdd");
+            String today = daySdf.format(now);
+            synchronized (WebServer.class) {
+                if (diagLog == null || !today.equals(diagLogDay)) {
+                    if (diagLog != null) {
+                        try { diagLog.close(); } catch (Exception ex) {}
+                    }
+                    String sFilename = appendageRW + "logs/" + today + "_rtserver.log";
+                    diagLog = new java.io.PrintStream(new java.io.BufferedOutputStream(
+                            new java.io.FileOutputStream(sFilename, true)));
+                    diagLogDay = today;
+                }
+                java.text.SimpleDateFormat tsSdf = new java.text.SimpleDateFormat("yyyy/MM/dd HH:mm:ss");
+                long threadID = Thread.currentThread().getId();
+                diagLog.println(tsSdf.format(now) + " [" + level + "] [RT.WebServer-" + threadID + "] " + s);
+                diagLog.flush();
+            }
+        } catch (Exception ex) {
+            // Swallow — logging must not break the caller.
+        }
+    }
+
     protected static void pw(String s) {
         Date ts_start = Calendar.getInstance().getTime();
         SimpleDateFormat sdf = new SimpleDateFormat("yyyy/MM/dd hh:mm:ss");
@@ -485,6 +519,7 @@ public class WebServer extends AbstractService {
             long threadID = Thread.currentThread().getId();
             System.out.println(ANSI_YELLOW + sDate + " [WARNING] [RT.WebServer-" + threadID + "] " + s + ANSI_RESET);
         }
+        writeDiagLog("WARNING", s);
     }
 
     protected static void pi(String s) {
@@ -496,6 +531,8 @@ public class WebServer extends AbstractService {
             long threadID = Thread.currentThread().getId();
             System.out.println(ANSI_GREEN + sDate + " [INFO ] [RT.WebServer-" + threadID + "] " + s + ANSI_RESET);
         }
+        // INFO — skip file write to avoid log spam.
+        // writeDiagLog("INFO", s);
     }
 
     protected static void pe(String s) {
@@ -507,6 +544,7 @@ public class WebServer extends AbstractService {
             long threadID = Thread.currentThread().getId();
             System.out.println(ANSI_RED + sDate + " [ERROR] [RT.WebServer-" + threadID + "] " + s + ANSI_RESET);
         }
+        writeDiagLog("ERROR", s);
     }
 
 
@@ -13112,11 +13150,11 @@ class Worker extends WebServer implements HttpConstants, Runnable {
                     //p("_file       :" + _file);
 
                     if (sLineName.equals(_file)) {
-                        pw("match found: '" + sLineName + "' md5: " + sLineMD5);
+                        p("match found: '" + sLineName + "' md5: " + sLineMD5); // p() = console only; per-lookup trace, was flooding diag log (B18-class)
                         sMD5 = sLineMD5;
                         break;
                     } else {
-                        pw("no match: '" + sLineName + "' vs '" + _file + "'");
+                        p("no match: '" + sLineName + "' vs '" + _file + "'"); // p() = console only; per-comparison trace, the dominant diag-log flood (fixed)
                     }
                 }
                 return sMD5;

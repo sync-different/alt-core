@@ -229,6 +229,201 @@ public class LocalFuncs {
     String _filename = "";
     String _filenamepath = "";
     boolean bBreak = false;
+
+    // C0 (Phase 2 prep): debug TxRollbackException injection.
+    // Read from www-processor.properties → debug.indexing.inject_rollback_rate
+    // Default 0.0 = disabled. Set to e.g. 0.05 in DEV to inject TxRollback at
+    // a 5% rate per MapDB transaction inside update_occurences_copies. This
+    // gives a deterministic way to exercise the Phase 2 retry-with-backoff
+    // path without needing actual MapDB contention (which doesn't reproduce
+    // locally). MUST stay at 0.0 in PROD — if you find this enabled in PROD
+    // by accident it'll cause real data loss until P2.1 retry logic is in.
+    static double injectRollbackRate = 0.0;
+    static final java.util.Random injectRng = new java.util.Random();
+
+    /** C0: maybe throw TxRollbackException based on injectRollbackRate.
+     *  Logs the injection point so postmortem can distinguish injected from
+     *  organic rollbacks. MapDB 1.0.9's TxRollbackException has no String ctor. */
+    private static void maybeInjectRollback(String site) throws TxRollbackException {
+        if (injectRollbackRate > 0.0 && injectRng.nextDouble() < injectRollbackRate) {
+            pw("INJECT_ROLLBACK site=" + site + " rate=" + injectRollbackRate);
+            throw new TxRollbackException();
+        }
+    }
+
+    // P2.1: per-transaction retry with exponential backoff.
+    // Attempts a tx.execute() up to RETRY_MAX_ATTEMPTS times. Backoff sequence:
+    // 100ms / 500ms / 2000ms. Only retries on TxRollbackException (transient
+    // by definition — MapDB threw because of concurrent write conflict).
+    // Other exception classes pass through unhandled — OutOfMemoryError is
+    // genuinely fatal, InternalError might be retryable but we conservatively
+    // bubble it for now until we have data showing it's transient too.
+    //
+    // The TxBlock body must be IDEMPOTENT (safe to re-run with the same input
+    // producing the same MapDB end-state). For Map.put and Set.add this is
+    // automatic — same key+value writes are no-ops on the second attempt.
+    // For bodies that mutate Java state (e.g. nerror counters), the caller
+    // must snapshot/restore around the retry call.
+    //
+    // Returns true if the tx eventually committed, false if all attempts
+    // exhausted. Caller decides what to do on permanent failure.
+    static final int RETRY_MAX_ATTEMPTS = 3;
+    static final long[] RETRY_BACKOFF_MS = {100L, 500L, 2000L};
+
+    private boolean executeWithRetry(TxMaker tx, TxBlock body, String site) {
+        for (int attempt = 0; attempt < RETRY_MAX_ATTEMPTS; attempt++) {
+            try {
+                tx.execute(body);
+                if (attempt > 0) {
+                    // Recovered after a retry — log it so postmortem can quantify retry success rate.
+                    pw("RETRY_OK site=" + site + " attempts=" + (attempt + 1));
+                }
+                return true;
+            } catch (TxRollbackException e) {
+                // Per-class counter (P0.1) so INDEXING_HEALTH metrics still reflect the rollback.
+                classifyAndCount(e);
+                if (attempt + 1 < RETRY_MAX_ATTEMPTS) {
+                    long backoffMs = RETRY_BACKOFF_MS[attempt];
+                    pw("RETRY site=" + site
+                       + " attempt=" + (attempt + 1) + "/" + RETRY_MAX_ATTEMPTS
+                       + " next_backoff_ms=" + backoffMs);
+                    try {
+                        Thread.sleep(backoffMs);
+                    } catch (InterruptedException ie) {
+                        Thread.currentThread().interrupt();
+                        return false;
+                    }
+                } else {
+                    pw("LINE_FAIL_PERMANENT site=" + site
+                       + " attempts=" + RETRY_MAX_ATTEMPTS
+                       + " last_exception=TxRollbackException");
+                }
+            }
+        }
+        return false;
+    }
+
+    // P0.1: per-exception-class counters for update_occurences_copies.
+    // Reset at the top of each update_occurences_copies call. Emitted in the
+    // structured DONE OK / WARNING: Need to ROLLBACK log lines so postmortem
+    // can see WHICH exception class dominated (TxRollback vs InternalError vs
+    // OOM vs generic Exception). This is the data PROJECT_INDEXING Phase 2
+    // retry-with-backoff needs to make its policy decisions.
+    int nerr_txrollback = 0;
+    int nerr_internalerror = 0;
+    int nerr_assertionerror = 0;
+    int nerr_oom = 0;
+    int nerr_generic = 0;
+    int nerr_illegalaccess = 0;
+
+    /** P0.1: classify a Throwable and increment the matching nerr_* counter. */
+    private void classifyAndCount(Throwable t) {
+        // Per-batch counter increment (P0.1).
+        if (t == null) {
+            nerr_generic++;
+            health_exc_generic.incrementAndGet();
+            return;
+        }
+        String cls = t.getClass().getSimpleName();
+        if ("TxRollbackException".equals(cls)) {
+            nerr_txrollback++;
+            health_exc_txrollback.incrementAndGet();
+        } else if ("InternalError".equals(cls)) {
+            nerr_internalerror++;
+            health_exc_internalerror.incrementAndGet();
+        } else if ("AssertionError".equals(cls)) {
+            nerr_assertionerror++;
+            health_exc_assertionerror.incrementAndGet();
+        } else if ("OutOfMemoryError".equals(cls)) {
+            nerr_oom++;
+            health_exc_oom.incrementAndGet();
+        } else if ("IllegalAccessError".equals(cls)) {
+            nerr_illegalaccess++;
+            health_exc_illegalaccess.incrementAndGet();
+        } else {
+            nerr_generic++;
+            health_exc_generic.incrementAndGet();
+        }
+    }
+
+    // P0.2: rolling 60-second INDEXING_HEALTH metric.
+    // Static class-scope counters accumulate across batches; emitted once per
+    // INDEXING_HEALTH_WINDOW_MS (60s) and reset. Tracks batch outcomes +
+    // per-exception-class counts since the last emit so an operator can see
+    // contention building BEFORE the death-spiral triggers .bad files.
+    //
+    // Uses AtomicLong because multiple threads (CopyLoader + scanner/processor
+    // threads) all touch update_occurences_copies / index_token paths.
+    //
+    // Emitted as a single `pw()` line (lands in <YYYYMMDD>_rtserver.log via B12).
+    static final long INDEXING_HEALTH_WINDOW_MS = 60_000L;
+    static volatile long health_lastEmitMs = System.currentTimeMillis();
+    static final java.util.concurrent.atomic.AtomicLong health_batches_ok = new java.util.concurrent.atomic.AtomicLong();
+    static final java.util.concurrent.atomic.AtomicLong health_batches_fail = new java.util.concurrent.atomic.AtomicLong();
+    static final java.util.concurrent.atomic.AtomicLong health_nput_in_window = new java.util.concurrent.atomic.AtomicLong();
+    static final java.util.concurrent.atomic.AtomicLong health_exc_txrollback = new java.util.concurrent.atomic.AtomicLong();
+    static final java.util.concurrent.atomic.AtomicLong health_exc_internalerror = new java.util.concurrent.atomic.AtomicLong();
+    static final java.util.concurrent.atomic.AtomicLong health_exc_assertionerror = new java.util.concurrent.atomic.AtomicLong();
+    static final java.util.concurrent.atomic.AtomicLong health_exc_oom = new java.util.concurrent.atomic.AtomicLong();
+    static final java.util.concurrent.atomic.AtomicLong health_exc_illegalaccess = new java.util.concurrent.atomic.AtomicLong();
+    static final java.util.concurrent.atomic.AtomicLong health_exc_generic = new java.util.concurrent.atomic.AtomicLong();
+
+    /**
+     * P0.2: emit the INDEXING_HEALTH metric if 60s has elapsed since the last
+     * emit, then reset the counters. Called from update_occurences_copies at
+     * the success/failure decision point. Cheap when not emitting (one volatile
+     * read + one subtract). Thread-safe via atomic CAS on lastEmitMs.
+     */
+    private static void maybeEmitIndexingHealth() {
+        long now = System.currentTimeMillis();
+        long last = health_lastEmitMs;
+        long elapsed = now - last;
+        if (elapsed < INDEXING_HEALTH_WINDOW_MS) {
+            return;
+        }
+        // Try to claim the emit slot. If another thread beat us, just return.
+        synchronized (LocalFuncs.class) {
+            // Recheck inside the lock.
+            if (now - health_lastEmitMs < INDEXING_HEALTH_WINDOW_MS) {
+                return;
+            }
+            long ok = health_batches_ok.getAndSet(0);
+            long fail = health_batches_fail.getAndSet(0);
+            long nput = health_nput_in_window.getAndSet(0);
+            long ex_tx = health_exc_txrollback.getAndSet(0);
+            long ex_ie = health_exc_internalerror.getAndSet(0);
+            long ex_ae = health_exc_assertionerror.getAndSet(0);
+            long ex_oom = health_exc_oom.getAndSet(0);
+            long ex_ia = health_exc_illegalaccess.getAndSet(0);
+            long ex_gen = health_exc_generic.getAndSet(0);
+            health_lastEmitMs = now;
+
+            long totalBatches = ok + fail;
+            long totalExc = ex_tx + ex_ie + ex_ae + ex_oom + ex_ia + ex_gen;
+            // Rates: per-second batch throughput + per-batch failure rate + per-put exception rate.
+            double batchesPerSec = totalBatches > 0 ? (totalBatches * 1000.0 / elapsed) : 0.0;
+            double failRate = totalBatches > 0 ? ((double) fail / totalBatches) : 0.0;
+            double excPerPut = nput > 0 ? ((double) totalExc / nput) : 0.0;
+
+            // Use log() instead of pw() so this lands in the same file via the
+            // pre-existing append PrintStream and timestamp format. log() also
+            // checks mLogLevel (level 0 always logs).
+            log("INDEXING_HEALTH window_ms=" + elapsed
+                + " batches_ok=" + ok
+                + " batches_fail=" + fail
+                + " batches_per_sec=" + String.format("%.2f", batchesPerSec)
+                + " fail_rate=" + String.format("%.4f", failRate)
+                + " nput=" + nput
+                + " exceptions_total=" + totalExc
+                + " exc_per_put=" + String.format("%.6f", excPerPut)
+                + " txrollback=" + ex_tx
+                + " internalerror=" + ex_ie
+                + " assertionerror=" + ex_ae
+                + " oom=" + ex_oom
+                + " illegalaccess=" + ex_ia
+                + " generic=" + ex_gen, 0);
+        }
+    }
     
     static String appendage = "";
     static String appendageRW = "";
@@ -240,6 +435,39 @@ public class LocalFuncs {
     public static final String ANSI_YELLOW = "\u001B[33m";
     public static final String ANSI_RESET = "\u001B[0m";
 
+    // Lazy-opened static append PrintStream for pw/pe diagnostic file output.
+    // LocalFuncs already has an instance `log(s, level)` method (line 2919) that
+    // writes to the same _rtserver.log, but using it from pw/pe would cause
+    // recursion via its pi() call. Separate helper keeps things simple.
+    // See B12 in TODO_BUGS.md.
+    private static java.io.PrintStream diagLog = null;
+    private static String diagLogDay = "";
+
+    private static void writeDiagLog(String level, String s) {
+        try {
+            java.util.Date now = java.util.Calendar.getInstance().getTime();
+            java.text.SimpleDateFormat daySdf = new java.text.SimpleDateFormat("yyyyMMdd");
+            String today = daySdf.format(now);
+            synchronized (LocalFuncs.class) {
+                if (diagLog == null || !today.equals(diagLogDay)) {
+                    if (diagLog != null) {
+                        try { diagLog.close(); } catch (Exception ex) {}
+                    }
+                    String sFilename = appendageRW + "logs/" + today + "_rtserver.log";
+                    diagLog = new java.io.PrintStream(new java.io.BufferedOutputStream(
+                            new java.io.FileOutputStream(sFilename, true)));
+                    diagLogDay = today;
+                }
+                java.text.SimpleDateFormat tsSdf = new java.text.SimpleDateFormat("yyyy/MM/dd HH:mm:ss");
+                long threadID = Thread.currentThread().getId();
+                diagLog.println(tsSdf.format(now) + " [" + level + "] [CS.LocalFuncs-" + threadID + "] " + s);
+                diagLog.flush();
+            }
+        } catch (Exception ex) {
+            // Swallow — logging must not break the caller.
+        }
+    }
+
     protected static void pw(String s) {
         Date ts_start = Calendar.getInstance().getTime();
         SimpleDateFormat sdf = new SimpleDateFormat("yyyy/MM/dd hh:mm:ss");
@@ -249,6 +477,7 @@ public class LocalFuncs {
             long threadID = Thread.currentThread().getId();
             System.out.println(ANSI_YELLOW + sDate + " [WARNING] [CS.LocalFuncs-" + threadID + "] " + s + ANSI_RESET);
         }
+        writeDiagLog("WARNING", s);
     }
 
     protected static void pi(String s) {
@@ -260,6 +489,8 @@ public class LocalFuncs {
             long threadID = Thread.currentThread().getId();
             System.out.println(ANSI_GREEN + sDate + " [INFO ] [CS.LocalFuncs-" + threadID + "] " + s + ANSI_RESET);
         }
+        // INFO — skip file write to avoid log spam.
+        // writeDiagLog("INFO", s);
     }
 
     protected static void pe(String s) {
@@ -271,6 +502,7 @@ public class LocalFuncs {
             long threadID = Thread.currentThread().getId();
             System.out.println(ANSI_RED + sDate + " [ERROR] [LocalFuncs-" + threadID + "] " + s + ANSI_RESET);
         }
+        writeDiagLog("ERROR", s);
     }
 
     /* print to stdout */
@@ -584,23 +816,26 @@ public class LocalFuncs {
                                                 Boolean bAssert=false;
                                                 try {
                                                     mm1.add(Fun.t2(sub_string, _token));
-                                                    nok++;    
-                                                    nput++;   
+                                                    nok++;
+                                                    nput++;
                                                     add = true;
                                                 } catch (AssertionError e) {
-                                                    log("WARNING AssertionError mm1: " + sub_string + " " + _token + " " + sub_string.length() + " " + _token.length(), 2);                                    
+                                                    log("WARNING AssertionError mm1: " + sub_string + " " + _token + " " + sub_string.length() + " " + _token.length(), 2);
                                                     e.printStackTrace();
-                                                    nerr++;        
+                                                    nerr++;
+                                                    classifyAndCount(e);
                                                     bAssert=true;
                                                 } catch (InternalError e) {
-                                                    log("WARNING InternalError mm1: " + sub_string + " " + _token + " " + sub_string.length() + " " + _token.length(), 2);                                    
+                                                    log("WARNING InternalError mm1: " + sub_string + " " + _token + " " + sub_string.length() + " " + _token.length(), 2);
                                                     e.printStackTrace();
                                                     nerr++;
+                                                    classifyAndCount(e);
                                                     bAssert=true;
                                                 } catch (Exception e) {
-                                                    log("WARNING Exception mm1: " + sub_string + " " + _token + " " + sub_string.length() + " " + _token.length(), 2);                                    
+                                                    log("WARNING Exception mm1: " + sub_string + " " + _token + " " + sub_string.length() + " " + _token.length(), 2);
                                                     e.printStackTrace();
                                                     nerr++;
+                                                    classifyAndCount(e);
                                                     bAssert=true;
                                                 } finally {
                                                     if (bAssert) {
@@ -649,19 +884,22 @@ public class LocalFuncs {
                                                     nput++;   
                                                     add = true;                                                 
                                                 } catch (AssertionError e) {
-                                                    log("WARNING AssertionError mm2: " + sub_string + " " + sAdder + " " + sub_string.length() + " " + sAdder.length(), 2);                                    
+                                                    log("WARNING AssertionError mm2: " + sub_string + " " + sAdder + " " + sub_string.length() + " " + sAdder.length(), 2);
                                                     e.printStackTrace();
                                                     nerr++;
+                                                    classifyAndCount(e);
                                                     bAssert = true;
                                                 } catch (InternalError e) {
                                                     log("WARNING InternalError mm2: " + sub_string + " " + sAdder + " " + sub_string.length() + " " + sAdder.length(), 2);
                                                     e.printStackTrace();
                                                     nerr++;
+                                                    classifyAndCount(e);
                                                     bAssert = true;
                                                 } catch (Exception e) {
-                                                    log("WARNING Exception mm2: " + sub_string + " " + sAdder + " " + sub_string.length() + " " + sAdder.length(), 2);                                    
+                                                    log("WARNING Exception mm2: " + sub_string + " " + sAdder + " " + sub_string.length() + " " + sAdder.length(), 2);
                                                     e.printStackTrace();
-                                                    nerr++;                                                                                          
+                                                    nerr++;
+                                                    classifyAndCount(e);
                                                     bAssert = true;
                                                 } finally {
                                                     if (bAssert) {
@@ -973,9 +1211,9 @@ public class LocalFuncs {
             p("[LocalFuncs.open_mapdb()] DBName: '" + sFile + "'");
             
             String sAppend = appendage + "../rtserver/";
-            pw("****Appendage for OpenDB[v8] : " + sAppend);
+            p("****Appendage for OpenDB[v8] : " + sAppend); // p() = stdout only; per-DB-open trace, was flooding diag log
             //if (appendage.length() > 0) sAppend = "";
-            pw("will be looking for DB file at: " + sAppend + sFile);
+            p("will be looking for DB file at: " + sAppend + sFile); // p() = stdout only; per-DB-open trace
 
             if (tx_mm1 == null) {     
                 //.asyncWriteEnable()
@@ -1004,9 +1242,16 @@ public class LocalFuncs {
     }
     
     public int update_occurences_copies(String _batchid) {
-        try {              
-            
-            open_mapdb();       
+        try {
+            // P0.1: reset per-class exception counters for this batch attempt.
+            nerr_txrollback = 0;
+            nerr_internalerror = 0;
+            nerr_assertionerror = 0;
+            nerr_oom = 0;
+            nerr_generic = 0;
+            nerr_illegalaccess = 0;
+
+            open_mapdb();
             
            
             if (db_mm1_oc == null) {
@@ -1093,13 +1338,15 @@ public class LocalFuncs {
                                 Boolean bput = false;
                                 if (bUseMapDBTx) {
                                     p("**** Using TX *****[copy]");
-                                    tx_cp.execute(new TxBlock() {
+                                    // P2.1: retry with backoff on TxRollbackException.
+                                    // cp body is pure put — idempotent, safe to retry.
+                                    bput = executeWithRetry(tx_cp, new TxBlock() {
                                         @Override public void tx(DB db) throws TxRollbackException {
+                                            maybeInjectRollback("cp");
                                             Map occurences_copies_w = db.getTreeMap("numberofcopies");
                                             occurences_copies_w.put(_key, sCopyInfo);
                                         }
-                                    });
-                                    bput = true;
+                                    }, "cp");
                                 } else {
                                     int j = 0;
                                     while (!bput && j<5) {
@@ -1118,7 +1365,10 @@ public class LocalFuncs {
                                             db_cp_oc = tx_cp.makeTx();                                          
                                         }
                                     }
-                                    if (!bput) nerror++;
+                                    if (!bput) {
+                                        nerror++;
+                                        nerr_illegalaccess++; // ran out of retries on IllegalAccessError reopen
+                                    }
                                 }
                             } else {
                                 p("***Closing DB - Skipping PUT[copies]");
@@ -1126,19 +1376,23 @@ public class LocalFuncs {
                         } catch (TxRollbackException e) {
                             log("WARNING: There was a TxRollbackException[copies]: " + _key + "," + sCopyInfo, 0);
                             nerror++;
+                            classifyAndCount(e);
                         } catch (OutOfMemoryError  e) {
                             e.printStackTrace();
                             p("WARNING: OUT OF MEMORY ERROR when adding #copies: " + _key + "," + sCopyInfo);
                             nerror++;
+                            classifyAndCount(e);
                         } catch (InternalError e) {
                             e.printStackTrace();
-                            nerror++;                            
+                            nerror++;
+                            classifyAndCount(e);
                         } catch (Exception e) {
                             //p("EXCEPTION: multimap2 " + sub_string + " " + sAdder + " " + sub_string.length() + " " + sAdder.length());
                             //e.printStackTrace();
                             nerror++;
-                        }                         
-                    //}                    
+                            classifyAndCount(e);
+                        }
+                    //}
                     i++;
 
                     //String _filename = "";
@@ -1175,12 +1429,14 @@ public class LocalFuncs {
                             if (!bClosingDB) {
                                 if (bUseMapDBTx) {
                                     p("**** Using TX[attr]*****");
-                                    tx_attr.execute(new TxBlock() {
+                                    // P2.1: retry with backoff. attr body is pure put — idempotent.
+                                    executeWithRetry(tx_attr, new TxBlock() {
                                         @Override public void tx(DB db) throws TxRollbackException {
+                                            maybeInjectRollback("attr");
                                             Map occurences_attr_w = db.getTreeMap("attributes");
                                             occurences_attr_w.put(_key, sStore);
                                         }
-                                    });                                    
+                                    }, "attr");
                                 } else {                                    
                                     Boolean bput = false;
                                     int j = 0;
@@ -1200,26 +1456,33 @@ public class LocalFuncs {
                                             db_attr_oc = tx_attr.makeTx();                                          
                                         }
                                     }
-                                    if (!bput) nerror++;
+                                    if (!bput) {
+                                        nerror++;
+                                        nerr_illegalaccess++; // ran out of retries on IllegalAccessError reopen
+                                    }
                                 }
                             } else {
-                                p("***Closing DB - Skipping PUT[attr]");    
+                                p("***Closing DB - Skipping PUT[attr]");
                             }
                         } catch (TxRollbackException e) {
                             log("WARNING: There was a TxRollbackException[attr]: " + _key + "," + sStore, 0);
                             nerror++;
+                            classifyAndCount(e);
                         } catch (OutOfMemoryError  e) {
                             e.printStackTrace();
                             p("WARNING: OUT OF MEMORY ERROR when adding ocurrences: " + _key + "," + sStore);
                             nerror++;
+                            classifyAndCount(e);
                         } catch (InternalError e) {
                             e.printStackTrace();
-                            nerror++;                        
+                            nerror++;
+                            classifyAndCount(e);
                         } catch (Exception e) {
                             //p("EXCEPTION: multimap2 " + sub_string + " " + sAdder + " " + sub_string.length() + " " + sAdder.length());
                             //e.printStackTrace();
                             nerror++;
-                        }                        
+                            classifyAndCount(e);
+                        }
                         //occurences_attr.add(Fun.t2(_key, sStore));
                     //}                                        
                     
@@ -1264,71 +1527,69 @@ public class LocalFuncs {
                             }
                         }                    
                     } else {
-                            p("**** Using TX *****");                       
-                            try {
-                                tx_mm1.execute(new TxBlock() {
+                            p("**** Using TX *****");
+                            // P2.1: retry with backoff. mm1 body's Set.add operations
+                            // are idempotent; the inner `nerror += n` may over-count
+                            // slightly on organic rollback (rare, acceptable —
+                            // BATCH_FAIL postmortem can correlate via INJECT_ROLLBACK
+                            // marker if injection is enabled).
+                            int nerrorBefore = nerror;
+                            boolean ok = executeWithRetry(tx_mm1, new TxBlock() {
                                 @Override public void tx(DB db) throws TxRollbackException {
 
+                                maybeInjectRollback("mm1");
                                 p("**TX1: >>Updating index #" + _key + " " + _date + " " + _filename + "filenamepath: " + _filenamepath);
-                                
-                                //db_mm1_oc = tx_mm1.makeTx();
-                                NavigableSet<Fun.Tuple2<String,String>> mm1 = db.getTreeSet("autocomplete"); 
 
-                                //db_mm2_oc = tx_mm2.makeTx();
-                                //NavigableSet<Fun.Tuple2<String,String>> mm2 = db.getTreeSet("md5"); 
-                                
-                                int n = update_index(_key, _date, _filename, sStore, _filenamepath, mm1, null, 1);      
-                                
+                                NavigableSet<Fun.Tuple2<String,String>> mm1 = db.getTreeSet("autocomplete");
+
+                                int n = update_index(_key, _date, _filename, sStore, _filenamepath, mm1, null, 1);
+
                                 p("TX1 res: " + n);
-                                
+
                                 if (n >= 0)  {
                                     nerror += n;
                                 } else {
                                     p("break");
-                                    //break;
                                     bBreak = true;
                                 }
                             }
-                        });                        
-                            } catch (TxRollbackException e) {
-                                log("WARNING: There has been a Rollback exception in TX1. Updating index #" + i + " " + _key + " " + _date + " " + _filename + " batch id: " + _batchid + "filenamepath: " + _filenamepath, 0);
-
-                                e.printStackTrace();                        
+                        }, "mm1");
+                            if (!ok) {
+                                // All retries exhausted — restore nerror to baseline
+                                // (the body may have updated it before the final throw)
+                                // and treat as a permanent line failure. The LINE_FAIL_PERMANENT
+                                // log line was already emitted inside executeWithRetry.
+                                nerror = nerrorBefore;
+                                nerror++; // count this batch-line as failed
                                 bBreak = true;
-                                Thread.sleep(5000);
-                            } 
-                    
-                    try {
-                        tx_mm2.execute(new TxBlock() {
-                            @Override public void tx(DB db) throws TxRollbackException {
-
-                                p("**TX2: >>Updating index #" + _key + " " + _date + " " + _filename + "filenamepath: " + _filenamepath);
-                                
-                                //db_mm1_oc = tx_mm1.makeTx();
-                                //NavigableSet<Fun.Tuple2<String,String>> mm1 = db.getTreeSet("autocomplete"); 
-
-                                //db_mm2_oc = tx_mm2.makeTx();
-                                NavigableSet<Fun.Tuple2<String,String>> mm2 = db.getTreeSet("md5"); 
-                                
-                                int n = update_index(_key, _date, _filename, sStore, _filenamepath, null, mm2, 2);    
-                                
-                                p("TX2 res: " + n);
-
-                                if (n >= 0)  {
-                                    nerror += n;
-                                } else {
-                                    p("break");
-                                    //break;
-                                    bBreak = true;
-                                }
                             }
-                        });                        
-                    } catch (TxRollbackException e) {
-                        log("WARNING: There has been a Rollback exception in TX2. Updating index #" + i + " " + _key + " " + _date + " " + _filename + " batch id: " + _batchid + "filenamepath: " + _filenamepath, 0);
+                    
+                    // P2.1: same retry wrap as mm1.
+                    int nerrorBefore2 = nerror;
+                    boolean ok2 = executeWithRetry(tx_mm2, new TxBlock() {
+                        @Override public void tx(DB db) throws TxRollbackException {
 
-                        e.printStackTrace();                        
+                            maybeInjectRollback("mm2");
+                            p("**TX2: >>Updating index #" + _key + " " + _date + " " + _filename + "filenamepath: " + _filenamepath);
+
+                            NavigableSet<Fun.Tuple2<String,String>> mm2 = db.getTreeSet("md5");
+
+                            int n = update_index(_key, _date, _filename, sStore, _filenamepath, null, mm2, 2);
+
+                            p("TX2 res: " + n);
+
+                            if (n >= 0)  {
+                                nerror += n;
+                            } else {
+                                p("break");
+                                bBreak = true;
+                            }
+                        }
+                    }, "mm2");
+                    if (!ok2) {
+                        nerror = nerrorBefore2;
+                        nerror++;
                         bBreak = true;
-                        Thread.sleep(5000);
                     }
                 }
 
@@ -1339,11 +1600,37 @@ public class LocalFuncs {
                 bCacheValid = false; //invalidate the cache
                 bLoadingCopies = false; //no longer updating copies 
                 p("#errors:" + nerror + " nput: " + nput);
+                // P0.1: structured per-batch outcome log. Includes per-exception-class
+                // counts so postmortem can see WHICH error class dominated. Format is
+                // grep-friendly key=value pairs.
+                String exceptionBreakdown =
+                    " txrollback=" + nerr_txrollback
+                    + " internalerror=" + nerr_internalerror
+                    + " assertionerror=" + nerr_assertionerror
+                    + " oom=" + nerr_oom
+                    + " illegalaccess=" + nerr_illegalaccess
+                    + " generic=" + nerr_generic;
+                // P0.2: increment the rolling health-window counters and emit
+                // the snapshot if the window has elapsed.
+                health_nput_in_window.addAndGet(nput);
                 if (nerror == 0) {
-                    log("DONE OK - Processed Batch id: " +_batchid + " " + i + " elements. nput=" + nput, 0);
-                    return 1;                    
+                    health_batches_ok.incrementAndGet();
                 } else {
-                    log("WARNING: Need to ROLLBACK - number of copies for batch id " +_batchid + " " + i + " elements.", 0);
+                    health_batches_fail.incrementAndGet();
+                }
+                maybeEmitIndexingHealth();
+                if (nerror == 0) {
+                    log("DONE OK - Processed Batch id: " + _batchid
+                        + " elements=" + i
+                        + " nput=" + nput
+                        + exceptionBreakdown, 0);
+                    return 1;
+                } else {
+                    log("WARNING: Need to ROLLBACK - number of copies for batch id " + _batchid
+                        + " elements=" + i
+                        + " nput=" + nput
+                        + " nerror=" + nerror
+                        + exceptionBreakdown, 0);
                     
                     if (bUseMapDBTx) {
                             try {
@@ -2870,6 +3157,20 @@ public class LocalFuncs {
                     THUMBNAIL_OUTPUT_DIR = r;
                 }
 
+                // C0: TxRollbackException injection rate (DEV-only debug flag).
+                // Default 0.0 = disabled. Must stay at 0 in PROD.
+                r = props.getProperty("debug.indexing.inject_rollback_rate");
+                if (r != null) {
+                    try {
+                        injectRollbackRate = Double.parseDouble(r);
+                        if (injectRollbackRate > 0.0) {
+                            pw("DEBUG: TxRollbackException injection ENABLED at rate=" + injectRollbackRate
+                               + " (set debug.indexing.inject_rollback_rate=0 to disable)");
+                        }
+                    } catch (NumberFormatException nfe) {
+                        pw("WARNING: debug.indexing.inject_rollback_rate='" + r + "' is not a valid double; keeping " + injectRollbackRate);
+                    }
+                }
 
             } else {
                 p("WARNING: config file does not exist: " + sConfig);

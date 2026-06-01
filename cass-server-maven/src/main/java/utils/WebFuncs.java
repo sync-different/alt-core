@@ -70,6 +70,40 @@ public class WebFuncs {
     public static final String ANSI_YELLOW = "\u001B[33m";
     public static final String ANSI_RESET = "\u001B[0m";
 
+    // Lazy-opened append PrintStream for diagnostic log file. Shared across
+    // pw/pe/p so they all land in the same per-day rtserver.log file in
+    // <appendageRW>logs/. PROD jpackage launcher discards stdout, so without
+    // this, WARNING BATCH / Too many errors / similar postmortem evidence is
+    // lost. See B12 in TODO_BUGS.md / PROJECT_INDEXING.md P0.0.
+    private static java.io.PrintStream diagLog = null;
+    private static String diagLogDay = "";
+
+    private static void writeDiagLog(String level, String s) {
+        try {
+            java.util.Date now = java.util.Calendar.getInstance().getTime();
+            java.text.SimpleDateFormat daySdf = new java.text.SimpleDateFormat("yyyyMMdd");
+            String today = daySdf.format(now);
+            synchronized (WebFuncs.class) {
+                // Rotate at midnight: reopen if the date changed.
+                if (diagLog == null || !today.equals(diagLogDay)) {
+                    if (diagLog != null) {
+                        try { diagLog.close(); } catch (Exception ex) {}
+                    }
+                    String sFilename = appendageRW + "logs/" + today + "_rtserver.log";
+                    diagLog = new java.io.PrintStream(new java.io.BufferedOutputStream(
+                            new java.io.FileOutputStream(sFilename, true)));
+                    diagLogDay = today;
+                }
+                java.text.SimpleDateFormat tsSdf = new java.text.SimpleDateFormat("yyyy/MM/dd HH:mm:ss");
+                long threadID = Thread.currentThread().getId();
+                diagLog.println(tsSdf.format(now) + " [" + level + "] [CS.WebFuncs-" + threadID + "] " + s);
+                diagLog.flush();
+            }
+        } catch (Exception ex) {
+            // Swallow — logging must not break the caller.
+        }
+    }
+
     protected static void pw(String s) {
         Date ts_start = Calendar.getInstance().getTime();
         SimpleDateFormat sdf = new SimpleDateFormat("yyyy/MM/dd hh:mm:ss");
@@ -79,6 +113,7 @@ public class WebFuncs {
             long threadID = Thread.currentThread().getId();
             System.out.println(ANSI_YELLOW + sDate + " [WARNING] [CS.WebFuncs-" + threadID + "] " + s + ANSI_RESET);
         }
+        writeDiagLog("WARNING", s);
     }
 
     protected static void pi(String s) {
@@ -90,6 +125,9 @@ public class WebFuncs {
             long threadID = Thread.currentThread().getId();
             System.out.println(ANSI_GREEN + sDate + " [INFO ] [CS.WebFuncs-" + threadID + "] " + s + ANSI_RESET);
         }
+        // pi is INFO — high volume. Skip file write to avoid log spam.
+        // Uncomment if a future incident requires INFO-level capture:
+        // writeDiagLog("INFO", s);
     }
 
     protected static void pe(String s) {
@@ -101,6 +139,7 @@ public class WebFuncs {
             long threadID = Thread.currentThread().getId();
             System.out.println(ANSI_RED + sDate + " [ERROR] [CS.WebFuncs-" + threadID + "] " + s + ANSI_RESET);
         }
+        writeDiagLog("ERROR", s);
     }
 
     /* print to stdout */
@@ -111,6 +150,8 @@ public class WebFuncs {
 
         long threadID = Thread.currentThread().getId();
         System.out.println(sDate + " [DEBUG] [CS.WebFuncs_" + threadID + "] " + s);
+        // p is DEBUG — high volume. Skip file write. Uncomment if needed.
+        // writeDiagLog("DEBUG", s);
     }
 
 
@@ -404,17 +445,46 @@ Thread.UncaughtExceptionHandler h = new Thread.UncaughtExceptionHandler() {
                         }
                         if (sValue==null) {
                             String sBatchID = f.getName().substring(f.getName().indexOf("_")+1,f.getName().indexOf("."));
+                            // P0.1: structured per-batch outcome log (PROJECT_INDEXING).
+                            // Wall-clock for the whole batch process — useful for retry/backoff
+                            // sizing and for spotting batches that hang vs. fail fast.
+                            long batchStartMs = System.currentTimeMillis();
                             p("time to process batch:" + sBatchID);
                             int nres = c8.update_occurences_copies(sBatchID);
-                            p("res occurences_copies:" + nres);  
-                            if (nres > 0) {                            
+                            long batchDurationMs = System.currentTimeMillis() - batchStartMs;
+                            p("res occurences_copies:" + nres);
+                            if (nres > 0) {
+                                // SUCCESS path. Use pw() so it lands in _rtserver.log
+                                // (post-B12) alongside the failure paths. mapBatches.size
+                                // shows growing cache of processed batches.
+                                pw("BATCH_OK batch=" + sBatchID
+                                   + " idxFile=" + f.getName()
+                                   + " duration_ms=" + batchDurationMs
+                                   + " mapBatches_size=" + mapBatches.size()
+                                   + " nErrors_total=" + nErrors);
                                 p("Processed Batch #" + sBatchID + " OK. Adding to map: " + f.getCanonicalPath());
                                 synchronized (mapBatches) {
                                     mapBatches.put(f.getCanonicalPath(), "");
-                                }                           
+                                }
                                 //boolean res = f.delete();
                                 //p("res delete:" + res);
                             } else {
+                                // FAILURE path → batch will be renamed to .bad.
+                                // Capture all observable context: which batch, how many
+                                // bad files so far (vs the 5-error shutdown threshold),
+                                // duration before failure, return code, mapBatches cache
+                                // size, full path. The nErrors counter is BEFORE this
+                                // batch's increment — so nErrors=0 means this is the
+                                // first failure, nErrors=5 means the next failure kills
+                                // the JVM.
+                                pw("BATCH_FAIL batch=" + sBatchID
+                                   + " idxFile=" + f.getName()
+                                   + " path=" + f.getCanonicalPath()
+                                   + " nres=" + nres
+                                   + " duration_ms=" + batchDurationMs
+                                   + " nErrors_before=" + nErrors
+                                   + " nErrors_threshold=5"
+                                   + " mapBatches_size=" + mapBatches.size());
                                 pw("WARNING BATCH #" + nErrors + ": There was an error processing batch: " + sBatchID);
                                 String sNewFileName = f.getName();
                                 sNewFileName = sNewFileName.replace(".idx", ".bad");
@@ -423,9 +493,32 @@ Thread.UncaughtExceptionHandler h = new Thread.UncaughtExceptionHandler() {
                                 p("Rename res = " + bres);
                                 nErrors++;
                                 if (nErrors > 5) {
-                                    pw("Too many errors. Exiting RT.");
-                                    c8.closeMapDB();
-                                    System.exit(-1);
+                                    // FATAL path — JVM about to die. Capture state.
+                                    // This is the death-spiral trigger.
+                                    // P1.2: do NOT System.exit on 6 bad files.
+                                    // Killing the JVM was the proximate cause of the PROD
+                                    // death-spiral — restart → MapDB recovery → reindex
+                                    // flood → potentially same exception class → another
+                                    // 6 .bad files → System.exit → loop forever.
+                                    //
+                                    // New behavior: emit the BATCH_FATAL postmortem log
+                                    // line, then RESET nErrors to 0 and keep running. The
+                                    // operator can investigate the .bad files post-hoc.
+                                    // If the underlying issue is persistent, .bad files
+                                    // will keep being generated and BATCH_FATAL will keep
+                                    // emitting — still loud enough for monitoring.
+                                    //
+                                    // The action= field changes to log the new behavior
+                                    // explicitly so postmortem can tell pre-P1.2 from
+                                    // post-P1.2 deployments.
+                                    pw("BATCH_FATAL nErrors=" + nErrors
+                                       + " threshold=5"
+                                       + " last_bad_batch=" + sBatchID
+                                       + " last_bad_file=" + sNewFileName
+                                       + " mapBatches_size=" + mapBatches.size()
+                                       + " action=reset_counter_continue_running");
+                                    pw("WARNING: 6 bad batches accumulated. NOT exiting RT (P1.2). Resetting nErrors. Investigate .bad files in rtserver/.");
+                                    nErrors = 0;
                                 }
                             }                                                
                             Thread.sleep(5000);

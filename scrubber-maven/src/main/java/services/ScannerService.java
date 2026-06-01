@@ -294,6 +294,38 @@ public class ScannerService implements Runnable {
     public static final String ANSI_YELLOW = "\u001B[33m";
     public static final String ANSI_RESET = "\u001B[0m";
 
+    // Lazy-opened static append PrintStream for diagnostic log file.
+    // Mirrors WebFuncs/FileUtils.writeDiagLog. Keeps static pw()/pe() output
+    // alive in PROD where jpackage launcher discards stdout. See B12 in
+    // TODO_FIXED.md; extended to ScannerService for P1.3 LOAD_PENDING markers.
+    private static java.io.PrintStream diagLog = null;
+    private static String diagLogDay = "";
+
+    private static void writeDiagLog(String level, String s) {
+        try {
+            java.util.Date now = java.util.Calendar.getInstance().getTime();
+            java.text.SimpleDateFormat daySdf = new java.text.SimpleDateFormat("yyyyMMdd");
+            String today = daySdf.format(now);
+            synchronized (ScannerService.class) {
+                if (diagLog == null || !today.equals(diagLogDay)) {
+                    if (diagLog != null) {
+                        try { diagLog.close(); } catch (Exception ex) {}
+                    }
+                    String sFilename = appendageRW + "logs/" + today + "_rtserver.log";
+                    diagLog = new java.io.PrintStream(new java.io.BufferedOutputStream(
+                            new java.io.FileOutputStream(sFilename, true)));
+                    diagLogDay = today;
+                }
+                java.text.SimpleDateFormat tsSdf = new java.text.SimpleDateFormat("yyyy/MM/dd HH:mm:ss");
+                long threadID = Thread.currentThread().getId();
+                diagLog.println(tsSdf.format(now) + " [" + level + "] [SC.ScannerService-" + threadID + "] " + s);
+                diagLog.flush();
+            }
+        } catch (Exception ex) {
+            // Swallow — logging must not break the caller.
+        }
+    }
+
     protected static void pw(String s) {
         Date ts_start = Calendar.getInstance().getTime();
         SimpleDateFormat sdf = new SimpleDateFormat("yyyy/MM/dd hh:mm:ss");
@@ -303,6 +335,7 @@ public class ScannerService implements Runnable {
             long threadID = Thread.currentThread().getId();
             System.out.println(ANSI_YELLOW + sDate + " [WARNING] [SC.ScannerService-" + threadID + "] " + s + ANSI_RESET);
         }
+        writeDiagLog("WARNING", s);
     }
 
     protected static void pi(String s) {
@@ -325,6 +358,7 @@ public class ScannerService implements Runnable {
             long threadID = Thread.currentThread().getId();
             System.out.println(ANSI_RED + sDate + " [ERROR] [SC.ScannerService-" + threadID + "] " + s + ANSI_RESET);
         }
+        writeDiagLog("ERROR", s);
     }
 
     /* print to stdout */
@@ -426,6 +460,34 @@ public class ScannerService implements Runnable {
                 Boolean bres = pf.loadPendingFiles();
                 pw("load res = " + bres);
                 pw("count = " + pf.printFileCount());
+
+                // P1.2/P1.3: structured load outcome + safety check.
+                // If loadPendingFiles returned false AND records.db exists on
+                // disk, this is a real load failure (file present but
+                // unparseable). Without this check, scanner would proceed with
+                // an empty mFilesDatabase, treat ALL files as new, and re-index
+                // from scratch on every pass — the silent re-indexing flaw
+                // documented in B2.
+                String recordsDbPath = appendage + "../scrubber/data/records.db";
+                java.io.File recordsDbFile = new java.io.File(recordsDbPath);
+                if (Boolean.FALSE.equals(bres) && recordsDbFile.exists() && recordsDbFile.length() > 0) {
+                    pw("LOAD_PENDING_FAIL records_db_exists=true bytes=" + recordsDbFile.length()
+                       + " mapDatabase_size=" + pf.printFileCount()
+                       + " path=" + recordsDbPath
+                       + " action=skip_scan_pass");
+                    pw("WARNING: records.db exists but loadPendingFiles() failed. SKIPPING this scan pass to avoid silent full re-index. Sleeping " + mDelay + "ms before retry. Investigate records.db corruption.");
+                    try {
+                        Thread.sleep(mDelay);
+                    } catch (InterruptedException ie) {
+                        Thread.currentThread().interrupt();
+                    }
+                    continue;
+                }
+                if (Boolean.FALSE.equals(bres)) {
+                    pw("LOAD_PENDING_FIRST_RUN records_db_exists=false action=proceed_with_empty_map (this is normal on a fresh install)");
+                } else {
+                    pw("LOAD_PENDING_OK records=" + pf.printFileCount());
+                }
 
                 boolean bCheck = false;
                 j++;

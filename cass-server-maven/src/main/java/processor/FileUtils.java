@@ -119,9 +119,14 @@ public class FileUtils {
     String mUUID = "";
     String mUUIDPath = "";
     
-    int mDelayFile = 500;  
+    int mDelayFile = 500;
     long mDelayTime = 1000;
     int mRecordsCount = 0;
+    // P1.1: periodic records.db save interval. Save every N successfully
+    // indexed files inside the scan loop. Default 100 — about 5-30s of work
+    // bounded as the worst-case loss window on JVM crash. Set to 0 to disable.
+    // Loaded from www-processor.properties key `records_save_interval`.
+    int RECORDS_SAVE_INTERVAL = 100;
     boolean bSkipHidden = true;
     
     static int count = 0;
@@ -170,6 +175,38 @@ public class FileUtils {
     public static final String ANSI_YELLOW = "\u001B[33m";
     public static final String ANSI_RESET = "\u001B[0m";
 
+    // Lazy-opened static append PrintStream for diagnostic log file.
+    // Mirrors WebFuncs.writeDiagLog. Keeps static pw()/pe() output alive
+    // in PROD where jpackage launcher discards stdout. Instance log()
+    // (writing to scanner.txt) is unchanged. See B12 in TODO_BUGS.md.
+    private static java.io.PrintStream diagLog = null;
+    private static String diagLogDay = "";
+
+    private static void writeDiagLog(String level, String s) {
+        try {
+            java.util.Date now = java.util.Calendar.getInstance().getTime();
+            java.text.SimpleDateFormat daySdf = new java.text.SimpleDateFormat("yyyyMMdd");
+            String today = daySdf.format(now);
+            synchronized (FileUtils.class) {
+                if (diagLog == null || !today.equals(diagLogDay)) {
+                    if (diagLog != null) {
+                        try { diagLog.close(); } catch (Exception ex) {}
+                    }
+                    String sFilename = appendageRW + "logs/" + today + "_rtserver.log";
+                    diagLog = new java.io.PrintStream(new java.io.BufferedOutputStream(
+                            new java.io.FileOutputStream(sFilename, true)));
+                    diagLogDay = today;
+                }
+                java.text.SimpleDateFormat tsSdf = new java.text.SimpleDateFormat("yyyy/MM/dd HH:mm:ss");
+                long threadID = Thread.currentThread().getId();
+                diagLog.println(tsSdf.format(now) + " [" + level + "] [CS.FileUtils-" + threadID + "] " + s);
+                diagLog.flush();
+            }
+        } catch (Exception ex) {
+            // Swallow — logging must not break the caller.
+        }
+    }
+
     protected static void pw(String s) {
         Date ts_start = Calendar.getInstance().getTime();
         SimpleDateFormat sdf = new SimpleDateFormat("yyyy/MM/dd hh:mm:ss");
@@ -179,6 +216,7 @@ public class FileUtils {
             long threadID = Thread.currentThread().getId();
             System.out.println(ANSI_YELLOW + sDate + " [WARNING] [CS.FileUtils-" + threadID + "] " + s + ANSI_RESET);
         }
+        writeDiagLog("WARNING", s);
     }
 
     protected static void pi(String s) {
@@ -190,6 +228,8 @@ public class FileUtils {
             long threadID = Thread.currentThread().getId();
             System.out.println(ANSI_GREEN + sDate + " [INFO ] [CS.FileUtils-" + threadID + "] " + s + ANSI_RESET);
         }
+        // INFO — skip file write to avoid log spam.
+        // writeDiagLog("INFO", s);
     }
 
     protected static void pe(String s) {
@@ -201,6 +241,7 @@ public class FileUtils {
             long threadID = Thread.currentThread().getId();
             System.out.println(ANSI_RED + sDate + " [ERROR] [CS.FileUtils-" + threadID + "] " + s + ANSI_RESET);
         }
+        writeDiagLog("ERROR", s);
     }
 
     /* print to stdout */
@@ -338,7 +379,18 @@ public class FileUtils {
                 mRecordsCount = Integer.parseInt(r);
                 bCheckRecordCount = true;
             }
-            
+
+            // P1.1: periodic records.db save interval. Optional override.
+            r = props.getProperty("records_save_interval");
+            if (r != null) {
+                try {
+                    RECORDS_SAVE_INTERVAL = Integer.parseInt(r);
+                    pw("RECORDS_SAVE_INTERVAL configured to " + RECORDS_SAVE_INTERVAL + " (0 = disabled)");
+                } catch (NumberFormatException nfe) {
+                    pw("WARNING: records_save_interval='" + r + "' is not a valid int; keeping default " + RECORDS_SAVE_INTERVAL);
+                }
+            }
+
             r = props.getProperty(("skip_hidden"));
             if (r != null) {
                 bSkipHidden = Boolean.parseBoolean(r);
@@ -754,7 +806,7 @@ public class FileUtils {
                                         }else{
                                             outputfolderPath = projectsFolderPath + "rtserver/streaming/" + sMD5;
                                         }
-                                        p("outputfolderPath: " + outputfolderPath);
+                                        //p("outputfolderPath: " + outputfolderPath);
                                         log("outputfolder is " + outputfolderPath, 2);
                                         
                                         String streamingFolderPath;
@@ -763,22 +815,22 @@ public class FileUtils {
                                         } else {
                                             streamingFolderPath = projectsFolderPath + "/rtserver/streaming/";
                                         }
-                                        p("streamingfolderPath: " + streamingFolderPath);
+                                        //p("streamingfolderPath: " + streamingFolderPath);
                                         File streamingFolder = new File(streamingFolderPath);
                                         log("streamingFolder is " + streamingFolder.getCanonicalPath(), 2);
-                                        p("*** Streaming folder is : " + streamingFolder.getCanonicalPath());
+                                        //p("*** Streaming folder is : " + streamingFolder.getCanonicalPath());
                                         if(!streamingFolder.exists()){
                                             log("mkdir " + streamingFolder.getCanonicalPath(), 0);                                            
                                             streamingFolder.mkdirs();                                        
                                         } else {
-                                            p("skip mkdir. folder already exists: " + streamingFolder.getCanonicalPath());                                            
+                                            //p("skip mkdir. folder already exists: " + streamingFolder.getCanonicalPath());                                            
                                         }
                                         File folder = new File(outputfolderPath);
                                         if(!folder.exists()){
                                             FfmpegExecutor fe = new FfmpegExecutor();
                                             fe.execute(f, sMD5, outputfolderPath, projectsFolderPath, isWin);
                                         } else {
-                                            p("skip encode. folder already exists: " + folder.getCanonicalPath());
+                                            //p("skip encode. folder already exists: " + folder.getCanonicalPath());
                                         }
                                     }
                                                            
@@ -975,17 +1027,19 @@ public class FileUtils {
     }
     
     public String calcMD5_2(String _filename) {
-        try {            
-            FileInputStream fis = new FileInputStream(_filename);
-            
-            String hashtext = DigestUtils.md5Hex(fis);                        
-            return hashtext;
-            
+        // B21: wrap the source in a large (8MB) BufferedInputStream so the OS reads
+        // ahead in big sequential chunks and keeps a spinning USB-HDD continuously
+        // busy, instead of DigestUtils' default 8KB stop-start reads that leave the
+        // drive idle ~80% of the time mid-hash and let its firmware idle-spin-down
+        // (caused PROD scan freezes — see TODO_BUGS B21). Same MD5 result, fewer
+        // syscalls, same-or-faster. try-with-resources also fixes an FD leak: the
+        // old code never closed fis on the success path.
+        try (FileInputStream fis = new FileInputStream(_filename);
+             BufferedInputStream bis = new BufferedInputStream(fis, 8 * 1024 * 1024)) {
+            return DigestUtils.md5Hex(bis);
         } catch (Exception e) {
             return "";
         }
-        
-        
     }
     
     public String calcMD5_1(String _filename) {
@@ -1121,40 +1175,123 @@ public class FileUtils {
 
             close_out(fos);
             close_out(oos);
-            
+
             ft = null;
             fos = null;
             oos = null;
 
             countrecords++;
+
+            // P1.1: periodic records.db save every RECORDS_SAVE_INTERVAL files.
+            // Without this, save fires only at end-of-scan-pass (once per ~2500
+            // files). If the JVM dies mid-pass (e.g. OOM, kill -9), all
+            // progress since the last pass-end save is lost — and on restart
+            // the scanner re-MD5s every file, hammering CPU + producing the
+            // same batches the consumer just finished. Periodic save bounds
+            // the loss window to RECORDS_SAVE_INTERVAL files (5-30s of work).
+            //
+            // Interval is configurable via www-processor.properties
+            // (records_save_interval), default 100. Setting to 0 disables.
+            if (RECORDS_SAVE_INTERVAL > 0 && countrecords > 0
+                && countrecords % RECORDS_SAVE_INTERVAL == 0) {
+                pw("RECORDS_DB_SAVE_PERIODIC trigger=interval interval=" + RECORDS_SAVE_INTERVAL
+                   + " countrecords=" + countrecords);
+                savePendingFiles();
+            }
             return true;
         }
-        
+
     }
-    
-    
+
+
     public synchronized boolean savePendingFiles() {
+        // P0.3: structured records.db save trace. Captures previous file size,
+        // duration, post-save size, and record count so postmortem can quantify
+        // save cost and detect slow saves / runaway map growth / partial-write
+        // corruption.
+        long startMs = System.currentTimeMillis();
+        long prevSize = 0;
+        int recordCount = mFilesDatabase != null ? mFilesDatabase.size() : 0;
         try {
-            p("---- Saving Pending Files(db): " + mFilesDatabase.size());
+            // Capture pre-save size for delta calculation. May not exist on first save.
+            java.io.File prevFile = new java.io.File(appendage + mStorage);
+            if (prevFile.exists()) {
+                prevSize = prevFile.length();
+            }
+
+            p("---- Saving Pending Files(db): " + recordCount);
             p("path for save: " + appendage + mStorage);
-                    
-            FileOutputStream fileOut = new FileOutputStream(appendage + mStorage);
+
+            // P1.1: atomic tmp-file + rename. Without this, a crash mid-write
+            // leaves records.db truncated/corrupted — and on restart
+            // loadPendingFiles silently returns false, then mFilesDatabase
+            // starts empty, then the scanner re-MD5s all 20k files. The
+            // tmp+rename pattern guarantees readers see either the previous
+            // valid file OR the new valid file — never a half-written state.
+            // Same pattern as used in UserCollection (B10 fix 2026-05-01).
+            String finalPath = appendage + mStorage;
+            String tmpPath = finalPath + ".tmp";
+            FileOutputStream fileOut = new FileOutputStream(tmpPath);
             ObjectOutputStream out = new ObjectOutputStream(fileOut);
             out.writeObject(mFilesDatabase);
+            out.flush();
+            fileOut.getFD().sync();  // force OS to flush to disk before rename
             out.close();
             fileOut.close();
-            
+
             fileOut = null;
             out = null;
-            
+
+            // Atomic rename. java.nio.file.Files.move with ATOMIC_MOVE if the FS
+            // supports it; fall back to plain replace otherwise.
+            java.nio.file.Path src = java.nio.file.Paths.get(tmpPath);
+            java.nio.file.Path dst = java.nio.file.Paths.get(finalPath);
+            try {
+                java.nio.file.Files.move(src, dst,
+                    java.nio.file.StandardCopyOption.REPLACE_EXISTING,
+                    java.nio.file.StandardCopyOption.ATOMIC_MOVE);
+            } catch (java.nio.file.AtomicMoveNotSupportedException atomicEx) {
+                java.nio.file.Files.move(src, dst,
+                    java.nio.file.StandardCopyOption.REPLACE_EXISTING);
+            }
+
+            // P0.3: emit the structured save trace via pw() so it lands in the
+            // post-B12 diag log (<YYYYMMDD>_rtserver.log). Grep-friendly key=value
+            // pairs aligned with INDEXING_HEALTH / BATCH_OK conventions.
+            long durationMs = System.currentTimeMillis() - startMs;
+            long newSize = new java.io.File(appendage + mStorage).length();
+            pw("RECORDS_DB_SAVE result=ok"
+               + " records=" + recordCount
+               + " duration_ms=" + durationMs
+               + " prev_bytes=" + prevSize
+               + " new_bytes=" + newSize
+               + " delta_bytes=" + (newSize - prevSize)
+               + " path=" + appendage + mStorage);
+
             return true;
         } catch (FileNotFoundException ex) {
+            long durationMs = System.currentTimeMillis() - startMs;
+            pw("RECORDS_DB_SAVE result=fail"
+               + " reason=FileNotFoundException"
+               + " records=" + recordCount
+               + " duration_ms=" + durationMs
+               + " prev_bytes=" + prevSize
+               + " path=" + appendage + mStorage
+               + " msg=" + ex.toString());
             pe("exception> " + ex.toString());
             return false;
         } catch (IOException ex) {
+            long durationMs = System.currentTimeMillis() - startMs;
+            pw("RECORDS_DB_SAVE result=fail"
+               + " reason=IOException"
+               + " records=" + recordCount
+               + " duration_ms=" + durationMs
+               + " prev_bytes=" + prevSize
+               + " path=" + appendage + mStorage
+               + " msg=" + ex.toString());
             pe("exception> " + ex.toString());
             return false;
-        }        
+        }
     }
     
     
@@ -1249,7 +1386,7 @@ public class FileUtils {
                 String realfilename = _filename.substring(_filename.lastIndexOf(File.separator) + 1, _filename.length());
                 //pw("realfilename='" + realfilename + "'");
                 if (realfilename.startsWith(".")) {
-                    pw("Skipping hidden file: " + _filename);
+                    pdebug("Skipping hidden file: " + _filename); // p() = stdout only; routine per-file skip, was flooding diag log (esp. exFAT ._* sidecars)
                     bRes = false;
                 } else {
                     bRes = true;
