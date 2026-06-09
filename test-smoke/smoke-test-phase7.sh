@@ -65,10 +65,20 @@ IDX_TEST_DIR=$(mktemp -d)
 FULL_CONTENT="index-test-full-${IDX_TEST_ID}"
 echo -n "$FULL_CONTENT" > "$IDX_TEST_DIR/idxfull-${IDX_TEST_ID}.txt"
 
-CHUNKED_CONTENT="IDXCHUNK_A_IDXCHUNK_B_IDXCHUNK_C"
-echo -n "IDXCHUNK_A_" > "$IDX_TEST_DIR/idxchunk1.dat"
-echo -n "IDXCHUNK_B_" > "$IDX_TEST_DIR/idxchunk2.dat"
-echo -n "IDXCHUNK_C" > "$IDX_TEST_DIR/idxchunk3.dat"
+# Chunked content MUST be run-unique (embed IDX_TEST_ID), exactly like FULL_CONTENT above.
+# Previously this was a FIXED constant ("IDXCHUNK_A_IDXCHUNK_B_IDXCHUNK_C"), so every run
+# produced the SAME md5. A leftover chunked file from a prior run (same content) then collided:
+# this run's delete succeeded, but getfile.fn?sNamer=<md5> still served the prior-run copy still
+# on disk → 7.11/7.12 falsely FAILED. Run-unique content gives each run a distinct md5, so no
+# cross-run collision. Keep 3 chunks (the test verifies chunked reassembly) and avoid hyphens
+# (the search engine tokenizes on hyphens).
+CHUNK1_CONTENT="IDXCHUNK_A_${IDX_TEST_ID}_"
+CHUNK2_CONTENT="IDXCHUNK_B_"
+CHUNK3_CONTENT="IDXCHUNK_C"
+CHUNKED_CONTENT="${CHUNK1_CONTENT}${CHUNK2_CONTENT}${CHUNK3_CONTENT}"
+echo -n "$CHUNK1_CONTENT" > "$IDX_TEST_DIR/idxchunk1.dat"
+echo -n "$CHUNK2_CONTENT" > "$IDX_TEST_DIR/idxchunk2.dat"
+echo -n "$CHUNK3_CONTENT" > "$IDX_TEST_DIR/idxchunk3.dat"
 
 FULL_FNAME="idxfull-${IDX_TEST_ID}.txt"
 CHUNKED_FNAME="idxchunked-${IDX_TEST_ID}.txt"

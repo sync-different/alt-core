@@ -31,11 +31,14 @@ FUNC_TEST_DIR=$(mktemp -d)
 FUNC_TEST_CONTENT="smoke-test-functional-${FUNC_TEST_ID}"
 echo -n "$FUNC_TEST_CONTENT" > "$FUNC_TEST_DIR/fullupload-${FUNC_TEST_ID}.txt"
 
-# Create chunk files for chunked upload test
-echo -n "CHUNK_ONE_" > "$FUNC_TEST_DIR/chunk1.dat"
+# Create chunk files for chunked upload test.
+# Content MUST be run-unique (embed FUNC_TEST_ID) so each run gets a distinct md5 — otherwise a
+# leftover chunked file from a prior run (identical fixed content) collides on md5 and getfile.fn
+# serves the stale copy. (Same fix as phase 7's CHUNKED_CONTENT.) No hyphens — search tokenizes on them.
+echo -n "CHUNK_ONE_${FUNC_TEST_ID}_" > "$FUNC_TEST_DIR/chunk1.dat"
 echo -n "CHUNK_TWO_" > "$FUNC_TEST_DIR/chunk2.dat"
 echo -n "CHUNK_THREE" > "$FUNC_TEST_DIR/chunk3.dat"
-CHUNKED_EXPECTED="CHUNK_ONE_CHUNK_TWO_CHUNK_THREE"
+CHUNKED_EXPECTED="CHUNK_ONE_${FUNC_TEST_ID}_CHUNK_TWO_CHUNK_THREE"
 
 # INCOMING and MOBILEBACKUP are set by smoke-common.sh (auto-detects dev vs production)
 
@@ -306,7 +309,7 @@ fi
 
 # --- P6-010: Chunked download — download chunked-uploaded file in 3 chunks, reassemble, verify ---
 # Downloads the reassembled chunked file in 3 separate range requests, then verifies
-# the concatenation matches the original CHUNK_ONE_CHUNK_TWO_CHUNK_THREE content.
+# the concatenation matches CHUNKED_EXPECTED (run-unique: CHUNK_ONE_<id>_CHUNK_TWO_CHUNK_THREE).
 # Also verifies X-Chunk-MD5 response header matches the bytes of each chunk.
 test_start "6.10 chunked upload — chunked download (3 chunks) content"
 CHUNKED_CHUNK_DL_OK=false
@@ -385,11 +388,12 @@ fi  # end MOBILEBACKUP_SCANNABLE check for P6-007..P6-010
 # For HTTPS, uiv5 POSTs to port 8081 (via reverse proxy) with the .p filename in the URL.
 # WebServer.processPost() routes .p files directly to incoming/ (line 9511-9513).
 
-# Create chunk content for uiv5-style tests
-echo -n "UIV5_PART_A_" > "$FUNC_TEST_DIR/uiv5chunk1.dat"
+# Create chunk content for uiv5-style tests — run-unique (embed FUNC_TEST_ID) to avoid
+# cross-run md5 collision with prior-run leftovers (same rationale as above).
+echo -n "UIV5_PART_A_${FUNC_TEST_ID}_" > "$FUNC_TEST_DIR/uiv5chunk1.dat"
 echo -n "UIV5_PART_B_" > "$FUNC_TEST_DIR/uiv5chunk2.dat"
 echo -n "UIV5_PART_C" > "$FUNC_TEST_DIR/uiv5chunk3.dat"
-UIV5_EXPECTED="UIV5_PART_A_UIV5_PART_B_UIV5_PART_C"
+UIV5_EXPECTED="UIV5_PART_A_${FUNC_TEST_ID}_UIV5_PART_B_UIV5_PART_C"
 
 # --- P6-011: uiv5-style chunked upload via Netty (port 8087) ---
 # Mimics how the React frontend uploads: form field name = upload.<name>.<total>.<idx>.p
