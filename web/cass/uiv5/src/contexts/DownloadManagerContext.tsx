@@ -58,10 +58,11 @@ interface DownloadManagerContextType {
   downloadFolder: string;
   folderError: string;
   logEntries: DownloadLogEntry[];
+  addLog: (entry: DownloadLogEntry) => void;
   addToQueue: (file: File) => void;
   removeFromQueue: (id: string) => void;
   resumeDownload: (id: string) => void;
-  startDownloads: () => void;
+  startDownloads: () => void | Promise<void>;
   cancelAll: () => void;
   openModal: () => void;
   closeModal: () => void;
@@ -72,7 +73,7 @@ interface DownloadManagerContextType {
   setEnableParallelChunks: (value: boolean) => void;
   setParallelChunkCount: (value: number) => void;
   setSaveAs: (value: boolean) => void;
-  pickDownloadFolder: () => void;
+  pickDownloadFolder: () => Promise<boolean>;
   clearDownloadFolder: () => void;
   clearCompleted: () => void;
 }
@@ -120,12 +121,18 @@ export function DownloadManagerProvider({ children }: { children: ReactNode }) {
       );
     }
     setQueue(prev => {
-      // Don't add duplicates (same file nickname) if already downloading/queued
-      if (prev.some(item => item.file.nickname === file.nickname && item.status !== 'complete' && item.status !== 'failed' && item.status !== 'cancelled')) {
+      // Dedup key: nickname (md5) AND relative path. For ordinary downloads relativePath is
+      // undefined, so this is the old md5-only behavior. For FOLDER downloads, the SAME content
+      // (same md5) can legitimately appear at multiple paths (folder1/a.jpg AND folder1/sub/a.jpg) —
+      // those are distinct destinations and must BOTH be queued. Keying on md5 alone dropped the
+      // 2nd copy, causing the ribbon (16 files) vs queue (14) mismatch AND an incomplete folder tree.
+      const dedupKey = (f: File) => `${f.nickname}|${f.file_relative_path ?? ''}`;
+      const key = dedupKey(file);
+      if (prev.some(item => dedupKey(item.file) === key && item.status !== 'complete' && item.status !== 'failed' && item.status !== 'cancelled')) {
         return prev;
       }
       const item: QueueItem = {
-        id: `${file.nickname}-${Date.now()}`,
+        id: `${file.nickname}-${file.file_relative_path ?? ''}-${Date.now()}`,
         file,
         status: 'queued',
         progress: { ...initialProgress, totalBytes: file.file_size },
@@ -145,7 +152,8 @@ export function DownloadManagerProvider({ children }: { children: ReactNode }) {
     setQueue(prev => prev.filter(item => item.status !== 'complete' && item.status !== 'failed' && item.status !== 'cancelled'));
   }, []);
 
-  const pickDownloadFolder = useCallback(async () => {
+  // Returns true if a destination directory was chosen, false otherwise (cancelled/unsupported).
+  const pickDownloadFolder = useCallback(async (): Promise<boolean> => {
     try {
       setFolderError('');
       if (!('showDirectoryPicker' in window)) {
@@ -154,9 +162,10 @@ export function DownloadManagerProvider({ children }: { children: ReactNode }) {
       const handle = await (window as any).showDirectoryPicker({ mode: 'readwrite' });
       directoryHandleRef.current = handle;
       setDownloadFolder(handle.name);
+      return true;
     } catch (err) {
       const error = err as Error;
-      if (error.name === 'AbortError') return;
+      if (error.name === 'AbortError') return false;
 
       if (error.message === 'NOT_SUPPORTED' || error.name === 'TypeError' || error.name === 'SecurityError') {
         const isSecure = window.isSecureContext;
@@ -169,6 +178,7 @@ export function DownloadManagerProvider({ children }: { children: ReactNode }) {
         setFolderError(msg);
         addLog({ type: 'warning', message: msg, timestamp: Date.now() });
       }
+      return false;
     }
   }, [addLog]);
 
@@ -231,6 +241,7 @@ export function DownloadManagerProvider({ children }: { children: ReactNode }) {
         maxRetries: retries,
         saveAs: useSaveAs && !item.resumeState, // Don't show save picker on resume
         directoryHandle: directoryHandleRef.current,
+        relativePath: item.file.file_relative_path, // FF4: recreate folder structure under dest dir
         resumeState: item.resumeState,
         enableAdaptiveChunks: adaptive,
         enableParallelChunks: parallel,
@@ -436,13 +447,39 @@ export function DownloadManagerProvider({ children }: { children: ReactNode }) {
   const queueRef = useRef<QueueItem[]>([]);
   queueRef.current = queue;
 
-  const startDownloads = useCallback(() => {
+  const startDownloads = useCallback(async () => {
     const currentQueue = queueRef.current;
     const actionableItems = currentQueue.filter(item => item.status === 'queued' || item.status === 'waiting_retry');
-    if (actionableItems.length > 0) {
-      processQueue(chunkSizeMB, maxRetries, maxFileRetries, saveAs, enableAdaptiveChunks, enableParallelChunks, parallelChunkCount);
+    if (actionableItems.length === 0) return;
+
+    // Folder-structured downloads recreate subfolders under a chosen destination directory —
+    // which needs the File System Access API. Behavior splits by browser support:
+    //   - API available (Chrome/Edge/Brave-with-flag): prompt for the destination if none chosen,
+    //     so the structure can be recreated. Abort if the user declines.
+    //   - API unavailable (Safari/Firefox/Brave-default): FLAT FALLBACK — download each file
+    //     individually to the browser's Downloads folder (no nesting). Notify once, then proceed.
+    const needsFolder = actionableItems.some(item => !!item.file.file_relative_path);
+    const hasFsApi = 'showDirectoryPicker' in window;
+    if (needsFolder) {
+      if (hasFsApi) {
+        if (!directoryHandleRef.current) {
+          const picked = await pickDownloadFolder();
+          if (!picked || !directoryHandleRef.current) {
+            addLog({ type: 'warning', message: 'Download cancelled — a destination folder is required to recreate the folder structure.', timestamp: Date.now() });
+            return;
+          }
+        }
+      } else {
+        addLog({
+          type: 'warning',
+          message: 'This browser can\'t recreate folders on disk — files will download individually to your Downloads folder (flat, no subfolders). Use Chrome or Edge to preserve folder structure.',
+          timestamp: Date.now(),
+        });
+      }
     }
-  }, [processQueue, chunkSizeMB, maxRetries, maxFileRetries, saveAs, enableAdaptiveChunks, enableParallelChunks, parallelChunkCount]);
+
+    processQueue(chunkSizeMB, maxRetries, maxFileRetries, saveAs, enableAdaptiveChunks, enableParallelChunks, parallelChunkCount);
+  }, [processQueue, pickDownloadFolder, addLog, chunkSizeMB, maxRetries, maxFileRetries, saveAs, enableAdaptiveChunks, enableParallelChunks, parallelChunkCount]);
 
   /**
    * Resume a specific failed download — re-queues it with its resume state intact
@@ -498,6 +535,7 @@ export function DownloadManagerProvider({ children }: { children: ReactNode }) {
       downloadFolder,
       folderError,
       logEntries,
+      addLog,
       addToQueue,
       removeFromQueue,
       resumeDownload,

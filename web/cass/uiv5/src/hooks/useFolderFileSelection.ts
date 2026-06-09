@@ -3,6 +3,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import type { RootState, AppDispatch } from '../store/store';
 import {
   toggleFileSelection,
+  toggleFolderSelection,
   selectRange,
   selectAll,
   deselectAll,
@@ -27,6 +28,9 @@ export const useFolderFileSelection = (items: Folder[]) => {
   const lastSelectedId = useSelector(
     (state: RootState) => state.folderSelection.lastSelectedId,
   );
+  const selectedFolderPaths = useSelector(
+    (state: RootState) => state.folderSelection.selectedFolderPaths,
+  );
 
   // File MD5s in display order — used as the canonical id list for shift-range
   // selection and select-all.
@@ -43,11 +47,30 @@ export const useFolderFileSelection = (items: Folder[]) => {
     [items, selectedFileIds],
   );
 
+  // Selected FOLDER items in the current listing (keyed by folder name). Used by the
+  // folder-download flow (FF2/FF3) to recursively enumerate each one.
+  const selectedFolders = useMemo(
+    () => items.filter((it) => it.type === 'folder' && selectedFolderPaths.includes(it.name)),
+    [items, selectedFolderPaths],
+  );
+
   const toggleSelect = useCallback(
     (md5: string) => {
       dispatch(toggleFileSelection(md5));
     },
     [dispatch],
+  );
+
+  const toggleFolderSelect = useCallback(
+    (folderName: string) => {
+      dispatch(toggleFolderSelection(folderName));
+    },
+    [dispatch],
+  );
+
+  const isFolderSelected = useCallback(
+    (folderName: string | undefined) => !!folderName && selectedFolderPaths.includes(folderName),
+    [selectedFolderPaths],
   );
 
   const handleClick = useCallback(
@@ -79,14 +102,19 @@ export const useFolderFileSelection = (items: Folder[]) => {
     [selectedFileIds],
   );
 
-  const selectedCount = selectedFileIds.length;
+  // total selected across files AND folders — drives the blue SelectionToolbar visibility
+  const selectedCount = selectedFileIds.length + selectedFolderPaths.length;
   const isAllSelected =
     allFileIds.length > 0 && selectedFileIds.length === allFileIds.length;
 
   return {
     selectedFiles,
     selectedFileIds,
+    selectedFolders,
+    selectedFolderPaths,
     toggleSelect,
+    toggleFolderSelect,
+    isFolderSelected,
     handleClick,
     selectAll: handleSelectAll,
     deselectAll: handleDeselectAll,

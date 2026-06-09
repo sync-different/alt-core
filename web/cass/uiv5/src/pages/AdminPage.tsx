@@ -10,6 +10,7 @@ import { Box, Tabs, Tab, Alert } from '@mui/material';
 import { selectIsAdmin } from '../store/slices/authSlice';
 import { CurrentLoginsTab } from '../components/admin/CurrentLoginsTab';
 import { UsersTab } from '../components/admin/UsersTab';
+import { DataIntegrityTab } from '../components/admin/DataIntegrityTab';
 
 export function AdminPage() {
   const isAdmin = useSelector(selectIsAdmin);
@@ -36,6 +37,7 @@ export function AdminPage() {
         >
           <Tab label="Current Logins" />
           <Tab label="Users" />
+          <Tab label="Data Integrity" />
         </Tabs>
       </Box>
 
@@ -43,6 +45,7 @@ export function AdminPage() {
       <Box sx={{ flex: 1, overflow: 'auto' }}>
         {activeTab === 0 && <CurrentLoginsTab />}
         {activeTab === 1 && <UsersTab />}
+        {activeTab === 2 && <DataIntegrityTab />}
       </Box>
     </Box>
   );

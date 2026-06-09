@@ -43,6 +43,7 @@ export interface Folder {
   count?: number;
   type?: 'file' | 'folder';
   md5?: string;
+  size?: number; // BE1: file size in bytes (files only; from getfolders-json.fn). 0/undefined for folders.
 }
 
 /**
@@ -432,8 +433,83 @@ export const fetchFolders = async (sFolder: string = 'scanfolders', options?: { 
       count: typeof folder === 'object' ? folder.count : undefined,
       type: typeof folder === 'object' ? folder.type : undefined,
       md5: typeof folder === 'object' ? folder.md5 : undefined,
+      size: typeof folder === 'object' && folder.size != null ? Number(folder.size) : undefined,
     }))
     .filter((folder: Folder) => !folder.name.startsWith('.')); // Filter out hidden files/folders
+};
+
+/**
+ * A single file discovered by a recursive folder enumeration (FF3, PROJECT_FOLDER_DOWNLOAD).
+ * `relativePath` is the path from the *selected* folder down to the file (POSIX '/'-separated),
+ * e.g. selecting "folder1" containing "sub/image1.jpg" yields "folder1/sub/image1.jpg". The client
+ * recreates these subdirectories under the chosen destination directory when writing.
+ */
+export interface EnumeratedFile {
+  md5: string;
+  name: string;        // bare filename
+  size: number;        // bytes (from BE1 — no per-file getfileinfo.fn needed)
+  relativePath: string; // <selectedFolderName>/.../<name>
+}
+
+export interface EnumerateResult {
+  files: EnumeratedFile[];
+  skippedFolders: string[]; // subfolder paths whose listing failed (logged + skipped, not fatal)
+  truncated: boolean;       // hit the depth cap (symlink-loop / runaway guard)
+}
+
+/**
+ * FF3 — recursively enumerate all files under a folder, preserving relative paths.
+ *
+ * Frontend recursion (v1): one `getfolders-json.fn` call per folder NODE (not per file). File size
+ * comes from the listing (BE1), so NO per-file `getfileinfo.fn` calls. A subfolder whose listing
+ * fails is logged + skipped (the rest continue) — never fatal. Recursion depth is capped to guard
+ * against symlink loops / runaway trees.
+ *
+ * @param absPath   the folder path as `getfolders-json.fn` expects it (what FoldersPage navigates to)
+ * @param baseRel   the relative-path prefix to prepend (usually the selected folder's display name)
+ * @param onProgress optional callback fired as files are discovered (for a "Scanning… N found" UI)
+ */
+export const enumerateFolder = async (
+  absPath: string,
+  baseRel: string,
+  onProgress?: (found: number) => void,
+): Promise<EnumerateResult> => {
+  const MAX_DEPTH = 32; // symlink-loop / runaway guard
+  const files: EnumeratedFile[] = [];
+  const skippedFolders: string[] = [];
+  let truncated = false;
+
+  const walk = async (curAbs: string, curRel: string, depth: number): Promise<void> => {
+    if (depth > MAX_DEPTH) { truncated = true; return; }
+    let entries: Folder[];
+    try {
+      entries = await fetchFolders(curAbs);
+    } catch (e) {
+      console.warn('[enumerateFolder] failed to list, skipping:', curAbs, e);
+      skippedFolders.push(curAbs);
+      return;
+    }
+    // process files first, then descend into subfolders
+    for (const entry of entries) {
+      if (entry.type === 'file' && entry.md5) {
+        files.push({
+          md5: entry.md5,
+          name: entry.name,
+          size: entry.size ?? 0,
+          relativePath: `${curRel}/${entry.name}`,
+        });
+      }
+    }
+    if (onProgress) onProgress(files.length);
+    for (const entry of entries) {
+      if (entry.type === 'folder') {
+        await walk(`${curAbs}/${entry.name}`, `${curRel}/${entry.name}`, depth + 1);
+      }
+    }
+  };
+
+  await walk(absPath, baseRel, 0);
+  return { files, skippedFolders, truncated };
 };
 
 /**

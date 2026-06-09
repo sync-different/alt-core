@@ -27,6 +27,10 @@ export interface File {
   file_path: string;             // File path
   file_path_webapp?: string;     // Web-accessible file path
   video_url_webapp?: string;     // HLS video stream URL
+  // FF4 (PROJECT_FOLDER_DOWNLOAD): when this file was added via a folder download, its path
+  // relative to the chosen destination dir, e.g. "folder1/sub/image1.jpg". The download service
+  // recreates those subdirectories before writing. Absent for ordinary single-file downloads.
+  file_relative_path?: string;
 
   // Optional media-specific fields
   file_duration?: number;        // Duration in seconds (audio/video)

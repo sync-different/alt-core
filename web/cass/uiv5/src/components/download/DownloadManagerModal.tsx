@@ -11,7 +11,7 @@ import {
   Dialog, DialogTitle, DialogContent, DialogActions, Button,
   LinearProgress, Typography, Box, Alert, Slider, Collapse,
   IconButton, List, ListItem, ListItemText,
-  Chip, Divider, FormControlLabel, Switch,
+  Chip, Divider, FormControlLabel, Switch, ToggleButtonGroup, ToggleButton,
 } from '@mui/material';
 import {
   Download as DownloadIcon,
@@ -29,9 +29,12 @@ import {
   FolderOpen as FolderIcon,
   Replay as ResumeIcon,
   Schedule as WaitingIcon,
+  AccountTree as TreeIcon,
+  ViewList as ListViewIcon,
 } from '@mui/icons-material';
 import { useDownloadManager, type QueueItem } from '../../contexts/DownloadManagerContext';
 import { formatSpeed, formatTimeRemaining } from '../../services/downloadService';
+import { FolderTreeView } from './FolderTreeView';
 
 const chunkMarks = [
   { value: 5, label: '5 MB' },
@@ -99,6 +102,13 @@ export function DownloadManagerModal() {
 
   const [logExpanded, setLogExpanded] = useState(false);
   const [settingsExpanded, setSettingsExpanded] = useState(false);
+  // null = follow the smart default (tree when folders present, list otherwise);
+  // once the user clicks the toggle, their choice is respected.
+  const [viewModeOverride, setViewModeOverride] = useState<'list' | 'tree' | null>(null);
+  // show the Tree/List toggle only when the queue has folder-structured items
+  const hasFolders = queue.some((q) => !!q.file.file_relative_path);
+  // change #2: default to tree when a folder is queued, list when only files
+  const viewMode: 'list' | 'tree' = viewModeOverride ?? (hasFolders ? 'tree' : 'list');
 
   const queuedCount = queue.filter(q => q.status === 'queued').length;
   const completedCount = queue.filter(q => q.status === 'complete' || q.status === 'failed' || q.status === 'cancelled').length;
@@ -145,6 +155,39 @@ export function DownloadManagerModal() {
       </DialogTitle>
 
       <DialogContent sx={{ pb: 1 }}>
+        {/* Download Folder — always visible (not hidden in advanced settings) */}
+        <Box sx={{ mb: 1.5 }}>
+          <Typography variant="body2" color="text.secondary" gutterBottom>
+            Download Folder
+          </Typography>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <Button
+              variant="outlined"
+              size="small"
+              startIcon={<FolderIcon />}
+              onClick={pickDownloadFolder}
+              disabled={isProcessing}
+            >
+              {downloadFolder || 'Choose Folder'}
+            </Button>
+            {downloadFolder && (
+              <IconButton size="small" onClick={clearDownloadFolder} disabled={isProcessing} title="Clear folder selection">
+                <CloseIcon fontSize="small" />
+              </IconButton>
+            )}
+          </Box>
+          {folderError && (
+            <Typography variant="caption" color="error" sx={{ mt: 0.5, display: 'block' }}>
+              {folderError}
+            </Typography>
+          )}
+          {!downloadFolder && !folderError && (
+            <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5, display: 'block' }}>
+              No folder selected — files save to browser default
+            </Typography>
+          )}
+        </Box>
+
         {/* Settings Section */}
         <Box sx={{ mb: 2 }}>
           <Box
@@ -285,39 +328,6 @@ export function DownloadManagerModal() {
               </Typography>
             </Box>
 
-            {/* Download Folder */}
-            <Box sx={{ mt: 1, mb: 1 }}>
-              <Typography variant="body2" color="text.secondary" gutterBottom>
-                Download Folder
-              </Typography>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                <Button
-                  variant="outlined"
-                  size="small"
-                  startIcon={<FolderIcon />}
-                  onClick={pickDownloadFolder}
-                  disabled={isProcessing}
-                >
-                  {downloadFolder || 'Choose Folder'}
-                </Button>
-                {downloadFolder && (
-                  <IconButton size="small" onClick={clearDownloadFolder} disabled={isProcessing} title="Clear folder selection">
-                    <CloseIcon fontSize="small" />
-                  </IconButton>
-                )}
-              </Box>
-              {folderError && (
-                <Typography variant="caption" color="error" sx={{ mt: 0.5, display: 'block' }}>
-                  {folderError}
-                </Typography>
-              )}
-              {!downloadFolder && !folderError && (
-                <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5, display: 'block' }}>
-                  No folder selected — files save to browser default
-                </Typography>
-              )}
-            </Box>
-
             {/* Save As Toggle */}
             {!downloadFolder && (
               <Box sx={{ mt: 1 }}>
@@ -373,12 +383,12 @@ export function DownloadManagerModal() {
                     </Typography>
                   )}
                 </Box>
-                <Box sx={{ display: 'flex', gap: 2 }}>
-                  {currentSpeedKBps > 0 && (
-                    <Typography variant="caption" color="text.secondary">
-                      Current speed: {formatSpeed(currentSpeedKBps)}
-                    </Typography>
-                  )}
+                {/* Always render this row at a fixed height so the ribbon doesn't jitter
+                    between 1 and 2 rows as the speed fluctuates to 0 between chunks. */}
+                <Box sx={{ display: 'flex', gap: 2, minHeight: 18, alignItems: 'center' }}>
+                  <Typography variant="caption" color="text.secondary">
+                    {currentSpeedKBps > 0 ? `Current speed: ${formatSpeed(currentSpeedKBps)}` : ' '}
+                  </Typography>
                   {(totalErrors > 0 || totalRetries > 0) && (
                     <Typography variant="caption" color="text.secondary">
                       {totalErrors > 0 && `${totalErrors} error${totalErrors !== 1 ? 's' : ''}`}
@@ -392,6 +402,25 @@ export function DownloadManagerModal() {
           </Box>
         )}
 
+        {/* Queue header: Tree/List toggle (only when folder downloads are present) */}
+        {queue.length > 0 && hasFolders && (
+          <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 0.5 }}>
+            <ToggleButtonGroup
+              size="small"
+              exclusive
+              value={viewMode}
+              onChange={(_e, v) => { if (v) setViewModeOverride(v); }}
+            >
+              <ToggleButton value="list" sx={{ py: 0.25, px: 1 }}>
+                <ListViewIcon fontSize="small" sx={{ mr: 0.5 }} /> List
+              </ToggleButton>
+              <ToggleButton value="tree" sx={{ py: 0.25, px: 1 }}>
+                <TreeIcon fontSize="small" sx={{ mr: 0.5 }} /> Tree
+              </ToggleButton>
+            </ToggleButtonGroup>
+          </Box>
+        )}
+
         {/* Queue */}
         {queue.length === 0 ? (
           <Box sx={{ py: 4, textAlign: 'center' }}>
@@ -399,6 +428,8 @@ export function DownloadManagerModal() {
               No files in download queue. Click the download button on any file to add it.
             </Typography>
           </Box>
+        ) : (hasFolders && viewMode === 'tree') ? (
+          <FolderTreeView queue={queue} />
         ) : (
           <List dense disablePadding sx={{ maxHeight: 300, overflow: 'auto' }}>
             {queue.map((item) => (

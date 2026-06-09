@@ -68,6 +68,31 @@ export interface DownloadOptions {
   enableAdaptiveChunks?: boolean; // F8: adaptive chunk sizing
   enableParallelChunks?: boolean; // F7: parallel chunk downloads
   parallelChunkCount?: number;    // F7: number of parallel chunks (1-5, default 2)
+  // FF4 (PROJECT_FOLDER_DOWNLOAD): when downloading a folder, the relative path of this file
+  // under the chosen destination directory, e.g. "folder1/sub/image1.jpg". Subdirectories are
+  // created (getDirectoryHandle {create:true}) beneath `directoryHandle` before writing. When
+  // absent (single-file download), the file is written directly with its own name as today.
+  relativePath?: string;
+}
+
+/**
+ * FF4 — resolve the target file handle for a (possibly nested) relative path under a directory.
+ * Splits the path on '/', walks/creates each intermediate directory via getDirectoryHandle,
+ * then returns getFileHandle for the final segment. With no separators it's equivalent to the
+ * previous behavior: a single getFileHandle in the picked directory.
+ */
+async function resolveNestedFileHandle(
+  dirHandle: FileSystemDirectoryHandle,
+  relativePath: string,
+): Promise<FileSystemFileHandle> {
+  const parts = relativePath.split('/').filter((p) => p.length > 0 && p !== '.' && p !== '..');
+  if (parts.length === 0) throw new Error(`invalid relativePath: "${relativePath}"`);
+  console.log('[folder-download] creating nested path:', parts.join('/'), '(', parts.length - 1, 'subdir(s))');
+  let dir = dirHandle;
+  for (let i = 0; i < parts.length - 1; i++) {
+    dir = await dir.getDirectoryHandle(parts[i], { create: true });
+  }
+  return dir.getFileHandle(parts[parts.length - 1], { create: true });
 }
 
 /**
@@ -339,9 +364,19 @@ async function downloadFileDirect(
       let writable: FileSystemWritableFileStream | null = null;
       const useSaveAs = options.saveAs !== false;
 
+      // FF4: a folder-structured download with the FS API available REQUIRES a chosen destination
+      // dir (else we'd flatten). When the API is unavailable, we intentionally allow the flat
+      // fallback below (per-file browser download to Downloads). So only block when the API exists.
+      if (options.relativePath && !options.directoryHandle && ('showSaveFilePicker' in window)) {
+        options.onError?.(new Error('Choose a download folder first (folder downloads need a destination directory to recreate the structure).'));
+        return;
+      }
+
       if (options.directoryHandle) {
         try {
-          const fileHandle = await options.directoryHandle.getFileHandle(file.name, { create: true });
+          const fileHandle = options.relativePath
+            ? await resolveNestedFileHandle(options.directoryHandle, options.relativePath)
+            : await options.directoryHandle.getFileHandle(file.name, { create: true });
           writable = await fileHandle.createWritable();
         } catch (err) {
           options.onError?.(new Error(`Cannot write to folder: ${(err as Error).message}`));
@@ -552,7 +587,9 @@ async function downloadFileByChunksSequential(
     if (!writable && !resume) {
       if (options.directoryHandle) {
         try {
-          fileHandle = await options.directoryHandle.getFileHandle(file.name, { create: true });
+          fileHandle = options.relativePath
+            ? await resolveNestedFileHandle(options.directoryHandle, options.relativePath)
+            : await options.directoryHandle.getFileHandle(file.name, { create: true });
           writable = await fileHandle.createWritable();
         } catch (err) {
           options.onError?.(new Error(`Cannot write to folder: ${(err as Error).message}`));
@@ -837,7 +874,9 @@ async function downloadFileByChunksParallel(
     if (!writable && !resume) {
       if (options.directoryHandle) {
         try {
-          fileHandle = await options.directoryHandle.getFileHandle(file.name, { create: true });
+          fileHandle = options.relativePath
+            ? await resolveNestedFileHandle(options.directoryHandle, options.relativePath)
+            : await options.directoryHandle.getFileHandle(file.name, { create: true });
           writable = await fileHandle.createWritable();
         } catch (err) {
           options.onError?.(new Error(`Cannot write to folder: ${(err as Error).message}`));
@@ -1082,6 +1121,14 @@ export async function downloadFile(
   file: File,
   options: DownloadOptions = {}
 ): Promise<void> {
+  // FF4: folder-structured download recreates subfolders under a destination directory.
+  // Only block when the File System Access API EXISTS but no directory was chosen (user forgot).
+  // When the API is unavailable (Safari/Firefox/Brave-default), fall through to the flat
+  // per-file download path — the file lands in Downloads without nesting (flat fallback).
+  if (options.relativePath && !options.directoryHandle && ('showDirectoryPicker' in window)) {
+    options.onError?.(new Error('Choose a download folder first — folder downloads recreate the structure under a destination directory.'));
+    return;
+  }
   const chunkSize = options.chunkSize || DEFAULT_CHUNK_SIZE;
   if (file.file_size > chunkSize) {
     if (options.enableParallelChunks) {

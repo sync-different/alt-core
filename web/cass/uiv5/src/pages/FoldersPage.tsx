@@ -17,7 +17,7 @@ import {
   VideoFile as VideoIcon,
   AudioFile as AudioIcon,
 } from '@mui/icons-material';
-import { fetchFolders, fetchFileInfo } from '../services/fileApi';
+import { fetchFolders, enumerateFolder } from '../services/fileApi';
 import { checkFolderPermission } from '../services/folderPermissionApi';
 import { ImageViewer } from '../features/media/ImageViewer';
 import { VideoPlayer } from '../features/media/VideoPlayer';
@@ -48,6 +48,10 @@ export function FoldersPage() {
   const [breadcrumbs, setBreadcrumbs] = useState<string[]>(['scanfolders']);
   const [imageFiles, setImageFiles] = useState<File[]>([]);
   const [treeViewOpen, setTreeViewOpen] = useState(false);
+  // Per-folder recursive stats (file count + total bytes), keyed by absolute folder path.
+  // Computed lazily when a folder is selected, cached so deselect/reselect doesn't re-walk.
+  // value: { loading } while enumerating, then { files, bytes }.
+  const [folderStats, setFolderStats] = useState<Record<string, { loading?: boolean; files?: number; bytes?: number }>>({});
 
   // Notify context that we're on the Folders page and update current folder
   useEffect(() => {
@@ -98,7 +102,7 @@ export function FoldersPage() {
     closeDocumentViewer,
   } = useMediaViewer();
 
-  const { addToQueue } = useDownloadManager();
+  const { addToQueue, addLog, openModal } = useDownloadManager();
 
   // Multi-select for batch actions on files in the current folder.
   // See internal/PROJECT_FOLDER_MULTISELECT.md.
@@ -241,6 +245,24 @@ export function FoldersPage() {
     };
   }
 
+  // Aggregate recursive stats across currently-selected folders, for the ribbon label.
+  // Declared before toolbarSelection (which consumes it). folderStats is populated lazily
+  // by ensureFolderStats() on folder-select.
+  const selectedFolderStats = useMemo(() => {
+    let files = 0;
+    let bytes = 0;
+    let loading = false;
+    for (const folder of folderSelection.selectedFolders) {
+      const absPath = currentFolder === 'scanfolders' ? folder.name : `${currentFolder}/${folder.name}`;
+      const s = folderStats[absPath];
+      if (!s || s.loading) { loading = true; continue; }
+      files += s.files || 0;
+      bytes += s.bytes || 0;
+    }
+    return { files, bytes, loading };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [folderSelection.selectedFolders, folderStats, currentFolder]);
+
   // SelectionToolbar contract: it expects File[] for selectedFiles. The hook
   // returns Folder[] (file-flavor only), so map through folderToFile.
   const toolbarSelection = useMemo(
@@ -250,10 +272,14 @@ export function FoldersPage() {
         .map(folderToFile)
         .filter((f): f is File => f !== null),
       selectedFileIds: folderSelection.selectedFileIds,
+      selectedFolderCount: folderSelection.selectedFolders.length,
+      selectedFolderFileCount: selectedFolderStats.files,
+      selectedFolderBytes: selectedFolderStats.bytes,
+      selectedFolderStatsLoading: selectedFolderStats.loading,
       deselectAll: folderSelection.deselectAll,
     }),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [folderSelection.selectedCount, folderSelection.selectedFileIds, folderSelection.selectedFiles],
+    [folderSelection.selectedCount, folderSelection.selectedFileIds, folderSelection.selectedFiles, folderSelection.selectedFolders, selectedFolderStats],
   );
 
   // Download handler for selected files in the folder view. We can't reuse
@@ -265,36 +291,92 @@ export function FoldersPage() {
   // negative bytes-left.
   //
   // Fix: hydrate via getfileinfo.fn per MD5 in parallel before queueing.
+  // Build a queue-ready File from an enumerated file (md5 + name + size + relativePath).
+  // Size comes from the listing (BE1), so NO getfileinfo.fn call is needed.
+  const enumeratedToFile = (e: { md5: string; name: string; size: number; relativePath: string }): File => {
+    const fileGroup = getFileGroup(e.name);
+    const dot = e.name.lastIndexOf('.');
+    return {
+      nickname: e.md5,
+      name: decodeFolderName(e.name),
+      file_ext: dot >= 0 ? e.name.substring(dot) : '',
+      file_group: fileGroup,
+      file_date_long: Date.now(),
+      file_size: e.size,
+      multiclusterid: e.md5,
+      file_thumbnail: '',
+      file_tags: '',
+      file_path_webapp: `/cass/getfile.fn?sNamer=${e.md5}`,
+      video_url_webapp: fileGroup === 'movie' ? `getvideo.m3u8?md5=${e.md5}` : undefined,
+      md5hash: e.md5,
+      file_name: decodeFolderName(e.name),
+      file_date: new Date().toISOString(),
+      file_path: '',
+      file_relative_path: e.relativePath, // FF4: recreate folder structure under dest dir
+    };
+  };
+
+  // Lazily compute a folder's recursive stats (file count + total bytes) for the ribbon label.
+  // Cached per absolute path; size comes from the listing (BE1) so this is just the per-subfolder
+  // walk. A re-entrant call while loading/loaded is a no-op.
+  const ensureFolderStats = (folderName: string) => {
+    const absPath = currentFolder === 'scanfolders' ? folderName : `${currentFolder}/${folderName}`;
+    setFolderStats((prev) => {
+      if (prev[absPath]) return prev; // already loading or loaded
+      // kick off enumeration outside the setState updater
+      (async () => {
+        try {
+          const result = await enumerateFolder(absPath, decodeFolderName(folderName));
+          const bytes = result.files.reduce((sum, f) => sum + (f.size || 0), 0);
+          setFolderStats((p) => ({ ...p, [absPath]: { files: result.files.length, bytes } }));
+        } catch {
+          setFolderStats((p) => ({ ...p, [absPath]: { files: 0, bytes: 0 } }));
+        }
+      })();
+      return { ...prev, [absPath]: { loading: true } };
+    });
+  };
+
+  // FF2/FF3/FF5: download selected files AND selected folders (recursively enumerated),
+  // preserving each file's path under the chosen destination directory.
   const handleMultiDownload = async () => {
-    const ids = folderSelection.selectedFileIds;
-    if (ids.length === 0) return;
-    try {
-      const infos = await Promise.all(ids.map((id) => fetchFileInfo(id)));
-      infos.forEach((info) => {
-        const file: File = {
-          nickname: info.nickname,
-          name: info.name,
-          file_ext: info.file_ext,
-          file_group: info.file_group as File['file_group'],
-          file_date_long: info.file_date_long,
-          file_size: info.file_size,
-          multiclusterid: info.nickname,
-          file_thumbnail: info.file_thumbnail || '',
-          file_tags: info.file_tags,
-          file_path_webapp: info.file_path_webapp,
-          video_url_webapp: info.video_url_webapp,
-          md5hash: info.nickname,
-          file_name: info.name,
-          file_date: info.file_date,
-          file_path: '',
-        };
-        addToQueue(file);
-      });
-    } catch (err) {
-      console.error('handleMultiDownload: failed to hydrate file info', err);
-      // Fall back to the size=0 path so the user at least gets the bytes,
-      // even if the progress display will be off.
-      toolbarSelection.selectedFiles.forEach((f) => addToQueue(f));
+    const selFiles = folderSelection.selectedFiles;       // Folder entries (type==='file'), carry size (BE1)
+    const selFolders = folderSelection.selectedFolders;   // Folder entries (type==='folder')
+    console.log('[folder-download] handleMultiDownload: files=', selFiles.length, 'folders=', selFolders.map(f => f.name));
+    if (selFiles.length === 0 && selFolders.length === 0) return;
+
+    openModal(); // FF2: always show the Download Manager (so folder-scan progress is visible in the log)
+
+    // 1) Selected files → queue at the destination root (relativePath = bare name).
+    //    Size is already on the Folder entry from the listing (BE1) — no hydration needed.
+    for (const f of selFiles) {
+      if (!f.md5) continue;
+      addToQueue(enumeratedToFile({
+        md5: f.md5, name: f.name, size: f.size ?? 0, relativePath: decodeFolderName(f.name),
+      }));
+    }
+
+    // 2) Selected folders → recursively enumerate, queue each file under <folderName>/...
+    for (const folder of selFolders) {
+      const absPath = currentFolder === 'scanfolders' ? folder.name : `${currentFolder}/${folder.name}`;
+      try {
+        addLog({ type: 'info', message: `Scanning folder "${decodeFolderName(folder.name)}"…`, timestamp: Date.now() });
+        const result = await enumerateFolder(absPath, decodeFolderName(folder.name));
+        console.log('[folder-download] enumerated', absPath, '→', result.files.length, 'files; sample relPath:', result.files[0]?.relativePath);
+        if (result.files.length === 0) {
+          addLog({ type: 'warning', message: `No files found in "${decodeFolderName(folder.name)}"`, timestamp: Date.now() });
+        }
+        result.files.forEach((e) => addToQueue(enumeratedToFile(e)));
+        if (result.skippedFolders.length > 0) {
+          addLog({ type: 'warning', message: `${result.skippedFolders.length} subfolder(s) could not be read and were skipped`, timestamp: Date.now() });
+        }
+        if (result.truncated) {
+          addLog({ type: 'warning', message: `Folder "${decodeFolderName(folder.name)}" too deep — enumeration was capped`, timestamp: Date.now() });
+        }
+      } catch (err) {
+        console.error('handleMultiDownload: folder enumeration failed', absPath, err);
+        addLog({ type: 'error', message: `Failed to scan folder "${decodeFolderName(folder.name)}"`, timestamp: Date.now() });
+      }
     }
   };
 
@@ -662,7 +744,14 @@ export function FoldersPage() {
           {folders.map((folder, index) => {
             const { Icon, color } = folder.type === 'file' ? getFileIcon(folder.name) : { Icon: FolderIcon, color: '#FFD700' };
             const isFile = folder.type === 'file' && !!folder.md5;
-            const isMultiSelected = isFile && folderSelection.isSelected(folder.md5);
+            const isFolder = folder.type === 'folder';
+            // FF1: folders are selectable too (keyed by name). A card is "multi-selected"
+            // if it's a selected file OR a selected folder.
+            const isMultiSelected = isFile
+              ? folderSelection.isSelected(folder.md5)
+              : isFolder
+                ? folderSelection.isFolderSelected(folder.name)
+                : false;
 
             return (
               <Card
@@ -695,7 +784,7 @@ export function FoldersPage() {
                   '&:hover .folder-multiselect-checkbox': { opacity: 1 },
                 }}
               >
-                {isFile && (
+                {(isFile || isFolder) && (
                   <Checkbox
                     className="folder-multiselect-checkbox"
                     size="small"
@@ -706,10 +795,16 @@ export function FoldersPage() {
                       // React's synthetic event for the change is good enough — we only
                       // need shift/ctrl/meta from a real MouseEvent for range/multi-select.
                       // Since the change handler can't see modifier keys reliably across
-                      // browsers, route through toggleSelect (plain toggle). Range
+                      // browsers, route through toggle (plain toggle). Range
                       // selection via shift-click is wired in P3 / via card-level click.
                       e.stopPropagation();
-                      folderSelection.toggleSelect(folder.md5 as string);
+                      if (isFile) {
+                        folderSelection.toggleSelect(folder.md5 as string);
+                      } else {
+                        folderSelection.toggleFolderSelect(folder.name);
+                        // when selecting a folder, lazily compute its file count + total size for the ribbon
+                        if (!folderSelection.isFolderSelected(folder.name)) ensureFolderStats(folder.name);
+                      }
                     }}
                     sx={{
                       position: 'absolute',

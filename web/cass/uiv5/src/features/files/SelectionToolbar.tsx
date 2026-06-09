@@ -40,9 +40,13 @@ import type { File } from '../../types/models';
 
 /** Minimal selection contract the toolbar needs. */
 export interface ToolbarSelection {
-  selectedCount: number;
+  selectedCount: number;            // total selected (files + folders)
   selectedFiles: File[];
   selectedFileIds: string[];
+  selectedFolderCount?: number;     // folders selected (FoldersPage); omit/0 in file-only views
+  selectedFolderFileCount?: number; // recursive file count across selected folders
+  selectedFolderBytes?: number;     // recursive total bytes across selected folders
+  selectedFolderStatsLoading?: boolean; // still enumerating one+ selected folder
   deselectAll: () => void;
 }
 
@@ -79,6 +83,33 @@ export function SelectionToolbar({
   const fileViewSelection = useFileSelection();
   const sel: ToolbarSelection = selection ?? fileViewSelection;
   const { selectedCount, selectedFiles, selectedFileIds, deselectAll } = sel;
+  // file/folder breakdown for an accurate label ("X files, Y folders selected (N files, Z GB)")
+  const folderCount = sel.selectedFolderCount ?? 0;
+  const fileCount = Math.max(0, selectedCount - folderCount);
+  const fmtBytes = (n: number): string => {
+    if (n < 1024) return `${n} B`;
+    const u = ['KB', 'MB', 'GB', 'TB'];
+    let v = n / 1024, i = 0;
+    while (v >= 1024 && i < u.length - 1) { v /= 1024; i++; }
+    return `${v.toFixed(v < 10 ? 1 : 0)} ${u[i]}`;
+  };
+  const selectionLabel = (() => {
+    const parts: string[] = [];
+    if (fileCount > 0) parts.push(`${fileCount} ${fileCount === 1 ? 'file' : 'files'}`);
+    if (folderCount > 0) parts.push(`${folderCount} ${folderCount === 1 ? 'folder' : 'folders'}`);
+    let label = parts.length === 0 ? '0 files selected' : `${parts.join(', ')} selected`;
+    // when folders are selected, append the recursive contents summary
+    if (folderCount > 0) {
+      if (sel.selectedFolderStatsLoading) {
+        label += ' (scanning…)';
+      } else {
+        const fc = sel.selectedFolderFileCount ?? 0;
+        const bytes = sel.selectedFolderBytes ?? 0;
+        label += ` (${fc} ${fc === 1 ? 'file' : 'files'}, ${fmtBytes(bytes)})`;
+      }
+    }
+    return label;
+  })();
   const { addToQueue } = useDownloadManager();
   const [tagDialogOpen, setTagDialogOpen] = useState(false);
   const [shareDialogOpen, setShareDialogOpen] = useState(false);
@@ -142,7 +173,7 @@ export function SelectionToolbar({
       </IconButton>
 
       <Typography variant={inline ? "subtitle1" : "h6"} sx={{ mr: 2 }}>
-        {selectedCount} {selectedCount === 1 ? 'file' : 'files'} selected
+        {selectionLabel}
       </Typography>
 
       <Tooltip title="Add Tags">

@@ -16,11 +16,17 @@ import type { PayloadAction } from '@reduxjs/toolkit';
 interface FolderSelectionState {
   selectedFileIds: string[];
   lastSelectedId: string | null;
+  // PROJECT_FOLDER_DOWNLOAD FF1: folders are now selectable too. Folders have no md5,
+  // so they're keyed by their folder NAME within the current listing (the value used to
+  // build the recursive-enumeration path). Tracked separately from files; both feed the
+  // same blue SelectionToolbar.
+  selectedFolderPaths: string[];
 }
 
 const initialState: FolderSelectionState = {
   selectedFileIds: [],
   lastSelectedId: null,
+  selectedFolderPaths: [],
 };
 
 const folderSelectionSlice = createSlice({
@@ -59,8 +65,18 @@ const folderSelectionSlice = createSlice({
     selectAll: (state, action: PayloadAction<string[]>) => {
       state.selectedFileIds = [...action.payload];
     },
+    toggleFolderSelection: (state, action: PayloadAction<string>) => {
+      const path = action.payload;
+      const idx = state.selectedFolderPaths.indexOf(path);
+      if (idx > -1) {
+        state.selectedFolderPaths.splice(idx, 1);
+      } else {
+        state.selectedFolderPaths.push(path);
+      }
+    },
     deselectAll: (state) => {
       state.selectedFileIds = [];
+      state.selectedFolderPaths = [];
       state.lastSelectedId = null;
     },
   },
@@ -68,6 +84,7 @@ const folderSelectionSlice = createSlice({
 
 export const {
   toggleFileSelection,
+  toggleFolderSelection,
   selectRange,
   selectAll,
   deselectAll,
