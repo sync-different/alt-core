@@ -263,7 +263,20 @@ public class NetUtils {
         appendage = app.getAppendage();
         appendageRW = app.getAppendageRW();
         String mode = getConfig("mode", appendage + "config/www-rtbackup.properties");
-        return mode;        
+        return mode;
+    }
+
+    // Optional override for the IP a server-mode node advertises in its discovery broadcast.
+    // Set "broadcastip=loopback" (or "127.0.0.1") in www-server.properties to make a self-contained
+    // / single-box node broadcast 127.0.0.1, so its own setnode registration + file-serving URLs use
+    // loopback instead of a public/WAN IP the box can't reach itself on (NAT/firewall). When the key
+    // is absent or empty, returns "" and the broadcast keeps the discovered non-loopback IP (current
+    // behavior — required for real LAN clusters). See ClientService.setnode / read_view_link.
+    static public String getBroadcastIP() {
+        Appendage app = new Appendage();
+        appendage = app.getAppendage();
+        appendageRW = app.getAppendageRW();
+        return getConfig("broadcastip", appendage + "../rtserver/config/www-server.properties");
     }
     
     static public String getSignature() {

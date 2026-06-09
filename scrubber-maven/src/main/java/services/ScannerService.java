@@ -151,12 +151,19 @@ public class ScannerService implements Runnable {
    public void getServerAddressPort() throws InterruptedException {
            int PORT = 1234;
            byte[] recieveData = new byte[100];
-           
+
            DatagramSocket clientSocket = null;
            DatagramPacket recievePacket = null;
-           
-           while (!bHostFound) {                
-               p("before try");  
+
+           // ONE discovery attempt per call (single receive with a 10s SO_TIMEOUT), then RETURN.
+           // The retry budget lives in the CALLER's `while (!bHostFound && nRetry < 100)` loop
+           // (~line 569). Previously this method had its own unbounded `while (!bHostFound)` that
+           // never returned until a matching broadcast arrived — so the caller's 100-retry cap was
+           // dead code, and a lost broadcast (e.g. VPN/multi-interface) WEDGED indexing indefinitely
+           // (observed: scanner stuck ~5h, no new uploads indexed). Returning after one attempt lets
+           // the caller cap retries, then "Skipped scrubber" and resume scanning. See broadcastip=loopback.
+           {
+               p("before try");
 
                try {
                     p("[before new socket]");  

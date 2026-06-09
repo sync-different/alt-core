@@ -106,7 +106,16 @@ public class BroadcastService implements Runnable {
                      // p.setAddress(InetAddress.getByAddress(new byte[] {(byte)192,(byte)168,(byte)1,(byte)139}));
                       p.setPort(PORT);
 
-                      String s = new Integer(i++).toString() + "," + mNodeSignature + "," + localIP.getHostAddress() + "," + mLocalPort + "," + mClusterId + ",";
+                      // broadcastip=loopback override: advertise 127.0.0.1 for a self-contained node
+                      // (see NetUtils.getBroadcastIP). Absent/empty -> keep the discovered non-loopback IP.
+                      String advertiseIP = localIP.getHostAddress();
+                      String sBcastOverride = NetUtils.getBroadcastIP();
+                      if (sBcastOverride != null && (sBcastOverride.equalsIgnoreCase("loopback") || sBcastOverride.equals("127.0.0.1"))) {
+                          advertiseIP = "127.0.0.1";
+                          p("broadcastip=loopback: advertising 127.0.0.1 instead of " + localIP.getHostAddress());
+                      }
+
+                      String s = new Integer(i++).toString() + "," + mNodeSignature + "," + advertiseIP + "," + mLocalPort + "," + mClusterId + ",";
                       p("sending probe #:" + i + "'" + s + "'");
                       b = s.getBytes();
                       p.setData(b);
@@ -116,7 +125,7 @@ public class BroadcastService implements Runnable {
                           e.printStackTrace();
                           pw("WARNING: there was an error sending the probe.");
                       }
-                      p("done send probe." + localIP.getHostAddress());
+                      p("done send probe." + advertiseIP);
 
                   } else {
                       if (localIP == null) {
@@ -204,7 +213,15 @@ public class BroadcastService implements Runnable {
                                  // p.setAddress(InetAddress.getByAddress(new byte[] {(byte)192,(byte)168,(byte)1,(byte)139}));
                                   p.setPort(PORT);
 
-                                  String s = new Integer(i++).toString() + "," + mNodeSignature + "," + localIP.getHostAddress() + "," + mLocalPort + "," + mClusterId + ",";
+                                  // broadcastip=loopback override (see NetUtils.getBroadcastIP / block above)
+                                  String advertiseIP = localIP.getHostAddress();
+                                  String sBcastOverride = NetUtils.getBroadcastIP();
+                                  if (sBcastOverride != null && (sBcastOverride.equalsIgnoreCase("loopback") || sBcastOverride.equals("127.0.0.1"))) {
+                                      advertiseIP = "127.0.0.1";
+                                      p("broadcastip=loopback: advertising 127.0.0.1 instead of " + localIP.getHostAddress());
+                                  }
+
+                                  String s = new Integer(i++).toString() + "," + mNodeSignature + "," + advertiseIP + "," + mLocalPort + "," + mClusterId + ",";
                                   p("sending probe #:" + i + "'" + s + "'");
                                   b = s.getBytes();
                                   p.setData(b);
@@ -214,7 +231,7 @@ public class BroadcastService implements Runnable {
                                       e.printStackTrace();
                                       pw("WARNING: there was an error sending the probe.");
                                   }
-                                  p("done send probe." + localIP.getHostAddress());
+                                  p("done send probe." + advertiseIP);
 
                               } else {
                                   if (localIP == null) {

@@ -5963,6 +5963,16 @@ public static boolean isUnix(String sUUID) {
             //InetAddress addr = InetAddress.getByName(_ipaddress);
             //return addr.isReachable(500);
             p("isNodeAvailable() evaluating: " + _ipaddress + ":" + _port);
+            // Guard: if NodeInfo has no ipaddress/port for this UUID (missing record, or a stale path
+            // entry pointing at a removed node), these come back empty and Float.parseFloat("") throws
+            // NumberFormatException. Treat empty ip/port as "node not available" instead of crashing the
+            // request. (Root cause is usually node self-registration not running — see broadcastip /
+            // ClientService.setnode — but this keeps getfile_mobile from 500ing regardless.)
+            if (_ipaddress == null || _ipaddress.trim().isEmpty()
+                    || _port == null || _port.trim().isEmpty()) {
+                pw("isNodeAvailable: empty ip/port ('" + _ipaddress + "':'" + _port + "') — treating node as unavailable");
+                return false;
+            }
             InetAddress addr = InetAddress.getByName(_ipaddress);
             float portf = Float.parseFloat(_port);
             int port = (int)portf;

@@ -367,7 +367,17 @@ public class ClientService implements Runnable {
                     
                     //String LocalIP = "127.0.0.1";
                     if (clientIP != null) {
-                        String LocalIP = clientIP.getHostAddress();                    
+                        String LocalIP = clientIP.getHostAddress();
+                        // broadcastip=loopback: a self-contained node identifies as 127.0.0.1 everywhere.
+                        // This is the ipaddress REGISTERED in NodeInfo (and later used by read_view_link to
+                        // build file-serving URLs). Without this, getLocalAddressNonLoopback2() yields the
+                        // public/WAN IP on Linux, so files would be served via an unreachable address even
+                        // though setnode itself now connects over loopback. Mirrors BroadcastService. See B22.
+                        String sBcastOverride = NetUtils.getBroadcastIP();
+                        if (sBcastOverride != null && (sBcastOverride.equalsIgnoreCase("loopback") || sBcastOverride.equals("127.0.0.1"))) {
+                            LocalIP = "127.0.0.1";
+                            p("broadcastip=loopback: registering ipaddress as 127.0.0.1 instead of " + clientIP.getHostAddress());
+                        }
                         p("client hostname = " + clientIP.getHostName());
                         p("client canonical = " + clientIP.getCanonicalHostName());
                         p("client = " + LocalIP);

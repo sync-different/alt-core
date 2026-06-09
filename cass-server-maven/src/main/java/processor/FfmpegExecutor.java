@@ -246,15 +246,36 @@ public class FfmpegExecutor {
 
     }
 
+    /**
+     * POSIX-safe single-quote a value for inclusion in the generated ffmpegscript.sh.
+     * Wraps in single quotes and escapes any embedded single quote as '\'' (close-quote,
+     * literal-quote, reopen-quote). This makes ALL shell metacharacters inside the value
+     * inert ('`$;|&()<>* etc.) — closing the FfmpegExecutor filename command-injection
+     * (RCE-FINDINGS Finding 3 / smoke phase 14): a video uploaded as v'`touch x`'.mp4 can
+     * no longer break out of the quoting. Use for EVERY interpolated value, not just the
+     * attacker-controllable input path, as defense in depth.
+     *
+     * NOTE on Matcher.quoteReplacement: replaceAll/replace treat '\' and '$' specially in the
+     * REPLACEMENT string, so we build the command with explicit replace() of literal tokens and
+     * quoteReplacement-guarded values to avoid a second injection via the replacement mechanics.
+     */
+    private static String shq(String s) {
+        if (s == null) return "''";
+        return "'" + s.replace("'", "'\\''") + "'";
+    }
+
     private String getCommandMac(String _projectsFolderPath, File ffmpegexeFile, File _input, File outputm3u8File, String _md5, File outputtsFile, File outputthumbnailFile,File outputAudioFile,File outputAudioJsonFile) throws UnsupportedEncodingException, IOException {
         String ffmpegtxtPath = _projectsFolderPath + "/ffmpeg.txt";
         File ffmpegtxtFile = new File(ffmpegtxtPath);
         byte[] encoded = Files.readAllBytes(Paths.get(ffmpegtxtFile.getCanonicalPath()));
         String commandFile = new String(encoded, "UTF-8");
         String command = "nice -n 20 " + commandFile.trim();
-        command = command.replaceAll("\\$\\$ffmpegexePath\\$\\$", "'" + ffmpegexeFile.getCanonicalPath() + "'");
-        command = command.replaceAll("\\$\\$inputPath\\$\\$", "'" + _input.getPath() + "'");
-        command = command.replace("$$outputm3u8FilePath$$", "'" + outputm3u8File.getCanonicalPath() + "'");
+        // SECURITY: every interpolated value is POSIX-single-quote-escaped via shq() so a quote/
+        // metachar in any path (esp. the uploaded filename in _input) cannot break out of the
+        // shell quoting. quoteReplacement() guards against '\'/'$' in the replacement string.
+        command = command.replace("$$ffmpegexePath$$", shq(ffmpegexeFile.getCanonicalPath()));
+        command = command.replace("$$inputPath$$", shq(_input.getPath()));
+        command = command.replace("$$outputm3u8FilePath$$", shq(outputm3u8File.getCanonicalPath()));
 
             Appendage app = new Appendage();
             appendage = app.getAppendage();
@@ -262,12 +283,12 @@ public class FfmpegExecutor {
         String clusteridUUIDPath = appendage + "../scrubber/data/clusterid";
         p("[ffmpegexecutor] clusteridUUIDPath: " + clusteridUUIDPath);
         String clusteridUUID = NetUtils.getUUID(clusteridUUIDPath);
-        command = command.replace("$$prefix$$", "'" + "/getts.fn?md5=" + _md5 +"&multiclusterid="+clusteridUUID+ "&ts=" + "'");
-        command = command.replace("$$outputtsFile$$", "'" + outputtsFile.getCanonicalPath() + "'");
-        command = command.replace("$$thumbFile$$", "'" + outputthumbnailFile.getCanonicalPath() + "'");
-        command = command.replace("$$outputPathAudio$$", "'" + outputAudioFile.getCanonicalPath() + "'");
-        command = command.replace("$$outputTextJson$$", "'" + outputAudioJsonFile.getCanonicalPath() + "'");
-        command = command.replace("$$inputPathAudio$$", "'@" + outputAudioFile.getCanonicalPath() + "'");
+        command = command.replace("$$prefix$$", shq("/getts.fn?md5=" + _md5 + "&multiclusterid=" + clusteridUUID + "&ts="));
+        command = command.replace("$$outputtsFile$$", shq(outputtsFile.getCanonicalPath()));
+        command = command.replace("$$thumbFile$$", shq(outputthumbnailFile.getCanonicalPath()));
+        command = command.replace("$$outputPathAudio$$", shq(outputAudioFile.getCanonicalPath()));
+        command = command.replace("$$outputTextJson$$", shq(outputAudioJsonFile.getCanonicalPath()));
+        command = command.replace("$$inputPathAudio$$", shq("@" + outputAudioFile.getCanonicalPath()));
 
         return command;
     }
