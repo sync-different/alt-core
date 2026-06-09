@@ -104,7 +104,15 @@ public class HttpUploadServerHandler extends SimpleChannelInboundHandler<HttpObj
             }
         }
 
-        // Ensure we have a valid filename
+        // SECURITY (RCE-FINDINGS Finding 3 / smoke phase 14): strip shell-dangerous metacharacters.
+        // The uploaded filename is later interpolated into a generated ffmpegscript.sh that runs at
+        // scan-time. A single quote (or `$;|&()<>` etc.) could break out of the shell quoting →
+        // command injection / RCE. None of these have a legitimate purpose in a media filename, so
+        // we remove them at the entry point. (The sink, FfmpegExecutor.shq(), also escapes them —
+        // defense in depth: this protects even if the file arrives via a non-upload path.)
+        safeName = safeName.replaceAll("[\\'\"`$;|&()<>*?!{}\\[\\]\\r\\n\\t]", "");
+
+        // Ensure something survives the stripping
         if (safeName.isEmpty() || safeName.equals(".")) {
             return "unnamed_upload";
         }

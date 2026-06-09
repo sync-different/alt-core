@@ -168,6 +168,11 @@ public class WebServer extends AbstractService {
 
     static java.util.Hashtable<String,UserSession> uuidmap = new java.util.Hashtable<String,UserSession>();
 
+    // integritycheck.fn: async job registry (jobId -> in-progress/finished IntegrityChecker.Result).
+    // See internal/PROJECT_INTEGRITY_UI.md. Jobs run on a background thread; uiv5 polls status/result.
+    static java.util.concurrent.ConcurrentHashMap<String, utils.IntegrityChecker.Result> integrityJobs
+            = new java.util.concurrent.ConcurrentHashMap<String, utils.IntegrityChecker.Result>();
+
     static HashMap<String,String> probes = new HashMap<String, String>();
 
     // Login rate limiting: tracks failed attempts per IP
@@ -1924,6 +1929,7 @@ class Worker extends WebServer implements HttpConstants, Runnable {
                                 fname.contains("getfolders.fn")||
                                 fname.contains("gettranslate_json.fn")||
                                 fname.contains("gettranscribestatus.fn")||
+                                fname.contains("integritycheck.fn")||
                                 fname.contains("getfolders-json.fn")||
                                 fname.contains("getfolders_json.fn")||
                                 fname.contains("getscannews.fn")||
@@ -2045,6 +2051,9 @@ class Worker extends WebServer implements HttpConstants, Runnable {
                 String sFolder="";
                 String sFolderSel="";
                 String sTargetUuid="";
+                String sIntegrityCheck="";   // integritycheck.fn: which check (paths|coverage|downloadbtn|streaming)
+                String sIntegrityAction="";  // integritycheck.fn: start|status|result
+                String sIntegrityJob="";     // integritycheck.fn: job id (for status/result)
                 String sBlacklist="";
                 String sPermissions="";
 
@@ -2316,6 +2325,18 @@ class Worker extends WebServer implements HttpConstants, Runnable {
                         String sTmp = w.substring(11,w.length());
                         sTargetUuid = URLDecoder.decode(sTmp, "UTF-8");
                         p("targetUuid: " + sTargetUuid);
+                    }
+                    if (w.startsWith("check=")) {
+                        sIntegrityCheck = URLDecoder.decode(w.substring(6,w.length()), "UTF-8");
+                        p("integrity check: " + sIntegrityCheck);
+                    }
+                    if (w.startsWith("action=")) {
+                        sIntegrityAction = URLDecoder.decode(w.substring(7,w.length()), "UTF-8");
+                        p("integrity action: " + sIntegrityAction);
+                    }
+                    if (w.startsWith("jobid=")) {
+                        sIntegrityJob = URLDecoder.decode(w.substring(6,w.length()), "UTF-8");
+                        p("integrity jobid: " + sIntegrityJob);
                     }
 
                     if (w.startsWith("blacklist=")) {
@@ -3792,8 +3813,11 @@ class Worker extends WebServer implements HttpConstants, Runnable {
                                     }
                                     String sNameEscaped = f.getName().replace("\\", "\\\\").replace("\"", "\\\"");
                                     String sExtension = getFileExtension(f.getName()).replace("\\", "\\\\").replace("\"", "\\\"");
-                                    if (sType == "file") sMD5gf = getFileMD5(f.getName());
+                                    if (sType == "file") sMD5gf = getFileMD5(f.getName(), f.getCanonicalPath());
                                     String sMD5Escaped = sMD5gf.replace("\\", "\\\\").replace("\"", "\\\"");
+                                    // BE1 (PROJECT_FOLDER_DOWNLOAD): include file size so folder-download
+                                    // enumeration needs no per-file getfileinfo.fn call. Files only; folders -> 0.
+                                    long lSize = (sType == "file") ? f.length() : 0L;
                                     result += "{" +
                                             "\"" + "name\"" + ":" + "\""+ sNameEscaped + "\"" +
                                             "," +
@@ -3801,7 +3825,9 @@ class Worker extends WebServer implements HttpConstants, Runnable {
                                             "," +
                                             "\"" + "md5\"" + ":" + "\"" + sMD5Escaped + "\"" +
                                             "," +
-                                            "\"" + "extension\"" + ":" + "\"" + sExtension + "\"" + "}";
+                                            "\"" + "extension\"" + ":" + "\"" + sExtension + "\"" +
+                                            "," +
+                                            "\"" + "size\"" + ":" + lSize + "}";
                                     sMD5gf = ""; //clear after use
                                 }
                                 result+="]";
@@ -5291,6 +5317,229 @@ class Worker extends WebServer implements HttpConstants, Runnable {
                             result = "{\"error\":\"unauthorized\"}";
                         }
                         outFile.write(result.getBytes());
+                    }
+
+                    if (fname.contains("integritycheck.fn")) {
+                        p("call integritycheck.fn  check=" + sIntegrityCheck + " action=" + sIntegrityAction + " jobid=" + sIntegrityJob);
+                        String result;
+                        if (!isUserAdmin(sAuthUUID)) {
+                            result = "{\"error\":\"unauthorized\"}";
+                        } else if (sIntegrityAction.equals("start")) {
+                            final String checkId = sIntegrityCheck;
+                            if (!checkId.equals("paths") && !checkId.equals("coverage")
+                                    && !checkId.equals("downloadbtn") && !checkId.equals("streaming")
+                                    && !checkId.equals("duplicates")) {
+                                result = "{\"error\":\"unknown or unsupported check: " + jsonEsc(checkId) + "\"}";
+                            } else {
+                                final String jobId = UUID.randomUUID().toString();
+                                final utils.IntegrityChecker.Result job = new utils.IntegrityChecker.Result();
+                                job.check = checkId;
+                                integrityJobs.put(jobId, job);
+                                // prune old finished jobs to avoid unbounded growth (keep it simple)
+                                if (integrityJobs.size() > 20) {
+                                    for (String k : new java.util.ArrayList<String>(integrityJobs.keySet())) {
+                                        utils.IntegrityChecker.Result j = integrityJobs.get(k);
+                                        if (j != null && j != job && j.scanned >= j.totalToScan && j.totalToScan > 0) {
+                                            integrityJobs.remove(k);
+                                        }
+                                    }
+                                }
+                                UserSession usStart = uuidmap.get(sAuthUUID);
+                                String startUser = (usStart != null) ? usStart.getUsername() : "?";
+                                pw("[INTEGRITY] start check=" + checkId + " jobId=" + jobId + " by=" + startUser);
+                                final long startMs = System.currentTimeMillis();
+                                new Thread(new Runnable() {
+                                    public void run() {
+                                        try {
+                                            if (checkId.equals("coverage")) utils.IntegrityChecker.checkCoverage(job);
+                                            else if (checkId.equals("downloadbtn")) utils.IntegrityChecker.checkDownloadBtn(job);
+                                            else if (checkId.equals("streaming")) utils.IntegrityChecker.checkStreaming(job);
+                                            else if (checkId.equals("duplicates")) utils.IntegrityChecker.checkDuplicates(job);
+                                            else utils.IntegrityChecker.checkPaths(job);
+                                        } catch (Throwable t) {
+                                            t.printStackTrace(); job.error = "exception: " + t.getMessage();
+                                        } finally {
+                                            job.done = true;   // always mark complete so status polling can finish
+                                            try { utils.IntegrityChecker.logSummary(job, System.currentTimeMillis() - startMs); }
+                                            catch (Throwable ignore) {}
+                                        }
+                                    }
+                                }, "integrity-" + checkId + "-" + jobId).start();
+                                result = "{\"jobId\":\"" + jobId + "\",\"check\":\"" + jsonEsc(checkId) + "\"}";
+                            }
+                        } else if (sIntegrityAction.equals("status")) {
+                            utils.IntegrityChecker.Result job = integrityJobs.get(sIntegrityJob);
+                            if (job == null) {
+                                result = "{\"error\":\"job not found\"}";
+                            } else {
+                                // key off the explicit done flag (set in the job thread's finally), NOT a
+                                // count comparison — some items are skipped without bumping scanned (e.g.
+                                // non-directory entries under streaming/), which would otherwise hang the poll.
+                                boolean done = job.done || (job.error != null);
+                                StringBuilder sb = new StringBuilder();
+                                sb.append("{\"status\":\"").append(job.error != null ? "error" : (done ? "done" : "running")).append("\"")
+                                  .append(",\"check\":\"").append(jsonEsc(job.check)).append("\"")
+                                  .append(",\"scanned\":").append(job.scanned).append(",\"total\":").append(job.totalToScan);
+                                if (job.check.equals("coverage")) {
+                                    sb.append(",\"indexed\":").append(job.indexed).append(",\"missing\":").append(job.missing)
+                                      .append(",\"skipped\":").append(job.skipped);
+                                } else if (job.check.equals("downloadbtn")) {
+                                    sb.append(",\"dlOk\":").append(job.dlOk).append(",\"dlNotIndexed\":").append(job.dlNotIndexed)
+                                      .append(",\"dlBug\":").append(job.dlBug).append(",\"dlAmbiguous\":").append(job.dlAmbiguous);
+                                } else if (job.check.equals("streaming")) {
+                                    sb.append(",\"folders\":").append(job.strFolders)
+                                      .append(",\"thumbMiss\":").append(job.strThumbMiss)
+                                      .append(",\"hlsMiss\":").append(job.strHlsMiss)
+                                      .append(",\"trMiss\":").append(job.strTrMiss);
+                                } else if (job.check.equals("duplicates")) {
+                                    sb.append(",\"dupMd5\":").append(job.dupMd5)
+                                      .append(",\"dupCopies\":").append(job.dupCopies);
+                                } else {
+                                    sb.append(",\"ok\":").append(job.ok).append(",\"orphan\":").append(job.orphan)
+                                      .append(",\"unmounted\":").append(job.unmounted).append(",\"deleted\":").append(job.deleted)
+                                      .append(",\"emptymd5\":").append(job.emptymd5);
+                                }
+                                if (job.error != null) sb.append(",\"error\":\"").append(jsonEsc(job.error)).append("\"");
+                                sb.append("}");
+                                result = sb.toString();
+                            }
+                        } else if (sIntegrityAction.equals("result")) {
+                            utils.IntegrityChecker.Result job = integrityJobs.get(sIntegrityJob);
+                            if (job == null) {
+                                result = "{\"error\":\"job not found\"}";
+                            } else {
+                                // issuesOnly flag rides on the `check` param at result time (UI passes check=issues)
+                                boolean issuesOnly = "1".equals(sIntegrityCheck) || "issues".equalsIgnoreCase(sIntegrityCheck);
+                                boolean streamingDone = false;   // streaming branch emits its own rows + closes the JSON
+                                StringBuilder sb = new StringBuilder();
+                                sb.append("{\"check\":\"").append(jsonEsc(job.check)).append("\"");
+                                if (job.check.equals("coverage")) {
+                                    sb.append(",\"filesOnDisk\":").append(job.filesOnDisk)
+                                      .append(",\"indexedPathSet\":").append(job.indexedPathSet)
+                                      .append(",\"indexed\":").append(job.indexed)
+                                      .append(",\"missing\":").append(job.missing)
+                                      .append(",\"skipped\":").append(job.skipped)
+                                      .append(",\"indexOnly\":").append(job.indexOnly);
+                                    sb.append(",\"scanRoots\":[");
+                                    for (int vi = 0; vi < job.scanRoots.size(); vi++) {
+                                        if (vi > 0) sb.append(",");
+                                        sb.append("\"").append(jsonEsc(job.scanRoots.get(vi))).append("\"");
+                                    }
+                                    sb.append("],\"missingRoots\":[");
+                                    for (int vi = 0; vi < job.missingRoots.size(); vi++) {
+                                        if (vi > 0) sb.append(",");
+                                        sb.append("\"").append(jsonEsc(job.missingRoots.get(vi))).append("\"");
+                                    }
+                                    sb.append("]");
+                                } else if (job.check.equals("downloadbtn")) {
+                                    sb.append(",\"filesOnDisk\":").append(job.filesOnDisk)
+                                      .append(",\"dlOk\":").append(job.dlOk)
+                                      .append(",\"dlNotIndexed\":").append(job.dlNotIndexed)
+                                      .append(",\"dlBug\":").append(job.dlBug)
+                                      .append(",\"dlAmbiguous\":").append(job.dlAmbiguous);
+                                    sb.append(",\"missingRoots\":[");
+                                    for (int vi = 0; vi < job.missingRoots.size(); vi++) {
+                                        if (vi > 0) sb.append(",");
+                                        sb.append("\"").append(jsonEsc(job.missingRoots.get(vi))).append("\"");
+                                    }
+                                    sb.append("]");
+                                } else if (job.check.equals("streaming")) {
+                                    sb.append(",\"folders\":").append(job.strFolders)
+                                      .append(",\"thumbOk\":").append(job.strThumbOk).append(",\"thumbMiss\":").append(job.strThumbMiss)
+                                      .append(",\"hlsOk\":").append(job.strHlsOk).append(",\"hlsMiss\":").append(job.strHlsMiss)
+                                      .append(",\"trOk\":").append(job.strTrOk).append(",\"trMiss\":").append(job.strTrMiss)
+                                      .append(",\"empty\":").append(job.strEmpty).append(",\"incomplete\":").append(job.strIncomplete)
+                                      .append(",\"thumbReasons\":{\"SHORT\":").append(job.tfShort)
+                                        .append(",\"CORRUPT-OPEN\":").append(job.tfCorruptOpen)
+                                        .append(",\"CORRUPT-ENC\":").append(job.tfCorruptEnc)
+                                        .append(",\"NOFRAME\":").append(job.tfNoframe)
+                                        .append(",\"NOLOG\":").append(job.tfNolog)
+                                        .append(",\"UNKNOWN\":").append(job.tfUnknown).append("}")
+                                      .append(",\"hlsReasons\":{\"CORRUPT-OPEN\":").append(job.hfCorruptOpen)
+                                        .append(",\"CORRUPT-ENC\":").append(job.hfCorruptEnc)
+                                        .append(",\"NOFRAME\":").append(job.hfNoframe)
+                                        .append(",\"NOLOG\":").append(job.hfNolog)
+                                        .append(",\"UNKNOWN\":").append(job.hfUnknown).append("}")
+                                      .append(",\"trReasons\":{\"CORRUPT-OPEN\":").append(job.xfCorruptOpen)
+                                        .append(",\"NO-AUDIO\":").append(job.xfNoAudio)
+                                        .append(",\"WHISPER-FAIL\":").append(job.xfWhisper)
+                                        .append(",\"NOLOG\":").append(job.xfNolog)
+                                        .append(",\"UNKNOWN\":").append(job.xfUnknown).append("}");
+                                    // streaming rows (already non-OK only): per-category status + reason
+                                    sb.append(",\"rows\":[");
+                                    boolean sfirst = true;
+                                    for (utils.IntegrityChecker.StreamRow sr : job.streamRows) {
+                                        if (!sfirst) sb.append(",");
+                                        sfirst = false;
+                                        sb.append("{\"md5\":\"").append(jsonEsc(sr.md5)).append("\"")
+                                          .append(",\"path\":\"").append(jsonEsc(sr.path)).append("\"")
+                                          .append(",\"status\":\"").append(jsonEsc(sr.status)).append("\"")
+                                          .append(",\"thumbnail\":\"").append(jsonEsc(sr.thumb)).append("\"")
+                                          .append(",\"hls\":\"").append(jsonEsc(sr.hls)).append("\"")
+                                          .append(",\"transcription\":\"").append(jsonEsc(sr.transcript)).append("\"")
+                                          .append(",\"thumbReason\":\"").append(jsonEsc(sr.thumbReason)).append("\"")
+                                          .append(",\"hlsReason\":\"").append(jsonEsc(sr.hlsReason)).append("\"")
+                                          .append(",\"trReason\":\"").append(jsonEsc(sr.trReason)).append("\"}");
+                                    }
+                                    sb.append("]}");
+                                    streamingDone = true;   // streaming emitted its own rows; skip shared loop
+                                } else if (job.check.equals("duplicates")) {
+                                    sb.append(",\"dupMd5Files\":").append(job.dupMd5Files)
+                                      .append(",\"dupMd5\":").append(job.dupMd5)
+                                      .append(",\"dupCopies\":").append(job.dupCopies)
+                                      .append(",\"dupUnverifiable\":").append(job.dupUnverifiable)
+                                      .append(",\"dupRedundantBytes\":").append(job.dupRedundantBytes);
+                                    // one row per duplicate md5: { md5, copies, bytes, paths:[...] }
+                                    sb.append(",\"rows\":[");
+                                    boolean dfirst = true;
+                                    for (utils.IntegrityChecker.DupRow dr : job.dupRows) {
+                                        if (!dfirst) sb.append(",");
+                                        dfirst = false;
+                                        sb.append("{\"md5\":\"").append(jsonEsc(dr.md5)).append("\"")
+                                          .append(",\"copies\":").append(dr.copies)
+                                          .append(",\"bytes\":").append(dr.bytes)
+                                          .append(",\"paths\":[");
+                                        for (int pi = 0; pi < dr.paths.size(); pi++) {
+                                            if (pi > 0) sb.append(",");
+                                            sb.append("\"").append(jsonEsc(dr.paths.get(pi))).append("\"");
+                                        }
+                                        sb.append("]}");
+                                    }
+                                    sb.append("]}");
+                                    streamingDone = true;   // duplicates emitted its own rows; skip shared loop
+                                } else {
+                                    sb.append(",\"md5Files\":").append(job.md5Files)
+                                      .append(",\"pathEntries\":").append(job.pathEntries)
+                                      .append(",\"ok\":").append(job.ok).append(",\"orphan\":").append(job.orphan)
+                                      .append(",\"unmounted\":").append(job.unmounted).append(",\"deleted\":").append(job.deleted)
+                                      .append(",\"emptymd5\":").append(job.emptymd5);
+                                    sb.append(",\"unmountedVols\":[");
+                                    for (int vi = 0; vi < job.unmountedVols.size(); vi++) {
+                                        if (vi > 0) sb.append(",");
+                                        sb.append("\"").append(jsonEsc(job.unmountedVols.get(vi))).append("\"");
+                                    }
+                                    sb.append("]");
+                                }
+                                if (!streamingDone) {
+                                    // rows (coverage rows are already MISSING-only; paths rows include OK unless issuesOnly)
+                                    sb.append(",\"rows\":[");
+                                    boolean first = true;
+                                    for (utils.IntegrityChecker.Row row : job.rows) {
+                                        if (issuesOnly && "OK".equals(row.status)) continue;
+                                        if (!first) sb.append(",");
+                                        first = false;
+                                        sb.append("{\"md5\":\"").append(jsonEsc(row.md5)).append("\"")
+                                          .append(",\"path\":\"").append(jsonEsc(row.path)).append("\"")
+                                          .append(",\"status\":\"").append(jsonEsc(row.status)).append("\"}");
+                                    }
+                                    sb.append("]}");
+                                }
+                                result = sb.toString();
+                            }
+                        } else {
+                            result = "{\"error\":\"unknown action (use start|status|result)\"}";
+                        }
+                        outFile.write(result.getBytes("UTF-8"));
                     }
 
                     if (fname.contains("gen_public.fn")) {
@@ -13114,60 +13363,144 @@ class Worker extends WebServer implements HttpConstants, Runnable {
         }
     }
 
+    // Back-compat overload: callers without the file's full path get the name-only behaviour (first match).
     String getFileMD5(String _file) {
+        return getFileMD5(_file, null);
+    }
+
+    String getFileMD5(String _file, String _fullPath) {
         try {
             if (DB_PATH.length() == 0) loadPropsProcessor();
             String sPath = DB_PATH;
             String _cf = "Standard1";
             String _key = getFileExtension(_file).toLowerCase();
-            String filename = appendage + sPath + File.separator + _cf + File.separator + "." + _key;
-            String sMD5 = "";
-            File ft = new File(filename);
-            p("*** filename md5 = " + filename);
-            p("*** filename md path = " + ft.getAbsolutePath());
-            if (ft.exists()) {
-                p("file found");
+            String sBase = appendage + sPath + File.separator + _cf + File.separator;
 
-                FileReader fr = new FileReader(filename);
-                BufferedReader br = new BufferedReader(fr);
-                String sCurrentLine = "";
-                while ((sCurrentLine = br.readLine()) != null) {
-                    //p("sCurrentLine:" + sCurrentLine);
+            // FIX (SPEC_FOLDER_FILELOOKUP): resolve md5 from the PER-FILENAME index Standard1/<filename> FIRST.
+            // The per-extension aggregate Standard1/.<ext> only holds ONE row per unique content — the indexer's
+            // !bExists dedup gate (ProcessorService.java:1198) skips aggregate inserts for the 2nd+ copy of a
+            // duplicate-content file. So duplicate copies have NO row in .<ext> and the old aggregate-scan
+            // returned "" for them -> Folder View showed no Download button. The per-filename file IS written
+            // for every physical copy (above that gate), so it has full coverage. Fall back to the .<ext>
+            // aggregate if the per-filename key is somehow absent (e.g. an older index).
+            String byName = sBase + _file;
+            String byExt  = sBase + "." + _key;
 
-
-                    String delimitersgf = ",";
-                    StringTokenizer stgf = new StringTokenizer(sCurrentLine,delimitersgf, true);
-
-                    String sLineDate = stgf.nextToken();
-                    stgf.nextToken();
-                    String sLineMD5 = stgf.nextToken();
-                    stgf.nextToken();
-                    String sLineName = stgf.nextToken();
-
-                    //p("sLineData   :" + sLineDate);
-                    //p("sLineMD5    :" + sLineMD5);
-                    //p("sLineName   :" + sLineName);
-                    //p("_file       :" + _file);
-
-                    if (sLineName.equals(_file)) {
-                        p("match found: '" + sLineName + "' md5: " + sLineMD5); // p() = console only; per-lookup trace, was flooding diag log (B18-class)
-                        sMD5 = sLineMD5;
-                        break;
-                    } else {
-                        p("no match: '" + sLineName + "' vs '" + _file + "'"); // p() = console only; per-comparison trace, the dominant diag-log flood (fixed)
-                    }
-                }
-                return sMD5;
+            List<String> candidates;
+            String sSource;
+            if (new File(byName).exists()) {
+                candidates = collectMD5sFromIndexFile(byName, _file);
+                sSource = "name-key Standard1/<name>";
             } else {
-                p("file not found");
+                candidates = collectMD5sFromIndexFile(byExt, _file);
+                sSource = "aggregate ." + _key;
+            }
+
+            if (candidates.isEmpty()) {
+                pw("[FOLDERMD5] EMPTY md5 for '" + _file + "' — nameKeyExists=" + new File(byName).exists()
+                        + " aggExists=" + new File(byExt).exists() + " (.'" + _key + "')");
                 return "";
             }
+
+            // Common case: one filename -> one content. No path lookup needed.
+            if (candidates.size() == 1) {
+                String sMD5 = candidates.get(0);
+                pw("[FOLDERMD5] OK md5=" + sMD5 + " for '" + _file + "' via " + sSource);
+                return sMD5;
+            }
+
+            // SPEC_FOLDER_FILELOOKUP §9: two+ DIFFERENT files share this filename (different md5s). Disambiguate
+            // by matching the clicked file's full path against Super2/paths/<md5>, since the per-filename index
+            // alone cannot tell which physical copy is being browsed.
+            if (_fullPath != null && _fullPath.length() > 0) {
+                String wantCanon = canonicalizeQuietly(_fullPath);
+                for (String m : candidates) {
+                    if (pathMatchesMD5(m, wantCanon)) {
+                        pw("[FOLDERMD5] OK md5=" + m + " for '" + _file + "' via " + sSource
+                                + " [path-disambiguated among " + candidates.size() + " candidates]");
+                        return m;
+                    }
+                }
+                pw("[FOLDERMD5] AMBIGUOUS unresolved for '" + _file + "' path='" + _fullPath + "' — "
+                        + candidates.size() + " md5 candidates, none matched a Super2/paths entry; using first");
+            } else {
+                pw("[FOLDERMD5] AMBIGUOUS for '" + _file + "' — " + candidates.size()
+                        + " md5 candidates and no path provided; using first");
+            }
+            return candidates.get(0);
 
         } catch (Exception e) {
             e.printStackTrace();
             pe("Error in getFileMD5()");
             return "ERROR";
         }
+    }
+
+    // SPEC_FOLDER_FILELOOKUP: collect ALL md5s from a Standard1 flat-file index (lines "date,md5,name")
+    // whose name field equals _wantName, in file order. Splits on the first two commas only so a filename
+    // containing commas stays intact. Usually returns 0 or 1; >1 means a same-name/different-content collision.
+    private List<String> collectMD5sFromIndexFile(String _indexPath, String _wantName) {
+        List<String> out = new ArrayList<String>();
+        BufferedReader br = null;
+        try {
+            br = new BufferedReader(new FileReader(_indexPath));
+            String sCurrentLine;
+            while ((sCurrentLine = br.readLine()) != null) {
+                int c1 = sCurrentLine.indexOf(',');
+                if (c1 < 0) continue;
+                int c2 = sCurrentLine.indexOf(',', c1 + 1);
+                if (c2 < 0) continue;
+                String sLineMD5  = sCurrentLine.substring(c1 + 1, c2);
+                String sLineName = sCurrentLine.substring(c2 + 1);
+                if (sLineName.equals(_wantName) && !out.contains(sLineMD5)) {
+                    out.add(sLineMD5);
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            pe("Error in collectMD5sFromIndexFile() for " + _indexPath);
+        } finally {
+            try { if (br != null) br.close(); } catch (Exception ignore) {}
+        }
+        return out;
+    }
+
+    // SPEC_FOLDER_FILELOOKUP §9: true if Super2/paths/<md5> has a (non-DELETED) entry whose absolute path equals
+    // _wantCanon. Path lines look like "uuid:<absolutePath>/,name" — the stored path is decoded and absolute, so
+    // it's directly comparable to the clicked file's canonical path after stripping the trailing '/'.
+    private boolean pathMatchesMD5(String _md5, String _wantCanon) {
+        if (_wantCanon == null || _wantCanon.length() == 0) return false;
+        String pathsFile = appendage + DB_PATH + File.separator + "Super2" + File.separator + "paths" + File.separator + _md5;
+        BufferedReader br = null;
+        try {
+            File f = new File(pathsFile);
+            if (!f.exists()) return false;
+            br = new BufferedReader(new FileReader(f));
+            String line;
+            while ((line = br.readLine()) != null) {
+                // "uuid:<absolutePath>/,name"  — strip uuid prefix (first ':'), then the trailing "/,name".
+                int colon = line.indexOf(':');
+                if (colon < 0) continue;
+                String rest = line.substring(colon + 1);          // "<absolutePath>/,name"
+                if (rest.startsWith("DELETED") || rest.contains(",DELETED")) continue;
+                int comma = rest.lastIndexOf(',');
+                String stored = (comma >= 0) ? rest.substring(0, comma) : rest;   // "<absolutePath>/"
+                if (stored.endsWith("/")) stored = stored.substring(0, stored.length() - 1);
+                if (stored.equals(_wantCanon)) return true;
+                // also compare canonicalized, in case of symlinks/relative artifacts
+                if (canonicalizeQuietly(stored).equals(_wantCanon)) return true;
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            pe("Error in pathMatchesMD5() for " + pathsFile);
+        } finally {
+            try { if (br != null) br.close(); } catch (Exception ignore) {}
+        }
+        return false;
+    }
+
+    private String canonicalizeQuietly(String _path) {
+        try { return new File(_path).getCanonicalPath(); } catch (Exception e) { return _path; }
     }
 
     String getFileExtension(String _file) {
@@ -13177,6 +13510,28 @@ class Worker extends WebServer implements HttpConstants, Runnable {
             return "";
         }
         return _file.substring(dotIndex + 1);
+    }
+
+    // Escape a string for embedding inside a manually-built JSON string value (integritycheck.fn).
+    // Handles backslash, quote, and the control chars JSON requires; paths can contain backslashes
+    // (Windows) and arbitrary chars. See feedback_json_escaping (escape \ and " in hand-built JSON).
+    static String jsonEsc(String s) {
+        if (s == null) return "";
+        StringBuilder b = new StringBuilder(s.length() + 8);
+        for (int i = 0; i < s.length(); i++) {
+            char c = s.charAt(i);
+            switch (c) {
+                case '\\': b.append("\\\\"); break;
+                case '"':  b.append("\\\""); break;
+                case '\n': b.append("\\n"); break;
+                case '\r': b.append("\\r"); break;
+                case '\t': b.append("\\t"); break;
+                default:
+                    if (c < 0x20) b.append(String.format("\\u%04x", (int) c));
+                    else b.append(c);
+            }
+        }
+        return b.toString();
     }
 
     boolean isUserAdmin(String sAuthUUID) {
