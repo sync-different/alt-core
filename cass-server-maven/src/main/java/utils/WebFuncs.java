@@ -1418,7 +1418,13 @@ public  String echoOpenh2(String sNamer,String sFileName,String _key,String _hos
 
 public String getlocalfilepath(String sNamer) {
     String res = c8.get_file_path(sNamer, false);
-    return res;    
+    return res;
+}
+
+// FIX #1b (2026-06-11): first Super2/paths entry that exists on disk (handles moved files).
+public String getlocalfilepath_existing(String sNamer) {
+    String res = c8.get_file_path_existing(sNamer);
+    return res;
 }
 
 public String getfile_mobile(String sNamer, String sFileName, String _key, String _host, String _port, Boolean _cloudhosted, String _clientIP, String _dbmode) {

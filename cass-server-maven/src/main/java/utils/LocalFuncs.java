@@ -4687,12 +4687,49 @@ public class LocalFuncs {
                 }
 
                 return sPathEnc;
-                
+
             } catch (Exception e) {
                 return "ERROR";
             }
      }
-     
+
+     // FIX #1b (2026-06-11): return the first Super2/paths entry whose file ACTUALLY EXISTS on
+     // disk. get_file_path() above returns only the LAST entry with no existence check; when a
+     // file is moved between folders, Super2/paths can hold a stale old entry plus the current
+     // one (in any order). Iterating and returning the first existing path lets getfile.fn serve
+     // a moved file straight from disk regardless of entry order. Returns "" if none exist.
+     // f.exists() tolerates the quirks we see in real paths (double slashes, trailing spaces).
+     // See internal/INVESTIGATION_260611.md.
+     public String get_file_path_existing(String _key) {
+            BufferedReader br = null;
+            try {
+                String sPath = appendage + DB_PATH;
+                String filename = sPath + File.separator + "Super2" + File.separator + "paths" + File.separator + _key;
+                File ft = new File(filename);
+                if (ft.exists()) {
+                    br = new BufferedReader(new FileReader(filename));
+                    String sCurrentLine = "";
+                    while ((sCurrentLine = br.readLine()) != null) {
+                        int comma = sCurrentLine.lastIndexOf(",");
+                        int colon = sCurrentLine.indexOf(":");
+                        if (comma < 0 || colon < 0 || colon >= comma) continue;
+                        String sNodeUri = sCurrentLine.substring(0, comma);
+                        String sFilePath = sNodeUri.substring(sNodeUri.indexOf(":") + 1);
+                        try {
+                            if (sFilePath.length() > 0 && new File(sFilePath).exists()) {
+                                return sFilePath;
+                            }
+                        } catch (Exception e) { }
+                    }
+                }
+            } catch (Exception e) {
+                return "";
+            } finally {
+                try { if (br != null) br.close(); } catch (Exception e) { }
+            }
+            return "";
+     }
+
      public String[] read_view_link(String _key, Boolean _mobile, boolean optimized) {
          
             BufferedReader br = null;

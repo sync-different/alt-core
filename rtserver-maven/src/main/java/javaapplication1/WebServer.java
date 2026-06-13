@@ -1350,6 +1350,38 @@ public class WebServer extends AbstractService {
         }
         log("Server IP = " + LocalIP, 0);
 
+        // Fix #2 (2026-06-11): keep LocalIP fresh across network/IP changes WITHOUT a restart.
+        // LocalIP is set once above at startup; on a Wi-Fi/network change it went stale, so the
+        // getfile.fn resolver (which is passed LocalIP) kept probing the dead old IP — a 500ms
+        // isNodeAvailable timeout — and returned the 33-byte md5 fallback until the app was
+        // restarted. This daemon re-detects the local IP every 10s, mirroring ClientService's
+        // selection (incl. the broadcastip=loopback override), and updates the static so all
+        // consumers track the current address. See internal/INVESTIGATION_260611.md.
+        Thread localIpRefresher = new Thread(new Runnable() {
+            public void run() {
+                while (true) {
+                    try {
+                        Thread.sleep(10000);
+                        InetAddress freshAddr = NetUtils.getLocalAddressNonLoopback2();
+                        if (freshAddr == null) continue;
+                        String fresh = freshAddr.getHostAddress();
+                        String bcast = NetUtils.getBroadcastIP();
+                        if (bcast != null && (bcast.equalsIgnoreCase("loopback") || bcast.equals("127.0.0.1"))) {
+                            fresh = "127.0.0.1";
+                        }
+                        if (fresh != null && fresh.length() > 0 && !fresh.equals(LocalIP)) {
+                            log("LocalIP refreshed (network change): " + LocalIP + " -> " + fresh, 0);
+                            LocalIP = fresh;
+                        }
+                    } catch (Exception e) {
+                        // transient (interface flap mid-switch); retry next cycle
+                    }
+                }
+            }
+        }, "localip-refresher");
+        localIpRefresher.setDaemon(true);
+        localIpRefresher.start();
+
         //LocalFuncs c8 = new LocalFuncs();
         //c8.loadNumberOfCopies(LocalIP);
 
@@ -7376,7 +7408,35 @@ class Worker extends WebServer implements HttpConstants, Runnable {
                                 p(" **** dbMode       :" + dbmode);
 
 
-                                String urlgetfile = wf.getfile_mobile(sNamer, sFileName, sFoo2, LocalIP, Integer.toString(port), bCloudHosted, ClientIP, dbmode);
+                                // FIX #1 (2026-06-11): serve a locally-present file straight from disk,
+                                // BEFORE consulting the node-IP resolver. getfile_mobile round-trips through
+                                // isNodeAvailable()/fileexist over HTTP to a registered node IP; a stale or
+                                // unreachable IP (network change, ghost-owner UUID) made it return TIMEOUT,
+                                // which skipped the local-serve shortcut below and returned the 33-byte md5
+                                // fallback for a file sitting on this very disk. A local file needs no node
+                                // IP at all. See internal/INVESTIGATION_260611.md.
+                                // FIX #1b (2026-06-11): prefer the FIRST Super2/paths entry that actually
+                                // exists on disk, so a MOVED file (stale old entry + current entry, in any
+                                // order) serves straight from disk. Falls back to the legacy last-entry
+                                // path for the resolver/logging when nothing local exists.
+                                String pathgetfile = "";
+                                boolean bServeLocal = false;
+                                try {
+                                    pathgetfile = wf.getlocalfilepath_existing(sNamer);   // "" if no entry exists on disk
+                                    bServeLocal = (pathgetfile != null && pathgetfile.length() > 0);
+                                } catch (Exception exLocal) { }
+                                if (!bServeLocal) {
+                                    pathgetfile = wf.getlocalfilepath(sNamer);            // legacy last-entry path
+                                }
+
+                                String urlgetfile;
+                                if (bServeLocal) {
+                                    urlgetfile = "LOCAL";   // sentinel: bypass the IP resolver entirely
+                                    log("[getfile.fn] FIX#1 served from local disk (no node-IP probe) md5=" + sNamer + " path=" + pathgetfile, 0);
+                                } else {
+                                    urlgetfile = wf.getfile_mobile(sNamer, sFileName, sFoo2, LocalIP, Integer.toString(port), bCloudHosted, ClientIP, dbmode);
+                                    log("[getfile.fn] not local; node-IP resolver returned '" + urlgetfile + "' md5=" + sNamer + " LocalIP=" + LocalIP, 0);
+                                }
 
                                 p("url getfile = " + urlgetfile);
 
@@ -7385,15 +7445,7 @@ class Worker extends WebServer implements HttpConstants, Runnable {
                                     File fh = new File("tmp/");
                                     fh.mkdirs();
 
-                                    String pathgetfile = wf.getlocalfilepath(sNamer);
-
-                                    p("******************************");
-                                    p("******************************");
-                                    p("******************************");
                                     p("********pathgetfile**********:" + pathgetfile);
-                                    p("******************************");
-                                    p("******************************");
-                                    p("******************************");
 
                                     int gf = 1;
                                     File f = new File(pathgetfile);
@@ -7407,7 +7459,25 @@ class Worker extends WebServer implements HttpConstants, Runnable {
                                         p("res getfile = " + gf);
                                     }
 
-                                    sGetFileExt = urlgetfile.substring(urlgetfile.lastIndexOf("."), urlgetfile.length());
+                                    // sGetFileExt: when serving local (urlgetfile=="LOCAL") there is no URL
+                                    // to parse — derive the extension from the sFileExt URL param, falling
+                                    // back to the local path, then a safe default. (Parsing "LOCAL" with
+                                    // lastIndexOf('.') would throw StringIndexOutOfBounds.)
+                                    if (urlgetfile.lastIndexOf(".") < 0) {
+                                        if (sFileExt != null && sFileExt.length() > 0) {
+                                            sGetFileExt = "." + sFileExt;
+                                        } else {
+                                            String cleanPath = pathgetfile;
+                                            while (cleanPath.endsWith("/")) cleanPath = cleanPath.substring(0, cleanPath.length() - 1);
+                                            if (cleanPath.lastIndexOf(".") >= 0) {
+                                                sGetFileExt = cleanPath.substring(cleanPath.lastIndexOf("."));
+                                            } else {
+                                                sGetFileExt = ".jpeg";
+                                            }
+                                        }
+                                    } else {
+                                        sGetFileExt = urlgetfile.substring(urlgetfile.lastIndexOf("."), urlgetfile.length());
+                                    }
                                     p("sGetFileExt = " + sGetFileExt);
 
                                     String aesencrypt = GetConfig("aesencrypt", "config/www-server.properties");
@@ -8248,6 +8318,22 @@ class Worker extends WebServer implements HttpConstants, Runnable {
                         res += wf.insert_node_attribute(sUUID, "lastping", String.valueOf(System.currentTimeMillis()), dbmode, true);
                         res += wf.insert_node_attribute(sUUID, "machine", sMachine, dbmode, true);
                         res += wf.insert_node_attribute(sUUID, "nettyport", clientNettyPort, dbmode, true);
+
+                        // FIX #2b (2026-06-11): when OUR OWN node re-registers (ClientService after an
+                        // IP/network change), update the in-memory WebServer.LocalIP that getfile.fn uses
+                        // — event-driven and exactly the IP just registered, so a network change is picked
+                        // up the moment registration lands (not on the next 10s poll). The poller in main()
+                        // stays as a fallback. Remote nodes need no equivalent: their ipaddress is written
+                        // to NodeInfo above and read FRESH from NodeInfo on every resolution
+                        // (LocalFuncs.read_view_link). See internal/INVESTIGATION_260611.md.
+                        try {
+                            String ownUUID = NetUtils.getUUID(appendage + "../scrubber/data/.uuid");
+                            if (ownUUID != null && ownUUID.equals(sUUID)
+                                    && sIPAddress != null && sIPAddress.length() > 0 && !sIPAddress.equals(LocalIP)) {
+                                log("[setnode.php] own node re-registered; LocalIP " + LocalIP + " -> " + sIPAddress, 0);
+                                LocalIP = sIPAddress;
+                            }
+                        } catch (Exception exLip) { }
 
                         if (dbmode.equals("cass")) {
                             //only store the node UUID in the nodes column for cassandra case
