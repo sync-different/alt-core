@@ -32,7 +32,7 @@
         <maven.compiler.release>17</maven.compiler.release>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <cassandra.version>1.2.0</cassandra.version>
-        <thrift.version>0.13.0</thrift.version>
+        <thrift.version>0.23.0</thrift.version>
         <mapdb.version>1.0.9</mapdb.version>
         <slf4j.version>1.7.36</slf4j.version>
         <logback.version>1.2.12</logback.version>
@@ -58,7 +58,7 @@
         <dependency>
             <groupId>org.apache.httpcomponents.client5</groupId>
             <artifactId>httpclient5</artifactId>
-            <version>5.4.1</version>
+            <version>5.4.3</version>
         </dependency>
 
 
@@ -80,7 +80,7 @@
         <dependency>
             <groupId>org.apache.thrift</groupId>
             <artifactId>libthrift</artifactId>
-            <version>${thrift.version}</version>
+            <version>0.23.0</version>
         </dependency>
 
         <!-- MapDB for local database operations -->
