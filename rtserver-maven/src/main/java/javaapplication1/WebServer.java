@@ -482,6 +482,29 @@ public class WebServer extends AbstractService {
         return roots;
     }
 
+    /**
+     * SECURITY (#3127): the real client IP for rate limiting. Behind the same-host Cloudflare tunnel
+     * the TCP peer is always loopback, so keying the login limiter on the peer makes ONE global bucket
+     * — any anon client can lock out everyone. Trust CF-Connecting-IP ONLY when the peer is the tunnel
+     * (loopback/LocalIP); never trust it from an arbitrary peer (it is client-settable otherwise).
+     */
+    String rateLimitKey(String peerIp, String reqText) {
+        try {
+            boolean peerIsTunnel = peerIp != null && (peerIp.equals("127.0.0.1")
+                    || peerIp.equals("0:0:0:0:0:0:0:1") || peerIp.equals(LocalIP));
+            if (peerIsTunnel && reqText != null) {
+                for (String line : reqText.split("\r\n")) {
+                    String l = line.trim();
+                    if (l.toLowerCase().startsWith("cf-connecting-ip:")) {
+                        String ip = l.substring(l.indexOf(':') + 1).trim();
+                        if (!ip.isEmpty()) return ip;
+                    }
+                }
+            }
+        } catch (Throwable e) { /* fall back to peer */ }
+        return peerIp;
+    }
+
     boolean isRequestAdmin(String sAuthUUID, boolean bUserAuthenticated) {
         try {
             if (!bUserAuthenticated || sAuthUUID == null || sAuthUUID.isEmpty()) return false;
@@ -5815,7 +5838,9 @@ class Worker extends WebServer implements HttpConstants, Runnable {
                     if (fname.contains("login.fn")) {
 
                         // Rate limiting check
-                        String loginClientIP = s.getInetAddress().getHostAddress();
+                        // SECURITY (#3127): key the limiter on the real client IP (CF-Connecting-IP
+                        // when the peer is the tunnel), not the shared loopback peer.
+                        String loginClientIP = rateLimitKey(s.getInetAddress().getHostAddress(), text);
                         if (isLoginRateLimited(loginClientIP)) {
                             log("Login rate limited for IP: " + loginClientIP, 0);
                             String rateLimitMsg = getNavbarMenu(false, "", "", true, false);
