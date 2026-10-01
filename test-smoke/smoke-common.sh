@@ -53,6 +53,50 @@ FAIL_COUNT=0
 SKIP_COUNT=0
 RESULTS=()
 
+# ─── Platform portability (macOS / Linux / Windows Git Bash) ──
+
+case "$(uname -s)" in
+    MINGW*|MSYS*|CYGWIN*) SMOKE_WINDOWS=true ;;
+    *)                    SMOKE_WINDOWS=false ;;
+esac
+
+# Git Bash's curl/java are native Windows programs: they can't open MSYS paths
+# like /tmp/tmp.X, and MSYS only auto-converts arguments that are bare paths —
+# not `-F "file=@/tmp/x;filename=y"`, where curl then fails with exit 26
+# (HTTP 000). Point mktemp at the mixed form (C:/Users/.../Temp), which both
+# the MSYS tools and native Windows programs understand.
+if $SMOKE_WINDOWS; then
+    export TMPDIR="$(cygpath -m /tmp)"
+fi
+
+# port_listening PORT — succeeds if a local process is listening on PORT.
+# lsof doesn't exist on Windows (Git Bash); fall back to netstat there.
+port_listening() {
+    if command -v lsof > /dev/null 2>&1; then
+        lsof -ti:"$1" > /dev/null 2>&1
+    else
+        _port_pids "$1" | grep -q .
+    fi
+}
+
+# _port_pids PORT — PIDs listening on PORT, from Windows netstat output.
+_port_pids() {
+    netstat -ano 2>/dev/null | tr -d '\r' | awk -v p=":$1" \
+        '$1=="TCP" && $4=="LISTENING" && substr($2, length($2)-length(p)+1)==p {print $5}' | sort -u
+}
+
+# Windows: `python3` is usually the Microsoft Store stub (prints an install
+# prompt, exits non-zero), and a python.org install only provides python.exe
+# / py.exe. Python on Windows also writes CRLF to stdout, which would leak a
+# trailing \r into $(python3 -c ...) values — strip it.
+if $SMOKE_WINDOWS && ! python3 -c '' > /dev/null 2>&1; then
+    if python -c '' > /dev/null 2>&1; then
+        python3() { command python "$@" | tr -d '\r'; }
+    elif py -3 -c '' > /dev/null 2>&1; then
+        python3() { command py -3 "$@" | tr -d '\r'; }
+    fi
+fi
+
 # ─── Timing ───────────────────────────────────────────────
 
 # Returns current epoch time in milliseconds (uses perl for sub-second precision).
@@ -250,7 +294,7 @@ if [ -n "${SMOKE_URL:-}" ]; then
         exit 1
     fi
 else
-    if ! lsof -ti:8081 > /dev/null 2>&1; then
+    if ! port_listening 8081; then
         printf "${RED}ERROR${RESET}: No server running on port 8081.\n"
         printf "       Start the server first: ./run.sh\n"
         printf "       Or target a remote server with: SMOKE_URL=<url> %s\n" "$0"
@@ -263,7 +307,9 @@ fi
 #   REMOTE — SMOKE_URL set; target is a URL we don't share a filesystem with.
 #            Tests that rely on local filesystem observation are skipped.
 #   PROD   — app bundle at /Applications/alt-core.app with the PROD appendage
-#            (~/Library/Application Support/hivebot/scrubber/).
+#            (~/Library/Application Support/hivebot/scrubber/), or on Windows
+#            the MSI install (alt-core.exe serving 8081) with data under
+#            %APPDATA%\hivebot\.
 #   DEV    — running from the repo; paths relative to REPO_ROOT.
 #
 # PROD paths reflect the appendage prefix used by Netty/ProcessorService:
@@ -273,6 +319,20 @@ fi
 
 SMOKE_REMOTE=false
 PROD_APP_SUPPORT="$HOME/Library/Application Support/hivebot"
+WIN_APP_DATA=""
+if $SMOKE_WINDOWS && [ -n "${APPDATA:-}" ]; then
+    WIN_APP_DATA="$(cygpath -u "$APPDATA")/hivebot"
+fi
+
+# Windows: true when port 8081 is served by the installed alt-core.exe (MSI)
+# rather than a repo `run.bat` JVM (java.exe), which uses DEV paths.
+_win_installed_app_serving() {
+    local PID
+    for PID in $(_port_pids 8081); do
+        tasklist //fi "PID eq $PID" //fo csv //nh 2>/dev/null | grep -qi '"alt-core.exe"' && return 0
+    done
+    return 1
+}
 
 # REMOTE mode only applies when the SMOKE_URL host is NOT local — because the
 # whole purpose is to skip tests that need filesystem access. If SMOKE_URL
@@ -303,11 +363,26 @@ elif [ -d "/Applications/alt-core.app" ] && [ -d "$PROD_APP_SUPPORT/scrubber" ];
     INCOMING="$PROD_APP_SUPPORT/rtserver/incoming"
     MOBILEBACKUP="$PROD_APP_SUPPORT/scrubber/mobilebackup/upload"
     SCAN_CONFIG_DIR="$PROD_APP_SUPPORT/scrubber/config"
+    NODE_UUID_FILE="$PROD_APP_SUPPORT/scrubber/data/.uuid"
+elif [ -n "$WIN_APP_DATA" ] && [ -d "$WIN_APP_DATA/scrubber" ] && _win_installed_app_serving; then
+    SMOKE_ENV="PROD"
+    INCOMING="$WIN_APP_DATA/rtserver/incoming"
+    MOBILEBACKUP="$WIN_APP_DATA/scrubber/mobilebackup/upload"
+    SCAN_CONFIG_DIR="$WIN_APP_DATA/scrubber/config"
+    NODE_UUID_FILE="$WIN_APP_DATA/scrubber/data/.uuid"
 else
     SMOKE_ENV="DEV"
     INCOMING="$REPO_ROOT/rtserver/incoming"
     MOBILEBACKUP="$REPO_ROOT/scrubber/mobilebackup/upload"
     SCAN_CONFIG_DIR="$REPO_ROOT/scrubber/config"
+    NODE_UUID_FILE="$REPO_ROOT/scrubber/data/.uuid"
+fi
+
+# This node's UUID (first 36 chars of .uuid). Super2/paths entries are keyed
+# "<nodeUUID>:<path>/", so deletion notifications must carry it (Phase 7).
+NODE_UUID=""
+if [ -n "${NODE_UUID_FILE:-}" ] && [ -f "$NODE_UUID_FILE" ]; then
+    NODE_UUID=$(head -c 36 "$NODE_UUID_FILE")
 fi
 
 printf "${BOLD}Mode:${RESET} ${CYAN}%s${RESET}  " "$SMOKE_ENV"

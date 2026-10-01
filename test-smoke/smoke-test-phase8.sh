@@ -50,7 +50,7 @@ assert_server_alive() {
     return 0
 }
 
-if ! lsof -ti:$UPLOAD_PORT > /dev/null 2>&1; then
+if ! port_listening $UPLOAD_PORT; then
     skip "Phase 8" "upload port $UPLOAD_PORT not running"
     print_summary "PHASE 8"
     exit 0

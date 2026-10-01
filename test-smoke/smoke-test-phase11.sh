@@ -121,7 +121,7 @@ assert_server_alive "11.3"
 test_start "11.4 billion-laughs XML upload"
 if $SMOKE_REMOTE; then
     skip "11.4 billion-laughs XML" "REMOTE mode — direct port 8087 access not available"
-elif ! lsof -ti:8087 > /dev/null 2>&1; then
+elif ! port_listening 8087; then
     skip "11.4 billion-laughs XML" "upload port 8087 not running"
 else
     BL_XML='<?xml version="1.0"?><!DOCTYPE lolz [<!ENTITY lol "lol"><!ENTITY lol2 "&lol;&lol;&lol;&lol;&lol;&lol;&lol;&lol;&lol;&lol;"><!ENTITY lol3 "&lol2;&lol2;&lol2;&lol2;&lol2;&lol2;&lol2;&lol2;&lol2;&lol2;"><!ENTITY lol4 "&lol3;&lol3;&lol3;&lol3;&lol3;&lol3;&lol3;&lol3;&lol3;&lol3;"><!ENTITY lol5 "&lol4;&lol4;&lol4;&lol4;&lol4;&lol4;&lol4;&lol4;&lol4;&lol4;">]><lolz>&lol5;</lolz>'

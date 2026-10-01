@@ -20,7 +20,7 @@ printf "${BOLD}── Phase 6: Upload/Download Functional ──${RESET}\n"
 
 UPLOAD_PORT=8087
 
-if ! lsof -ti:$UPLOAD_PORT > /dev/null 2>&1; then
+if ! port_listening $UPLOAD_PORT; then
     skip "Upload/Download functional" "port $UPLOAD_PORT not running — skipping Phase 6 tests"
 else
 

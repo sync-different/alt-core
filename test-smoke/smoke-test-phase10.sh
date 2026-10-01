@@ -110,7 +110,7 @@ fi
 test_start "10.5 port 8087 CORS"
 if $SMOKE_REMOTE; then
     skip "10.5 port 8087 CORS" "REMOTE mode — direct port 8087 access not available"
-elif ! lsof -ti:$UPLOAD_PORT > /dev/null 2>&1; then
+elif ! port_listening $UPLOAD_PORT; then
     skip "10.5 port 8087 CORS" "upload port not running"
 else
     HEADERS=$(curl -s -D - -o /dev/null --max-time 3 \

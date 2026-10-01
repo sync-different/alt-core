@@ -1,6 +1,6 @@
 # Smoke Test — alt-core API Regression Suite
 
-Automated regression suite for alt-core's HTTP API. Run after any code change to confirm nothing is broken. 12 phases, 168 tests, ~4 minutes end-to-end on DEV.
+Automated regression suite for alt-core's HTTP API. Run after any code change to confirm nothing is broken. 13 phases, 191 tests, ~4 minutes end-to-end on DEV. Runs on macOS and on Windows (Git Bash) — see [Running on Windows](#running-on-windows).
 
 **Location:** all scripts live in `test-smoke/`. The examples below assume you run them from inside that directory. From the repo root, prefix with `test-smoke/` (e.g. `./test-smoke/smoke-test.sh`).
 
@@ -24,7 +24,7 @@ cd test-smoke
 ## Usage
 
 ```bash
-# Run all 168 tests across 12 phases
+# Run all 191 tests across 13 phases
 ./smoke-test.sh
 
 # Individual phases (counts shown match what each script contains)
@@ -40,6 +40,7 @@ cd test-smoke
 ./smoke-test-phase10.sh      # HTTP protocol hardening (13 tests)
 ./smoke-test-phase11.sh      # DoS resistance (7 tests)
 ./smoke-test-phase12.sh      # Scanner regression corpus (10 tests)
+./smoke-test-phase13.sh      # Admin user management CRUD (19 tests)
 
 # Flags (work with all scripts)
 ./smoke-test-phase1.sh --verbose    # Show response body snippets
@@ -70,7 +71,8 @@ PHASE9_SKIP_RATELIMIT=1 ./smoke-test.sh
 | 10 | 13 | HTTP protocol & response hardening — CRLF, CORS, smuggling, security headers | ~10s |
 | 11 | 7 | DoS resistance — concurrent load, parser DoS, orphan cleanup, unbounded result sets | ~45s |
 | 12 | 10 | Scanner regression corpus — replay real-world attack payloads | ~5s |
-| **Total** | **168** | | **~4 min** |
+| 13 | 19 | Admin user management — list/create/delete users, edit email/password, admin gating, session invalidation on password change | ~10s |
+| **Total** | **191** | | **~4 min** |
 
 Phase 11 shows 7 (not 8) because test 11.7 was removed 2026-04-17 after being superseded by 9.14.
 
@@ -78,9 +80,10 @@ Phase 11 shows 7 (not 8) because test 11.7 was removed 2026-04-17 after being su
 
 | File | Purpose |
 |------|---------|
-| `smoke-test.sh` | Master runner — sequences phases 1-8, 10, 11, 12, 9 (Phase 9 runs last) |
+| `smoke-test.sh` | Master runner — sequences phases 1-8, 10, 11, 12, 13, 9 (Phase 9 runs last) |
 | `smoke-common.sh` | Shared helpers: auth, env detection (DEV/PROD/REMOTE), WAF awareness, colored output |
 | `smoke-test-phase<N>.sh` | One script per phase, runnable standalone |
+| `CreateDeleteNotification.java` | Phase 7 helper — writes a `.D_` deletion record into `incoming/` (compiled on first run into `test-files/`, gitignored) |
 
 ## Environment Variables
 
@@ -106,6 +109,26 @@ Flags:
 | `--verbose` | Print extra debug on select tests (JSON response bodies on SKIP, etc.) |
 | `--no-color` | Plain output (for CI/logs) |
 | `--long` | Phase 11: doubles concurrency and orphan counts for stress testing |
+
+## Running on Windows
+
+The suite runs from **Git Bash** against either a repo server (`run.bat`) or the installed MSI. `smoke-common.sh` handles the platform differences:
+
+| Concern | How it's handled |
+|---|---|
+| Mode detection | If port 8081 is served by `alt-core.exe`, mode is **PROD** with paths under `%APPDATA%\hivebot\` (`rtserver/incoming`, `scrubber/mobilebackup/upload`, `scrubber/config`). A repo `java.exe` server stays DEV |
+| No `lsof` | `port_listening` falls back to `netstat -ano` |
+| `python3` | Windows ships a Microsoft Store stub; the harness falls back to `python` / `py -3` and strips the CRLF Python writes to stdout |
+| Temp files | Git Bash's `curl`/`java` are native Windows programs that can't open MSYS paths like `/tmp/x` inside `-F "file=@/tmp/x;filename=y"` (curl exit 26 → HTTP 000). `TMPDIR` is set to the mixed form (`C:/Users/.../Temp`) so `mktemp` paths work for both |
+| Java classpath | Phase 7 builds it with `;` and native paths |
+| Line endings | `.gitattributes` forces `*.sh` to LF (`set -euo pipefail\r` breaks bash) and `*.bat` to CRLF |
+
+Prerequisites:
+
+- Python 3 (`winget install -e --id Python.Python.3.12 --scope user`), then open a new terminal
+- CLI jar: `cd alt-core-cli && mvn package` (`build-cli.sh` works from Git Bash too)
+- For Phases 6/7 indexing: `%APPDATA%\hivebot\scrubber\mobilebackup\upload` must be a scan folder (Admin → Edit Scan Folders, or `setfolder-json.fn`)
+- After Phase 9.14, quit and relaunch alt-core from the tray (or wait 5 minutes) to clear the login lockout
 
 ## REMOTE / WAF Mode
 
@@ -162,7 +185,7 @@ Upload → verify indexed → delete → verify removed.
 | P7-011 | Chunked upload deletion — getfile.fn stops serving | Download no longer serves deleted file |
 | P7-012 | Chunked upload deletion — query.fn no longer returns | Search no longer returns deleted MD5 |
 
-**Requirements:** Uber JAR must be built (`scrubber/target/my-app-1.0-SNAPSHOT.jar`) for compiling the `CreateDeleteNotification` helper.
+**Requirements:** Uber JAR must be built (`scrubber/target/my-app-1.0-SNAPSHOT.jar`) for compiling the `test-smoke/CreateDeleteNotification.java` helper. The `.D_` record carries the **node** UUID (`scrubber/data/.uuid`), because Super2/paths entries are keyed `<nodeUUID>:<path>/` — a session UUID would never match.
 
 **Timing:** uploads + indexing ~60s, deletion ~10s. Total runtime: ~2-3 min.
 
@@ -180,6 +203,7 @@ Phases 8-12 were added 2026-04-12 through 2026-04-17 in response to a demo-serve
 
 | Environment | Date | Result | Notes |
 |-------------|------|--------|-------|
+| PROD (Windows 11, MSI 2026093000) | 2026-09-30 | 191/191 PASS | 13 phases; first Windows run (phases 4/6/7/8 rerun after the TMPDIR fix) |
 | DEV (localhost) | 2026-04-17 | 168/168 PASS | 12 phases, full suite, REMOTE-mode aware |
 | DEV (localhost) | 2026-03-28 | 116/116 PASS | 7 phases, pre-security-expansion baseline |
 | PROD (Application Support) | 2026-02-21 | 112/112 PASS | Phase 7 standalone: 12/12 in 1m 03s |
@@ -197,7 +221,7 @@ Phases 8-12 were added 2026-04-12 through 2026-04-17 in response to a demo-serve
 - Upload server on port `8087` (DEV only — skipped in REMOTE mode)
 - `alt-core-cli` built (`alt-core-cli/target/alt-core-cli.jar`)
 - Default credentials: `admin` / `valid`
-- `curl`, `java`, `lsof`, `python3` in PATH
+- `curl`, `java`, `perl`, `python3` in PATH (plus `lsof` on macOS/Linux; Windows uses `netstat`)
 
 ## When to Run
 
@@ -256,7 +280,7 @@ All phase scripts source `smoke-common.sh` which provides:
 | File | Description |
 |------|-------------|
 | `INDEXING_PIPELINE.md` | Upload → index → query → download → delete pipeline reference |
-| `internal/SMOKE-TEST-IMPLEMENTED.md` | Full per-test detail, all 168 tests across 12 phases |
+| `internal/SMOKE-TEST-IMPLEMENTED.md` | Full per-test detail, the original 168 tests across 12 phases (Phase 13 added later) |
 | `internal/SMOKE-TEST-HISTORY.md` | How the suite grew from 116 → 168 tests, incident-driven timeline |
 | `internal/SMOKE-TEST-PLAN.md` | Open coverage gaps (symlinks/TOCTOU, etc.) — candidate Phase 13 |
 | `internal/AUDIT.md` | Security audit summary across all phases |

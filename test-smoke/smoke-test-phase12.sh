@@ -60,7 +60,7 @@ check_safe_response() {
 
 if $SMOKE_REMOTE; then
     skip "Upload-side scanner tests (12.1-12.4)" "REMOTE mode — direct port 8087 access not available"
-elif ! lsof -ti:$UPLOAD_PORT > /dev/null 2>&1; then
+elif ! port_listening $UPLOAD_PORT; then
     skip "Upload port $UPLOAD_PORT" "not running — skipping upload-side scanner tests"
 else
 

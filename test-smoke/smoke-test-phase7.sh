@@ -25,10 +25,10 @@ printf "${BOLD}── Phase 7: Index Tests ──${RESET}\n"
 UPLOAD_PORT=8087
 # INCOMING and MOBILEBACKUP are set by smoke-common.sh (auto-detects dev vs production)
 UBER_JAR="$REPO_ROOT/scrubber/target/my-app-1.0-SNAPSHOT.jar"
-DELETE_HELPER_SRC="$REPO_ROOT/test-files/CreateDeleteNotification.java"
-DELETE_HELPER_CLASS="$REPO_ROOT/test-files"
+DELETE_HELPER_SRC="$SCRIPT_DIR/CreateDeleteNotification.java"
+DELETE_HELPER_CLASS="$REPO_ROOT/test-files"   # compiled output (gitignored)
 
-if ! lsof -ti:$UPLOAD_PORT > /dev/null 2>&1; then
+if ! port_listening $UPLOAD_PORT; then
     skip "Index tests" "port $UPLOAD_PORT not running — skipping Phase 7 tests"
 elif [ ! -f "$UBER_JAR" ]; then
     # Missing build artifact is a real problem, not an environment state — FAIL.
@@ -41,18 +41,47 @@ elif [ ! -f "$DELETE_HELPER_SRC" ]; then
     exit 1
 elif ! $MOBILEBACKUP_SCANNABLE; then
     skip "Index tests" "mobilebackup not in scan config — skipping Phase 7 tests (legitimate env gap)"
+elif [ -z "$NODE_UUID" ]; then
+    fail "Phase 7 setup" "node UUID not found at ${NODE_UUID_FILE:-<unset>} — needed for .D_ notifications"
+    print_summary "PHASE 7"
+    exit 1
 else
 
-# Compile the deletion helper if not already compiled
-if [ ! -f "$DELETE_HELPER_CLASS/CreateDeleteNotification.class" ]; then
+# Java on Windows needs ';' between classpath entries and native paths.
+if $SMOKE_WINDOWS; then
+    HELPER_CP="$(cygpath -w "$UBER_JAR");$(cygpath -w "$DELETE_HELPER_CLASS")"
+else
+    HELPER_CP="$UBER_JAR:$DELETE_HELPER_CLASS"
+fi
+
+# Compile the deletion helper if missing or older than its source
+mkdir -p "$DELETE_HELPER_CLASS"
+if [ ! -f "$DELETE_HELPER_CLASS/CreateDeleteNotification.class" ] \
+   || [ "$DELETE_HELPER_SRC" -nt "$DELETE_HELPER_CLASS/CreateDeleteNotification.class" ]; then
+    set +e
     COMPILE_ERR=$(javac -cp "$UBER_JAR" -d "$DELETE_HELPER_CLASS" "$DELETE_HELPER_SRC" 2>&1)
-    if [ $? -ne 0 ]; then
+    COMPILE_RC=$?
+    set -e
+    if [ $COMPILE_RC -ne 0 ]; then
         # Compilation failure is a real error — FAIL so it's visible.
         fail "Phase 7 setup" "failed to compile CreateDeleteNotification.java: $(echo "$COMPILE_ERR" | head -c 200)"
         print_summary "PHASE 7"
         exit 1
     fi
 fi
+
+# create_delete_notification MD5 FILE_PATH — drops a .D_ record for FILE_PATH
+# into $INCOMING. Prints the helper's error output and returns non-zero on
+# failure so the calling test FAILs instead of silently passing.
+create_delete_notification() {
+    local MD5="$1" FPATH="$2" OUT
+    OUT="$INCOMING/${NODE_UUID}.${MD5}.D_$(date +%s)000"
+    if $SMOKE_WINDOWS; then
+        FPATH=$(cygpath -w "$FPATH")
+        OUT=$(cygpath -w "$OUT")
+    fi
+    java -cp "$HELPER_CP" CreateDeleteNotification "$MD5" "$NODE_UUID" "$FPATH" "$OUT" 2>&1 > /dev/null
+}
 
 # Ensure mobilebackup/upload directory exists
 mkdir -p "$MOBILEBACKUP"
@@ -305,11 +334,12 @@ if $FULL_INDEXED; then
     rm -f "$FULL_DEST"
 
     # Create .D_ notification
-    DEL_NOTIF_FILE="$INCOMING/${UUID}.${FULL_MD5}.D_$(date +%s)000"
-    java -cp "$UBER_JAR:$DELETE_HELPER_CLASS" CreateDeleteNotification \
-        "$FULL_MD5" "$UUID" "$FULL_PATH" "$DEL_NOTIF_FILE" > /dev/null 2>&1
-
-    pass "7.7 full upload deletion — .D_ notification created"
+    if DEL_ERR=$(create_delete_notification "$FULL_MD5" "$FULL_PATH"); then
+        pass "7.7 full upload deletion — .D_ notification created"
+    else
+        FULL_INDEXED=false
+        fail "7.7 full upload deletion — .D_ notification" "helper failed: $(echo "$DEL_ERR" | head -c 200)"
+    fi
 else
     fail "7.7 full upload deletion — setup" "file not indexed (md5: ${FULL_MD5:-unknown})"
 fi
@@ -371,11 +401,12 @@ if $CHUNKED_INDEXED; then
     rm -f "$CHUNKED_DEST"
 
     # Create .D_ notification
-    DEL_NOTIF_FILE="$INCOMING/${UUID}.${CHUNKED_MD5}.D_$(date +%s)000"
-    java -cp "$UBER_JAR:$DELETE_HELPER_CLASS" CreateDeleteNotification \
-        "$CHUNKED_MD5" "$UUID" "$CHUNKED_PATH" "$DEL_NOTIF_FILE" > /dev/null 2>&1
-
-    pass "7.10 chunked upload deletion — .D_ notification created"
+    if DEL_ERR=$(create_delete_notification "$CHUNKED_MD5" "$CHUNKED_PATH"); then
+        pass "7.10 chunked upload deletion — .D_ notification created"
+    else
+        CHUNKED_INDEXED=false
+        fail "7.10 chunked upload deletion — .D_ notification" "helper failed: $(echo "$DEL_ERR" | head -c 200)"
+    fi
 else
     fail "7.10 chunked upload deletion — setup" "file not indexed (md5: ${CHUNKED_MD5:-unknown})"
 fi

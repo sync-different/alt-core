@@ -38,7 +38,7 @@ clean_incoming() {
 }
 
 # Check upload port is available
-if ! lsof -ti:$UPLOAD_PORT > /dev/null 2>&1; then
+if ! port_listening $UPLOAD_PORT; then
     skip "Upload port $UPLOAD_PORT" "not running — skipping Phase 4 upload tests"
 else
 

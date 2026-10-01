@@ -1,0 +1,4 @@
+# Shell scripts must be LF (bash on Windows/Git Bash chokes on CRLF: `set -euo pipefail\r`)
+*.sh  text eol=lf
+# Batch files must be CRLF or cmd.exe mis-parses them
+*.bat text eol=crlf
