@@ -3225,7 +3225,7 @@ class Worker extends WebServer implements HttpConstants, Runnable {
 // scan se informan a la UI para actualizar los datos ya mostrados en pantalla.
 // ***************************************************
 
-                    if (fname.contains("getscannews.fn")) {
+                    if (fname.contains("getscannews.fn") && bUserAuthenticated) {   // SECURITY: auth gate (Group B)
                         String result="";
                         try{
                             synchronized(CacheMetadataWeb.getInstance().getScanMap()){
@@ -3349,7 +3349,7 @@ class Worker extends WebServer implements HttpConstants, Runnable {
 // ***************************************************
 // Se inicializan variables globales para scan
 // ***************************************************
-                    if (fname.contains("initscan.fn")) {
+                    if (fname.contains("initscan.fn") && isRequestAdmin(sAuthUUID, bUserAuthenticated)) {   // SECURITY: auth gate (Group B)
                         CacheMetadataWeb.getInstance().clearScan();
                         outFile.close();
                     }
@@ -3410,7 +3410,7 @@ class Worker extends WebServer implements HttpConstants, Runnable {
 // ***************************************************
 // Se inicia scan del disco duro
 // ***************************************************
-                    if (fname.contains("startscan.fn")) {
+                    if (fname.contains("startscan.fn") && isRequestAdmin(sAuthUUID, bUserAuthenticated)) {   // SECURITY: auth gate (Group B)
                         sFolder = URLDecoder.decode(sFolder, "UTF-8");
                         CacheMetadataWeb.getInstance().startScan(sFolder,scanTreeVelocity, scanTreeVariant, scanTreeMode, bWindowsServer);
                         outFile.close();
@@ -4995,7 +4995,7 @@ class Worker extends WebServer implements HttpConstants, Runnable {
 // ***************************************************
 // sendfile.htm
 // ***************************************************
-                    if (fname.contains("sendfile.htm")) {
+                    if (fname.contains("sendfile.htm") && bUserAuthenticated) {   // SECURITY: auth gate (#3130)
                         if (sFoo2.equals("")) {
                             sFoo2 = sFileType;
                             p("Foo blank. Replacing with filetype...: '" + sFoo2 + "'");
@@ -5082,7 +5082,7 @@ class Worker extends WebServer implements HttpConstants, Runnable {
 // ***************************************************
 // openfile.htm
 // ***************************************************
-                    if (fname.contains("openfile.htm")) {
+                    if (fname.contains("openfile.htm") && bUserAuthenticated) {   // SECURITY: auth gate (#3130)
                         if (sFoo2.equals("")) {
                             sFoo2 = sFileType;
                             p("Foo blank. Replacing with filetype...: '" + sFoo2 + "'");
@@ -5118,7 +5118,7 @@ class Worker extends WebServer implements HttpConstants, Runnable {
 // ***************************************************
 // viewimg2.htm
 // ***************************************************
-                    if (fname.contains("viewimg2.htm") || fname.contains("sendimg2.htm")) {
+                    if ((fname.contains("viewimg2.htm") || fname.contains("sendimg2.htm")) && bUserAuthenticated) {   // SECURITY: auth gate (#3130)
                         UserSession us = uuidmap.get(sAuthUUID);
                         if(us != null && us.isRemote()){
                             sRedirectBulkerURL = "viewimg.htm?md5=" + sNamer;
@@ -5374,7 +5374,7 @@ class Worker extends WebServer implements HttpConstants, Runnable {
 // getconfig.htm
 // ***************************************************
 
-                    if (fname.contains("getconfig.htm")) {
+                    if (fname.contains("getconfig.htm") && isRequestAdmin(sAuthUUID, bUserAuthenticated)) {   // SECURITY: auth gate (Group B)
 
                         String res2 = "";
 
@@ -6991,7 +6991,7 @@ class Worker extends WebServer implements HttpConstants, Runnable {
 // ***************************************************
 // testemail.fn
 // ***************************************************
-                    if (fname.contains("testemail.fn")) {
+                    if (fname.contains("testemail.fn") && isRequestAdmin(sAuthUUID, bUserAuthenticated)) {   // SECURITY: auth gate (Group B)
 
                         MailerFuncs mf = new MailerFuncs();
 
@@ -7023,7 +7023,7 @@ class Worker extends WebServer implements HttpConstants, Runnable {
 
                     }
 
-                    if (fname.contains("getalteranteservers.fn")) {
+                    if (fname.contains("getalteranteservers.fn") && isRequestAdmin(sAuthUUID, bUserAuthenticated)) {   // SECURITY: auth gate (Group B)
                         String serversJS = getAlteranteServers();
 
                         byte[] kk = serversJS.getBytes();
@@ -7037,7 +7037,7 @@ class Worker extends WebServer implements HttpConstants, Runnable {
 // setconfig.htm
 // ***************************************************
 
-                    if (fname.contains("setconfig.htm")) {
+                    if (fname.contains("setconfig.htm") && isRequestAdmin(sAuthUUID, bUserAuthenticated)) {   // SECURITY: auth gate (Group B)
                         if (bUserAuthenticated) {
                             UserSession us = uuidmap.get(sAuthUUID);
                             boolean isAdmin = false;
@@ -8539,7 +8539,7 @@ class Worker extends WebServer implements HttpConstants, Runnable {
                     }
 
                     //systeminfo.fn
-                    if (fname.contains("systeminfo.fn")) {
+                    if (fname.contains("systeminfo.fn") && isRequestAdmin(sAuthUUID, bUserAuthenticated)) {   // SECURITY: auth gate (Group B)
                         p("---[Processing ssysteminfo]");
                         String res = "";
 
@@ -8594,7 +8594,7 @@ class Worker extends WebServer implements HttpConstants, Runnable {
                     }
 
                     //systeminfoscan.fn
-                    if (fname.contains("systeminfoscan.fn")) {
+                    if (fname.contains("systeminfoscan.fn") && isRequestAdmin(sAuthUUID, bUserAuthenticated)) {   // SECURITY: auth gate (Group B)
                         String res = "";
 
                         int idxfiles = GetNumberofFilesInDir(appendage + "../rtserver", ".idx");
@@ -8611,7 +8611,7 @@ class Worker extends WebServer implements HttpConstants, Runnable {
                     }
 
                     //nodeinfo
-                    if (fname.contains("nodeinfo.php")) {
+                    if (fname.contains("nodeinfo.php") && isRequestAdmin(sAuthUUID, bUserAuthenticated)) {   // SECURITY: auth gate (Group B)
                         p("---[Processing nodeinfo.php]");
                         p("sFoo = " + sFoo2);
                         String res = "";
@@ -8623,7 +8623,7 @@ class Worker extends WebServer implements HttpConstants, Runnable {
 
 
                     //backupinfo
-                    if (fname.contains("backupinfo.php")) {
+                    if (fname.contains("backupinfo.php") && isRequestAdmin(sAuthUUID, bUserAuthenticated)) {   // SECURITY: auth gate (Group B)
                         p("---[Processing backupinfo.php]");
                         String res = "";
                         res = wf.echobackup(sFoo2, dbmode) + "\n";
@@ -8676,7 +8676,7 @@ class Worker extends WebServer implements HttpConstants, Runnable {
                     }
 
                     //send file
-                    if (fname.contains("sendfile.php")) {
+                    if (fname.contains("sendfile.php") && isRequestAdmin(sAuthUUID, bUserAuthenticated)) {   // SECURITY: auth gate (Group B)
                         p("---[Processing sendmail.php]");
 
                         String sPathDec4 = wf.get_file_path(sMailFile);
@@ -8800,7 +8800,7 @@ class Worker extends WebServer implements HttpConstants, Runnable {
                     }
 
                     //bulker (batch checkbox)
-                    if (fname.contains("bulker.php")) {
+                    if (fname.contains("bulker.php") && bUserAuthenticated) {   // SECURITY: auth gate (Group B)
 
 
 
