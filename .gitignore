@@ -6,6 +6,7 @@
 /scrubber-maven/target
 /rtserver-maven/target
 /rtserver-maven/lib/cass-server.jar
+/rtserver-maven/lib/alt-common-1.0-SNAPSHOT.jar
 
 scrubber/.DS_Store
 scrubber/target/.DS_Store
