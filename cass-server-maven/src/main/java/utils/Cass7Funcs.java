@@ -6847,7 +6847,7 @@ public sURLPack get_remote_link2_cass(final String _key,
                                     p("lastdot = " + lastdot);
                                     String sExt = colName.substring(lastdot, colName.length()-1);
                                     String sPathEnc = URLEncoder.encode(sPathDec,  "UTF-8");
-                                    String sFullPath ="http://"+sIP+ ":" + sPort + "/fileexist.fn?sfileexist=" + sPathEnc + sExt ;
+                                    String sFullPath ="http://"+sIP+ ":" + sPort + "/fileexist.fn?sfileexist=" + sPathEnc + sExt + "&isecret=" + NetUtils.getNodeSecret(appendage) ;
 
                                     if (!_cloudhosted) {
                                         int resultGetFileExist=getfile(sFullPath, "fileexist.fnres", 1, 10,2000);                                

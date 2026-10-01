@@ -4779,7 +4779,7 @@ public class LocalFuncs {
                                 p("lastdot = " + lastdot);
                                 String sExt = colName.substring(lastdot, colName.length()-1);
                                 String sPathEnc1 = URLEncoder.encode(sPathDec,  "UTF-8");
-                                String sFullPath ="http://"+sIP+ ":" + sPort + "/fileexist.fn?sfileexist=" + sPathEnc1 + sExt ;
+                                String sFullPath ="http://"+sIP+ ":" + sPort + "/fileexist.fn?sfileexist=" + sPathEnc1 + sExt + "&isecret=" + NetUtils.getNodeSecret(appendage) ;
 
                                 Boolean bAvail_file = false;
                                 if (!optimized) {

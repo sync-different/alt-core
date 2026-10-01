@@ -43,12 +43,15 @@ else
 fi
 
 # 12.5 P3-003: fileexist.fn — noauth blocked
+# Uses the REAL parameter name (sfileexist=, not file=) so it actually exercises the handler (#3126).
+# A blocked response is empty OR "E,0" (not-found/denied). A leak would be "S,<size>,1" for a file
+# that exists outside the scan roots. /etc/hosts exists on every box and is outside any scan root.
 test_start "3.4 fileexist.fn --noauth — blocked"
-RESP=$(curl_noauth "$SERVER/cass/fileexist.fn?file=/etc/passwd" || true)
-if [ -z "$RESP" ]; then
+RESP=$(curl_noauth "$SERVER/cass/fileexist.fn?sfileexist=%2Fetc%2Fhosts" || true)
+if [ -z "$RESP" ] || [ "$RESP" = "E,0" ]; then
     pass "3.4 fileexist.fn --noauth — blocked"
 else
-    fail "3.4 fileexist.fn --noauth" "returned content without auth"
+    fail "3.4 fileexist.fn --noauth" "returned '$RESP' without auth (expected empty or E,0)"
 fi
 
 # 12.6 P3-004: getfolders.fn — noauth blocked

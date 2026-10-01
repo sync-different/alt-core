@@ -137,7 +137,7 @@ ATTACKER_UUID="11111111-2222-3333-4444-555555555555"
 # Use boxuser=/boxpass= (the real login params). Grab Set-Cookie in one request.
 NEW_COOKIE=$(curl -s -D - -o /dev/null --max-time 5 \
     -H "Cookie: uuid=$ATTACKER_UUID" \
-    "$SERVER/cass/login.fn?boxuser=$USER&boxpass=$PASS" 2>/dev/null \
+    "$SERVER/cass/login.fn?boxuser=$USER&boxpass=$(urlenc "$PASS")" 2>/dev/null \
     | tr -d '\r' | grep -i "^Set-Cookie:" | head -1 || true)
 if [ -z "$NEW_COOKIE" ]; then
     # No Set-Cookie = either the login endpoint isn't issuing cookies (broken),
@@ -155,7 +155,7 @@ fi
 # consumed when an RSA-encrypted sEncData map is present).
 test_start "9.8 cookie HttpOnly flag"
 LOGIN_HEADERS=$(curl -s -D - -o /dev/null --max-time 5 \
-    "$SERVER/cass/login.fn?boxuser=$USER&boxpass=$PASS" 2>/dev/null | tr -d '\r' || true)
+    "$SERVER/cass/login.fn?boxuser=$USER&boxpass=$(urlenc "$PASS")" 2>/dev/null | tr -d '\r' || true)
 COOKIE_LINE=$(echo "$LOGIN_HEADERS" | grep -i "^Set-Cookie:" | head -1 || true)
 if [ -z "$COOKIE_LINE" ]; then
     # No Set-Cookie is NOT a skip — login-with-valid-credentials must issue

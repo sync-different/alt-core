@@ -637,7 +637,11 @@ public boolean setnode(String _serverIP, String _portRT, String _uuid, String _i
             "&lastseq=" + mLastSeq +
             "&lastbat=" + mLastBatch +
             "&machine=" + sMachine  +
-            "&netty=" + nettyport    
+            "&netty=" + nettyport    +
+            // SECURITY (#3068): authenticate this loopback self-registration with the per-install
+            // internal secret so the now-gated setnode.php handler accepts it. External callers
+            // (through the tunnel) cannot read the secret file, so they are rejected.
+            "&isecret=" + NetUtils.getNodeSecret(appendage)
             ;
 
         p("    [setnode()] urlStr  : " + urlStr);

@@ -222,6 +222,14 @@ curl_auth() {
     curl -s -H "Cookie: uuid=$UUID" "$@"
 }
 
+# URL-encode a value for safe use in a query string. Without this, a password (or any
+# value) containing &, +, #, space, etc. is mangled by the server's URLDecoder on the way in
+# but not on a client that encodes — e.g. the admin-password change in phase 13 would store a
+# different value than it later logs in with, and could leave admin locked out.
+urlenc() {
+    python3 -c 'import sys,urllib.parse;print(urllib.parse.quote(sys.argv[1],safe=""))' "$1"
+}
+
 # Curl without auth
 curl_noauth() {
     curl -s "$@"

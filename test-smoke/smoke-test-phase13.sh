@@ -230,7 +230,7 @@ fi
 # Save the original admin password for restore (test 13.19).
 test_start "13.18 setadminpassword — change + caller session stays alive"
 ADMIN_TEMP_PW="adminTemp_${RAND_SUFFIX}"
-RESP=$(curl_auth "$SERVER/cass/setadminpassword.fn?boxpass=${ADMIN_TEMP_PW}")
+RESP=$(curl_auth "$SERVER/cass/setadminpassword.fn?boxpass=$(urlenc "${ADMIN_TEMP_PW}")")
 SET_OK=$(echo "$RESP" | tr -d '[:space:]')
 # Critical: our calling session ($UUID) must STILL be valid after the change.
 # (Other admin sessions get killed; this one is preserved per setadminpassword.fn impl.)
@@ -245,7 +245,7 @@ fi
 # This must succeed for the rest of the suite to keep working. Using setadminpassword.fn
 # again — the calling session still has admin auth, password change is just an in-place edit.
 test_start "13.19 RESTORE admin password (cleanup)"
-RESP=$(curl_auth "$SERVER/cass/setadminpassword.fn?boxpass=${PASS}")
+RESP=$(curl_auth "$SERVER/cass/setadminpassword.fn?boxpass=$(urlenc "${PASS}")")
 RESP_TRIM=$(echo "$RESP" | tr -d '[:space:]')
 if [ "$RESP_TRIM" = "success" ]; then
     # Verify the restore actually worked by re-logging in

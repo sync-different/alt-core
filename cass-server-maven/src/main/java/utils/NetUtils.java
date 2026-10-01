@@ -379,10 +379,46 @@ public class NetUtils {
         
     }
     
-    public static String getConfig(String _name, String _config) {
-        
+    // SECURITY (#3068/#3126): per-install secret for the server's own loopback self-calls
+    // (setnode.php, fileexist.fn). Generated once, stored on disk with owner-only perms.
+    // The self-caller and the request handler both run in this one JVM and read the same file,
+    // so the secret never leaves the host. Peer IP must NOT be used for trust — behind the
+    // Cloudflare tunnel every caller is loopback, i.e. the whole internet.
+    private static volatile String cachedNodeSecret = null;
+    public static synchronized String getNodeSecret(String _appendage) {
+        if (cachedNodeSecret != null) return cachedNodeSecret;
         try {
-            
+            String path = _appendage + "../scrubber/data/.node_secret";
+            File f = new File(path);
+            if (f.exists()) {
+                Scanner sc = new Scanner(new BufferedInputStream(new FileInputStream(f)), "UTF-8");
+                String v = sc.hasNextLine() ? sc.nextLine().trim() : "";
+                sc.close();
+                if (!v.isEmpty()) { cachedNodeSecret = v; return v; }
+            }
+            String secret = java.util.UUID.randomUUID().toString() + java.util.UUID.randomUUID().toString();
+            File parent = f.getParentFile();
+            if (parent != null && !parent.exists()) parent.mkdirs();
+            FileOutputStream fos = new FileOutputStream(f);
+            fos.write(secret.getBytes("UTF-8"));
+            fos.close();
+            try {
+                java.util.Set<java.nio.file.attribute.PosixFilePermission> perms =
+                    java.nio.file.attribute.PosixFilePermissions.fromString("rw-------");
+                java.nio.file.Files.setPosixFilePermissions(f.toPath(), perms);
+            } catch (Throwable ignore) { /* non-POSIX (Windows): ACL defaults apply */ }
+            cachedNodeSecret = secret;
+            return secret;
+        } catch (Throwable e) {
+            // Fail CLOSED: a null/empty secret means the handler rejects, never accepts.
+            return null;
+        }
+    }
+
+    public static String getConfig(String _name, String _config) {
+
+        try {
+
             Properties props = new Properties();
     
             File f = new File(_config);

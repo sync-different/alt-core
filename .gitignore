@@ -73,6 +73,7 @@ web/cass/setup.htm_*.tmp
 /scrubber/tmp
 *.tmp
 /internal
+/test-security
 /test-files
 /alt-core-cli/target
 /scrubber/corrupted

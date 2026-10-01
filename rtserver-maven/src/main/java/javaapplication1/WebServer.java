@@ -381,6 +381,42 @@ public class WebServer extends AbstractService {
      * the web root or any configured scan folder.
      * Prevents path traversal via Base64-encoded requests.
      *
+     * SECURITY: true only when the session is authenticated AND the user is an admin.
+     * Peer IP is never consulted — behind the Cloudflare tunnel every caller is loopback,
+     * so IP-based "local caller" trust means "the whole internet" (#3126/#3128/#3129).
+     */
+    /**
+     * SECURITY (#3068/#3126): constant-time check of the per-install internal-call secret.
+     * Used by endpoints that the server calls on itself over loopback (setnode.php, fileexist.fn)
+     * and that must NOT be reachable by an external client. Replaces the old peer-IP "local call"
+     * trust, which behind the tunnel trusted the whole internet.
+     */
+    boolean isValidInternalSecret(String provided) {
+        try {
+            if (provided == null || provided.isEmpty()) return false;
+            String expected = NetUtils.getNodeSecret(appendage);
+            if (expected == null || expected.isEmpty()) return false;   // fail closed
+            byte[] a = provided.getBytes("UTF-8");
+            byte[] b = expected.getBytes("UTF-8");
+            return java.security.MessageDigest.isEqual(a, b);
+        } catch (Throwable e) {
+            return false;
+        }
+    }
+
+    boolean isRequestAdmin(String sAuthUUID, boolean bUserAuthenticated) {
+        try {
+            if (!bUserAuthenticated || sAuthUUID == null || sAuthUUID.isEmpty()) return false;
+            UserSession us = uuidmap.get(sAuthUUID);
+            if (us == null) return false;
+            User user = UserCollection.getInstance().getUsersByName(us.getUsername());
+            return user != null && user.getRole() != null && user.getRole().equals("admin");
+        } catch (Throwable e) {
+            return false;
+        }
+    }
+
+    /**
      * @param decodedPath The decoded filesystem path to validate
      * @return true if the path is within an allowed directory
      */
@@ -2009,25 +2045,24 @@ class Worker extends WebServer implements HttpConstants, Runnable {
                             byte[] s2 = Base64.decode(fname3.toCharArray());
                             String sPathDec_test = new String(s2);
                             p("block decode: " + sPathDec_test);
-                            if (CheckPathValid(sPathDec_test)) {
-                                String sCaller = s.getInetAddress().getHostAddress();
-                                p("scaller = " + sCaller);
-                                String sMode = GetConfig("mode", appendage + "../scrubber/config/" + "www-rtbackup.properties");
-                                if (sMode.equals("server")) {
-                                    if (CheckIPValid(sCaller)) {
-                                        sPathDec = sPathDec_test;
-                                    } else {
-                                        sPathDec = "invalid1";
-                                    }
-                                } else {
-                                    if (CheckIPValid_Server(sCaller)) {
-                                        sPathDec = sPathDec_test;
-                                    } else {
-                                        sPathDec = "invalid1b";
-                                    }
-                                }
+                            // SECURITY (#3128): this legacy direct-serve branch previously gated on
+                            // CheckPathValid (a substring match that `../` escapes) + CheckIPValid
+                            // (peer IP). Behind the Cloudflare tunnel the peer is always loopback, so
+                            // the IP check trusted the whole internet and the substring check allowed
+                            // traversal — an unauthenticated arbitrary file read. Require an
+                            // authenticated session AND canonical-path containment, matching the
+                            // /cass/<base64> branch's isPathWithinAllowedDirs guard.
+                            if (bUserAuthenticated && isPathWithinAllowedDirs(sPathDec_test)) {
+                                sPathDec = sPathDec_test;
                             } else {
-                                sPathDec = "invalid2";
+                                if (!bUserAuthenticated) {
+                                    pw("[b64-serve] SECURITY: blocked unauthenticated direct file serve from "
+                                        + s.getInetAddress().getHostAddress() + " path=" + sPathDec_test);
+                                } else {
+                                    log("SECURITY: direct-serve path outside allowed dirs: " + sPathDec_test
+                                        + " from " + s.getInetAddress().getHostAddress(), 0);
+                                }
+                                sPathDec = "invalid1";
                             }
                         }
                         p("req_decrypted: '" + sPathDec + "'");
@@ -2080,6 +2115,7 @@ class Worker extends WebServer implements HttpConstants, Runnable {
                 //String sNamer = "";
                 String sFileName = "";
                 String sFile = "";
+                String sISecret = "";   // #3068/#3126: per-install secret for internal self-calls
                 String sFolder="";
                 String sFolderSel="";
                 String sTargetUuid="";
@@ -2626,6 +2662,10 @@ class Worker extends WebServer implements HttpConstants, Runnable {
                         String sTmp = w.substring(11,w.length());
                         sFile = URLDecoder.decode(sTmp, "UTF-8");
                         p("sFile: " + sFile);
+                    }
+
+                    if (w.startsWith("isecret=")) {
+                        sISecret = w.substring(8,w.length());
                     }
 
                     if (w.startsWith("rfactor=")) {
@@ -3309,11 +3349,20 @@ class Worker extends WebServer implements HttpConstants, Runnable {
                     if (fname.contains("fileexist.fn")) {
                         // Allow authenticated users OR internal server-to-server calls
                         // Internal calls use sfileexist= param and come from own IP/localhost
+                        // SECURITY (#3126): the old gate trusted any loopback peer (bLocalCall),
+                        // which behind the Cloudflare tunnel is the whole internet, with no path
+                        // restriction — an unauthenticated existence/size oracle for any path.
+                        // Now: an authenticated session OR the internal self-call secret, AND the
+                        // requested path must be inside the allowed dirs.
                         String feClientIP = s.getInetAddress().getHostAddress();
-                        boolean bLocalIP = feClientIP.equals(LocalIP) || feClientIP.equals("127.0.0.1") || feClientIP.equals("0:0:0:0:0:0:0:1");
-                        boolean bLocalCall = bLocalIP && !sFile.isEmpty();
-                        p("[fileexist.fn] clientIP=" + feClientIP + " LocalIP=" + LocalIP + " auth=" + bUserAuthenticated + " local=" + bLocalCall + " sFile=" + sFile);
-                        if (bUserAuthenticated || bLocalCall) {
+                        boolean bInternalCall = isValidInternalSecret(sISecret) && !sFile.isEmpty();
+                        boolean bPathAllowed = !sFile.isEmpty() && isPathWithinAllowedDirs(sFile);
+                        p("[fileexist.fn] clientIP=" + feClientIP + " auth=" + bUserAuthenticated + " internal=" + bInternalCall + " pathOK=" + bPathAllowed);
+                        if (!bPathAllowed) {
+                            pw("[fileexist.fn] SECURITY: blocked path outside allowed dirs from " + feClientIP + " sFile=" + sFile);
+                            outFile.write("E,0".getBytes());
+                            outFile.close();
+                        } else if (bUserAuthenticated || bInternalCall) {
                         p("INICIO FN FILEEXIST, file="+sFile);
                         String resFileExist="E,0";
                         if(!bWindowsServer && !sFile.startsWith("/")){
@@ -3337,7 +3386,12 @@ class Worker extends WebServer implements HttpConstants, Runnable {
                         outFile.write(kk);
                         outFile.close();
                         p("FIN FN FILEEXIST: "+resFileExist);
-                        } // end bUserAuthenticated fileexist
+                        } else {
+                            // path allowed but neither authenticated nor a valid internal call
+                            pw("[fileexist.fn] SECURITY: blocked unauthenticated call from " + feClientIP + " sFile=" + sFile);
+                            outFile.write("E,0".getBytes());
+                            outFile.close();
+                        }
                     }
 
 
@@ -8294,6 +8348,17 @@ class Worker extends WebServer implements HttpConstants, Runnable {
 //                   }
 
                     //set node
+                    if (fname.contains("setnode.php") && !isValidInternalSecret(sISecret)) {
+                        // SECURITY (#3068): setnode.php writes NodeInfo (node IP/port) and can
+                        // overwrite LocalIP. It was unauthenticated, so any internet client behind
+                        // the tunnel could poison the node resolver. The legitimate caller is the
+                        // node registering itself over loopback (ClientService), which now carries
+                        // the per-install internal secret. Reject anything else.
+                        pw("[setnode.php] SECURITY: blocked registration without valid internal secret from "
+                            + s.getInetAddress().getHostAddress() + " uuid=" + sUUID);
+                        outFile.write("forbidden".getBytes());
+                        outFile.close();
+                    } else
                     if (fname.contains("setnode.php")) {
                         p("---[Processing setnode.php]");
                         p("sUUID = " + sUUID);
@@ -8462,12 +8527,24 @@ class Worker extends WebServer implements HttpConstants, Runnable {
                     if (fname.contains("redir.php")) {
                         p("---[Processing redir.php]");
                         p("sFoo = " + sFoo2);
-                        String res = "hello";
-                        byte[] kk = res.getBytes();
-                        outFile.write(kk);
-                        outFile.close();
-                        bRedirect = true;
-                        sRedirectURI = sFoo2;
+                        // SECURITY (#3129): redir.php makes the server run its desktop opener
+                        // (open/explorer/eog) on a caller-supplied path. Behind the Cloudflare
+                        // tunnel the peer IP is always loopback, so an IP check is no protection.
+                        // Require an authenticated admin session; this endpoint is a local
+                        // desktop convenience (uiv5 never calls it) and must never be anonymous.
+                        if (!isRequestAdmin(sAuthUUID, bUserAuthenticated)) {
+                            pw("[redir.php] SECURITY: blocked unauthenticated/non-admin server-side open from "
+                                + s.getInetAddress().getHostAddress() + " foo=" + sFoo2);
+                            outFile.write("forbidden".getBytes());
+                            outFile.close();
+                        } else {
+                            String res = "hello";
+                            byte[] kk = res.getBytes();
+                            outFile.write(kk);
+                            outFile.close();
+                            bRedirect = true;
+                            sRedirectURI = sFoo2;
+                        }
                     }
 
                     //send file
