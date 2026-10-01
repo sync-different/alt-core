@@ -404,6 +404,84 @@ public class WebServer extends AbstractService {
         }
     }
 
+    /**
+     * SECURITY (#3111): serve-time folder authorization, open-by-DEFAULT with ACL restrictions.
+     * Returns true if `user` may READ `decodedFolder`. Semantics (must match getfolderperm.fn):
+     *   - admin: always true.
+     *   - if a governing ACL exists (local .acl.hivebot, else the nearest ancestor with a depth="*"
+     *     inheritable entry, up to a scan root): the user needs an entry whose permission contains 'r'.
+     *   - if NO ACL governs the folder at all: true (unprotected folders stay open — do NOT deny on
+     *     the display logic's "none", which conflates "excluded" with "no ACL").
+     * Fail CLOSED on error only when an ACL was found but could not be parsed.
+     */
+    boolean userCanReadFolder(String decodedFolder, String user, boolean isAdmin) {
+        if (isAdmin) return true;
+        try {
+            java.util.Set<String> scanRoots = loadScanRootsForAcl();
+            Properties gov = null;                 // the governing ACL properties, or null = none
+            File local = new File(decodedFolder + File.separator + ".acl.hivebot");
+            if (local.exists()) {
+                gov = new Properties();
+                InputStream in = new BufferedInputStream(new FileInputStream(local));
+                gov.load(in); in.close();
+            } else {
+                File cur = new File(decodedFolder).getParentFile();
+                while (cur != null) {
+                    String pp = cur.getAbsolutePath();
+                    File pacl = new File(pp + File.separator + ".acl.hivebot");
+                    if (pacl.exists()) {
+                        Properties pp2 = new Properties();
+                        InputStream in = new BufferedInputStream(new FileInputStream(pacl));
+                        pp2.load(in); in.close();
+                        Properties inh = new Properties();
+                        for (String u : pp2.stringPropertyNames()) {
+                            String v = pp2.getProperty(u, "");
+                            String[] parts = v.split(",");
+                            String depth = parts.length > 1 ? parts[1].trim() : ".";
+                            if ("*".equals(depth)) inh.setProperty(u, v);
+                        }
+                        if (!inh.isEmpty()) { gov = inh; break; }
+                    }
+                    if (scanRoots.contains(pp)) break;
+                    cur = cur.getParentFile();
+                }
+            }
+            if (gov == null || gov.isEmpty()) return true;   // no ACL governs -> open
+            String v = gov.getProperty(user);
+            if (v == null) return false;                     // ACL governs and user not listed -> deny
+            String perm = v.split(",")[0].trim();
+            return perm.contains("r");                       // r or rw
+        } catch (Throwable e) {
+            pw("[acl] userCanReadFolder error for " + decodedFolder + ": " + e);
+            return false;                                    // fail closed when an ACL load fails
+        }
+    }
+
+    // Scan roots (decoded) from www-rtbackup.properties -> scandir file, for ACL ancestor walk.
+    java.util.Set<String> loadScanRootsForAcl() {
+        java.util.Set<String> roots = new java.util.HashSet<String>();
+        try {
+            File cfg = new File(appendage + "../scrubber/config/www-rtbackup.properties");
+            if (cfg.exists()) {
+                Properties p = new Properties();
+                InputStream is = new BufferedInputStream(new FileInputStream(cfg));
+                p.load(is); is.close();
+                String scanDirPath = p.getProperty("scandir");
+                if (scanDirPath != null) {
+                    File sf = new File(appendage + scanDirPath);
+                    if (sf.exists()) {
+                        Properties sp = new Properties();
+                        InputStream s2 = new BufferedInputStream(new FileInputStream(sf));
+                        sp.load(s2); s2.close();
+                        for (String dir : sp.getProperty("scandir", "").split(";"))
+                            if (!dir.isEmpty()) roots.add(java.net.URLDecoder.decode(dir.trim(), "UTF-8"));
+                    }
+                }
+            }
+        } catch (Throwable e) { /* best effort */ }
+        return roots;
+    }
+
     boolean isRequestAdmin(String sAuthUUID, boolean bUserAuthenticated) {
         try {
             if (!bUserAuthenticated || sAuthUUID == null || sAuthUUID.isEmpty()) return false;
@@ -3866,8 +3944,18 @@ class Worker extends WebServer implements HttpConstants, Runnable {
                             }
                             } // end !isAdminBrowse
 
+                            // SECURITY (#3111): enforce the folder ACL for the session user (open by default).
+                            boolean aclAllowsList = true;
+                            if (isWithinScanRoot && !isAdminBrowse) {
+                                UserSession usAcl = uuidmap.get(sAuthUUID);
+                                String aclUser = (usAcl != null) ? usAcl.getUsername() : null;
+                                aclAllowsList = userCanReadFolder(sFolder, aclUser, isRequestAdmin(sAuthUUID, bUserAuthenticated));
+                            }
                             if (!isWithinScanRoot) {
                                 p("SECURITY: folder path rejected (not within scan roots): " + sFolder);
+                                outFile.write("[]".getBytes());
+                            } else if (!aclAllowsList) {
+                                pw("[acl] getfolders-json denied by folder ACL: " + sFolder);
                                 outFile.write("[]".getBytes());
                             } else {
                             //folder case
@@ -4486,6 +4574,28 @@ class Worker extends WebServer implements HttpConstants, Runnable {
 
 
                         sFolder= URLDecoder.decode(sFolder,"UTF-8");
+                        // SECURITY (#3137): this legacy listing had no scan-root containment, so any
+                        // authenticated user could enumerate any directory on the host. Require the
+                        // path to be inside the allowed dirs (scan roots / web root) and readable per
+                        // the folder ACL; the volume-root ("units") listing is admin-only.
+                        boolean gfAdmin = isRequestAdmin(sAuthUUID, bUserAuthenticated);
+                        // admin path bypass is scoped to the folder-picker browse flag (CLAUDE.md:
+                        // never unconditional) — without it admins get the normal containment check.
+                        boolean gfAdminBrowse = gfAdmin && "browse".equalsIgnoreCase(sFolderSel);
+                        boolean gfAllowed;
+                        if ("units".equals(sFolder)) {
+                            gfAllowed = gfAdmin;
+                        } else {
+                            UserSession usGf = uuidmap.get(sAuthUUID);
+                            String gfUser = (usGf != null) ? usGf.getUsername() : null;
+                            gfAllowed = sFolder != null && (gfAdminBrowse || (isPathWithinAllowedDirs(sFolder)
+                                        && userCanReadFolder(sFolder, gfUser, gfAdmin)));
+                        }
+                        if (!gfAllowed) {
+                            pw("[getfolders.fn] SECURITY: denied listing " + sFolder);
+                            outFile.write("<ul class='jqueryFileTree' style='display: none;'></ul>".getBytes());
+                            outFile.close();
+                        } else
                         if(sFolder!=null && !sFolder.equals("units")){
                             String result="<ul class='jqueryFileTree' style='display: none;'>";
                             boolean selParent=sFolderSel!=null && sFolderSel.equalsIgnoreCase("on");
@@ -7483,8 +7593,26 @@ class Worker extends WebServer implements HttpConstants, Runnable {
                                     pathgetfile = wf.getlocalfilepath(sNamer);            // legacy last-entry path
                                 }
 
+                                // SECURITY (#3111): enforce the folder ACL for the session user on the
+                                // resolved local path (open by default; denied only when a governing ACL
+                                // excludes the user). Admins bypass. On denial, route into the existing
+                                // not-found handling below by leaving pathgetfile empty + urlgetfile set.
+                                boolean aclDenyGetfile = false;
+                                if (!isRequestAdmin(sAuthUUID, bUserAuthenticated)
+                                        && pathgetfile != null && !pathgetfile.isEmpty()) {
+                                    String aclFolder = new File(pathgetfile).getParent();
+                                    String aclUser = (us != null) ? us.getUsername() : null;
+                                    if (aclFolder != null && !userCanReadFolder(aclFolder, aclUser, false)) {
+                                        pw("[acl] getfile.fn denied by folder ACL user=" + aclUser + " md5=" + sNamer + " folder=" + aclFolder);
+                                        aclDenyGetfile = true;
+                                    }
+                                }
+
                                 String urlgetfile;
-                                if (bServeLocal) {
+                                if (aclDenyGetfile) {
+                                    urlgetfile = "FILENOTFOUND";   // reuse existing not-found path = empty serve
+                                    pathgetfile = "";
+                                } else if (bServeLocal) {
                                     urlgetfile = "LOCAL";   // sentinel: bypass the IP resolver entirely
                                     log("[getfile.fn] FIX#1 served from local disk (no node-IP probe) md5=" + sNamer + " path=" + pathgetfile, 0);
                                 } else {
