@@ -3149,10 +3149,13 @@ class Worker extends WebServer implements HttpConstants, Runnable {
                     }
                 }
 
+                // SECURITY (#3155, retires #3140): the pw= second factor compared the request param
+                // to a shared, fleet-wide shipped password (xyzzy2011) and gated 8 LEGACY endpoints
+                // (echoClient4/5/6/7, test4.php, nodestats.htm, cass7.php) — none used by uiv5. Those
+                // endpoints are retired: bPasswordValid is forced false, so every `... && bPasswordValid
+                // && bUserAuthenticated` handler is unreachable and falls through to not-found. The dead
+                // handler bodies + the pw=/password machinery are a separate cosmetic cleanup.
                 bPasswordValid = false;
-                if (sPassword.equals(password)) {
-                    bPasswordValid = true;
-                }
 
                 //p("Sbackupmode1[b]: " + sBackupMode1);
 
