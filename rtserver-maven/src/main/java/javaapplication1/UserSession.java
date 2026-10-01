@@ -96,6 +96,11 @@ public class UserSession {
         return (remoteCluster!=null && !remoteCluster.isEmpty());
     }
 
+    // SECURITY (#3142): a public-link token is a file-serving capability, not a full session.
+    private boolean publicLink = false;
+    public boolean isPublicLink(){ return publicLink; }
+    public void setPublicLink(boolean v){ this.publicLink = v; }
+
     /**
      * @return the aesecrypt
      */

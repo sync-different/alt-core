@@ -1274,7 +1274,7 @@ public class WebServer extends AbstractService {
         log("port="+port, 1);
         log("nettyport="+nettyport, 1);
         log("nettyport_post="+nettyport_post, 1);
-        log("password="+password, 1);
+        log("password=" + (password != null && !password.isEmpty() ? "<set>" : "<unset>"), 1);  // SECURITY (#3140): don't log the secret
         log("timeshut="+timeshut, 1);
         log("exitaftertimeshut="+bExitAfterTimeshut,1);
         log("cloudhosted="+bCloudHosted,1);
@@ -3156,6 +3156,20 @@ class Worker extends WebServer implements HttpConstants, Runnable {
                     new FileOutputStream(sFileNew, false).close();
 
                     FileOutputStream outFile = new FileOutputStream(sFileNew, false);
+
+                    // SECURITY (#3142): a public-link token is a per-file serving capability, not a full
+                    // session. Confine it to the file-serving endpoints; for anything else it is treated
+                    // as unauthenticated (so it cannot browse/search/enumerate as the target user).
+                    if (bUserAuthenticated && sAuthUUID != null) {
+                        UserSession usPub = uuidmap.get(sAuthUUID);
+                        if (usPub != null && usPub.isPublicLink()
+                                && !(fname.contains("getfile.fn") || fname.contains("getfilepart.fn")
+                                     || fname.contains("getts.fn") || fname.contains("getvideo.m3u8")
+                                     || fname.contains("getfileinfo.fn"))) {
+                            pw("[publiclink] token used off file-serving scope on " + fname + " — denied (#3142)");
+                            bUserAuthenticated = false;
+                        }
+                    }
 
                     if (fname.contains("getscannewsack.fn")){
 
@@ -5748,7 +5762,9 @@ class Worker extends WebServer implements HttpConstants, Runnable {
                                 if (targetUser != null && !targetUser.getRole().equals("admin")) {
                                     // Generate a new UUID token for this user
                                     String publicUuid = UUID.randomUUID().toString();
-                                    UserSession publicSession = new UserSession(sBoxUser, publicUuid, "", "", false, 128);
+                                    // SECURITY (#3142): mark as a file-serving-only capability
+                                    UserSession publicSession = new UserSession(sBoxUser, publicUuid, "", "",false, 128);
+                                    publicSession.setPublicLink(true);
                                     uuidmap.put(publicUuid, publicSession);
                                     String usernameEscaped = sBoxUser.replace("\\", "\\\\").replace("\"", "\\\"");
                                     result = "{\"uuid\":\"" + publicUuid + "\",\"username\":\"" + usernameEscaped + "\"}";
@@ -5940,12 +5956,11 @@ class Worker extends WebServer implements HttpConstants, Runnable {
 
                                 MultiClusterManager.getInstance().saveUserAndPassword(sBoxUser,sBoxPassword);
 
-                                // Generate UUID for session
-                                String sessionUuid = sUUID;
-                                if(sessionUuid == null || sessionUuid.isEmpty()){
-                                    UUID mUUID = UUID.randomUUID();
-                                    sessionUuid = mUUID.toString();
-                                }
+                                // SECURITY (#3131): always mint a server-side session id; never honor a
+                                // client-supplied uuid= (session fixation). The fresh id is still passed
+                                // to printHeaders via `uuid = sessionUuid` below, preserving the login
+                                // de-duplication fix.
+                                String sessionUuid = UUID.randomUUID().toString();
 
                                 // Store session in uuidmap
                                 int aessize = 128; // Default AES key size
