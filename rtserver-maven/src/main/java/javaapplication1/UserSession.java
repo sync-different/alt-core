@@ -10,6 +10,7 @@ public class UserSession {
     private boolean aesencrypt;
     private int aessize;
     private long loginTime;
+    private long lastSeen;   // SECURITY (#3074): for idle-timeout enforcement
 
     public UserSession(String username, String uuid, String passwordkey, String iv, boolean aesecrypt, int aessize) {
         this.username = username;
@@ -19,7 +20,11 @@ public class UserSession {
         this.aesencrypt = aesecrypt;
         this.aessize = aessize;
         this.loginTime = System.currentTimeMillis();
+        this.lastSeen = this.loginTime;
     }
+
+    public long getLastSeen(){ return lastSeen; }
+    public void setLastSeen(long t){ this.lastSeen = t; }
     
 
     /**

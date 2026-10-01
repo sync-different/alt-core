@@ -10786,7 +10786,14 @@ class Worker extends WebServer implements HttpConstants, Runnable {
             // HttpOnly: blocks document.cookie access (XSS session theft).
             // SameSite=Lax: blocks cookie on cross-site top-level POSTs (CSRF).
             // Path=/: cookie is valid across all endpoints.
-            String sCookieString = "Set-Cookie: uuid=" + _uuid + "; Path=/; Expires=Wed, 01-Sep-2029 20:18:14 GMT; HttpOnly; SameSite=Lax";
+            // SECURITY (#3074): cookie horizon matched to the 30-day absolute session cap (was 2029).
+            String sCookieExpires;
+            {
+                java.text.SimpleDateFormat _cfmt = new java.text.SimpleDateFormat("EEE, dd-MMM-yyyy HH:mm:ss 'GMT'", java.util.Locale.US);
+                _cfmt.setTimeZone(java.util.TimeZone.getTimeZone("GMT"));
+                sCookieExpires = _cfmt.format(new java.util.Date(System.currentTimeMillis() + 30L*24*60*60*1000));
+            }
+            String sCookieString = "Set-Cookie: uuid=" + _uuid + "; Path=/; Expires=" + sCookieExpires + "; HttpOnly; SameSite=Lax";
             p("Authenticated. Sending cookie. '" + sCookieString + "'");
             ps.print(sCookieString);
             ps.write(EOL);
@@ -11141,10 +11148,19 @@ class Worker extends WebServer implements HttpConstants, Runnable {
         UserSession t = uuidmap.get(sUUID);
         if (t == null) {
             return false;
-        } else {
-            //p("UUID is valid.");
-            return true;
         }
+        // SECURITY (#3074): expire sessions — absolute 30 days, idle 24h. Evict on expiry.
+        final long ABS_MS = 30L * 24 * 60 * 60 * 1000;   // 30 days
+        final long IDLE_MS = 24L * 60 * 60 * 1000;        // 24 hours
+        long now = System.currentTimeMillis();
+        if (now - t.getLoginTime() > ABS_MS || now - t.getLastSeen() > IDLE_MS) {
+            uuidmap.remove(sUUID);
+            pw("[session] expired uuid (age " + ((now - t.getLoginTime())/60000) + "m, idle "
+               + ((now - t.getLastSeen())/60000) + "m) — evicted (#3074)");
+            return false;
+        }
+        t.setLastSeen(now);   // sliding idle window
+        return true;
     }
     void sendFilePost(File targ, PrintStream ps) throws IOException {
         InputStream is = null;
