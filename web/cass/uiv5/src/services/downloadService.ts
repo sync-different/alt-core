@@ -76,16 +76,30 @@ export interface DownloadOptions {
 }
 
 /**
+ * Make one path segment acceptable to the File System Access API. Chrome rejects names with
+ * '\' or ':' ("Name is not allowed") — e.g. a Windows scan root "X:\" — plus other chars that
+ * are invalid on Windows, and trailing dots/spaces.
+ */
+function sanitizePathSegment(segment: string): string {
+  // eslint-disable-next-line no-control-regex
+  const s = segment.replace(/[<>:"|?*\u0000-\u001f]/g, '_').replace(/[. ]+$/, '');
+  return s.length > 0 ? s : '_';
+}
+
+/**
  * FF4 — resolve the target file handle for a (possibly nested) relative path under a directory.
- * Splits the path on '/', walks/creates each intermediate directory via getDirectoryHandle,
- * then returns getFileHandle for the final segment. With no separators it's equivalent to the
- * previous behavior: a single getFileHandle in the picked directory.
+ * Splits the path on '/' or '\' (Windows servers), walks/creates each intermediate directory via
+ * getDirectoryHandle, then returns getFileHandle for the final segment. With no separators it's
+ * equivalent to the previous behavior: a single getFileHandle in the picked directory.
  */
 async function resolveNestedFileHandle(
   dirHandle: FileSystemDirectoryHandle,
   relativePath: string,
 ): Promise<FileSystemFileHandle> {
-  const parts = relativePath.split('/').filter((p) => p.length > 0 && p !== '.' && p !== '..');
+  const parts = relativePath
+    .split(/[\\/]/)
+    .filter((p) => p.length > 0 && p !== '.' && p !== '..')
+    .map(sanitizePathSegment);
   if (parts.length === 0) throw new Error(`invalid relativePath: "${relativePath}"`);
   console.log('[folder-download] creating nested path:', parts.join('/'), '(', parts.length - 1, 'subdir(s))');
   let dir = dirHandle;

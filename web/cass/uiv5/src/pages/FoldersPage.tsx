@@ -217,6 +217,18 @@ export function FoldersPage() {
     }
   }
 
+  // Root name for a folder download's relative paths. At the scanfolders level folder.name is the
+  // full scan-root path (e.g. "X:\/VIDEO/EF OCT 2026/" on Windows, "/Users/x/Pictures/" on Mac) —
+  // use only its last component so we recreate "EF OCT 2026/..." rather than the absolute path
+  // (whose "X:\" segment Chrome rejects with "Name is not allowed").
+  function folderDownloadRoot(name: string): string {
+    const decoded = decodeFolderName(name);
+    if (currentFolder !== 'scanfolders') return decoded;
+    const parts = decoded.split(/[\\/]/).filter((p) => p.length > 0);
+    const last = parts[parts.length - 1] ?? '';
+    return last.replace(/:$/, '') || 'root'; // bare drive root "X:\" → "X"
+  }
+
   // Convert a Folder item (file flavor) into the File shape used by viewers,
   // download manager, and the SelectionToolbar. Returns null for non-file items.
   // Function declaration (not const arrow) so it's hoisted — the toolbarSelection
@@ -361,7 +373,7 @@ export function FoldersPage() {
       const absPath = currentFolder === 'scanfolders' ? folder.name : `${currentFolder}/${folder.name}`;
       try {
         addLog({ type: 'info', message: `Scanning folder "${decodeFolderName(folder.name)}"…`, timestamp: Date.now() });
-        const result = await enumerateFolder(absPath, decodeFolderName(folder.name));
+        const result = await enumerateFolder(absPath, folderDownloadRoot(folder.name));
         console.log('[folder-download] enumerated', absPath, '→', result.files.length, 'files; sample relPath:', result.files[0]?.relativePath);
         if (result.files.length === 0) {
           addLog({ type: 'warning', message: `No files found in "${decodeFolderName(folder.name)}"`, timestamp: Date.now() });
