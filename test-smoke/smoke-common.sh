@@ -22,6 +22,12 @@ CLI_JAR="$REPO_ROOT/alt-core-cli/target/alt-core-cli.jar"
 SERVER="${SMOKE_URL:-http://localhost:8081}"
 
 # Credentials can be overridden too (useful for per-env test accounts).
+# A gitignored .smoke-creds.local next to this file may set SMOKE_PASS (same file the security
+# harness reads) — env vars still win. Without it, DEV with a non-default admin password fails
+# every phase's login and trips the 5-fail/5-min login rate limiter.
+if [ -z "${SMOKE_PASS:-}" ] && [ -f "$(dirname "${BASH_SOURCE[0]}")/.smoke-creds.local" ]; then
+    . "$(dirname "${BASH_SOURCE[0]}")/.smoke-creds.local"
+fi
 USER="${SMOKE_USER:-admin}"
 PASS="${SMOKE_PASS:-valid}"
 
