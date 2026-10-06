@@ -95,18 +95,8 @@
             <version>1.15</version>
         </dependency>
 
-        <!-- Apache HttpClient 5 -->
-        <dependency>
-            <groupId>org.apache.httpcomponents.client5</groupId>
-            <artifactId>httpclient5</artifactId>
-            <version>5.2.1</version>
-        </dependency>
-
-        <dependency>
-            <groupId>org.apache.httpcomponents.core5</groupId>
-            <artifactId>httpcore5</artifactId>
-            <version>5.2.2</version>
-        </dependency>
+        <!-- Apache HttpClient 5 / HttpCore 5: declared once, above (next to docker-java-transport-httpclient5).
+             A second identical declaration here was a warning on Maven <=3.9 but is a hard error on 3.10. -->
 
 
         <!-- JSON Smart -->
