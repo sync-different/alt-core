@@ -190,6 +190,260 @@ public class FileTypesConfig {
         return root;
     }
 
+    // =====================================================================================
+    // Save (M2): selection + catalog add/remove, validated up front, written atomically.
+    // =====================================================================================
+
+    /** A rejected save. `status` is the HTTP-ish code the endpoint reports (400 invalid, 409 stale). */
+    public static class SaveException extends Exception {
+        public final int status;
+        public final String currentVersion;
+        public SaveException(int status, String msg, String currentVersion) {
+            super(msg); this.status = status; this.currentVersion = currentVersion;
+        }
+    }
+
+    /** One requested catalog addition. */
+    public static class NewType {
+        public final String ext, description, groupId;
+        public NewType(String ext, String description, String groupId) {
+            this.ext = ext; this.description = description; this.groupId = groupId;
+        }
+    }
+
+    // ext: ".heic", ".braw" ... lowercase, dot + 1-16 of [a-z0-9+_-]
+    static final java.util.regex.Pattern EXT_RE = java.util.regex.Pattern.compile("^\\.[a-z0-9][a-z0-9+_-]{0,15}$");
+    // description: no ',' (field separator), no CR/LF (line separator), no '<'/'>' (legacy pages render it as
+    // HTML) and no '.' (the endpoint name check is fname.contains(...) over the raw URL) — see the plan, §2.
+    static final java.util.regex.Pattern DESC_RE = java.util.regex.Pattern.compile("^[A-Za-z0-9 ()+/_'&-]{1,60}$");
+
+    /** Serialises every save in this JVM: read-check-write must not interleave. */
+    static final Object SAVE_LOCK = new Object();
+
+    /**
+     * Apply a save. `selected` is the complete desired selection; `add`/`remove` edit the catalog.
+     * Removing a type also unticks it. Existing orphans (selected keys not in the catalog) are kept.
+     * Returns the reloaded config. Throws SaveException(400/409) before writing anything when invalid.
+     */
+    public static FileTypesConfig save(File configDir, List<String> selected, List<NewType> add, List<String> remove,
+                                       String expectedVersion, String user) throws Exception {
+        synchronized (SAVE_LOCK) {
+            FileTypesConfig cur = new FileTypesConfig(configDir);
+            cur.reload();
+
+            if (expectedVersion == null || !expectedVersion.equals(cur.version)) {
+                throw new SaveException(409, "stale: the file types were changed since you loaded them", cur.version);
+            }
+
+            // ---- normalise + validate (nothing is written until all of this passes) ----
+            Set<String> removeSet = new LinkedHashSet<String>();
+            for (String r : remove) {
+                String e = norm(r);
+                if (!cur.catalog.containsKey(e)) throw new SaveException(400, "unknown type: " + e, cur.version);
+                if (!cur.custom.contains(e)) throw new SaveException(400, "cannot remove shipped type " + e, cur.version);
+                removeSet.add(e);
+            }
+            Map<String, NewType> addMap = new LinkedHashMap<String, NewType>();
+            Set<String> groupIds = new LinkedHashSet<String>();
+            for (Group g : cur.groups) groupIds.add(g.id);
+            for (NewType a : add) {
+                String e = norm(a.ext);
+                if (!EXT_RE.matcher(e).matches()) throw new SaveException(400, "invalid extension: " + a.ext, cur.version);
+                if (cur.catalog.containsKey(e) || addMap.containsKey(e)) throw new SaveException(400, "already exists: " + e, cur.version);
+                if (removeSet.contains(e)) throw new SaveException(400, "cannot add and remove " + e, cur.version);
+                String d = a.description == null ? "" : a.description.trim();
+                if (!DESC_RE.matcher(d).matches()) throw new SaveException(400, "invalid description for " + e + " (1-60 letters, digits, spaces, ( ) + / _ ' & -)", cur.version);
+                String gid = a.groupId == null ? "" : a.groupId.trim().toLowerCase();
+                if (!groupIds.contains(gid)) throw new SaveException(400, "unknown group: " + a.groupId, cur.version);
+                addMap.put(e, new NewType(e, d, gid));
+            }
+
+            Set<String> finalSel = new LinkedHashSet<String>();
+            for (String s : selected) {
+                String e = norm(s);
+                if (removeSet.contains(e)) continue;                         // removal implies untick
+                boolean known = (cur.catalog.containsKey(e)) || addMap.containsKey(e) || cur.orphans().contains(e);
+                if (!known) throw new SaveException(400, "unknown type: " + e, cur.version);
+                finalSel.add(e);
+            }
+            for (String o : cur.orphans()) if (cur.selected.contains(o)) finalSel.add(o); // never drop orphans silently
+            if (finalSel.isEmpty()) throw new SaveException(400, "at least one file type must be selected", cur.version);
+
+            // ---- build new file contents ----
+            String sep = detectSeparator(new File(configDir, CATALOG_FILE));
+            List<String> newCatalog = cur.catalogLinesWith(addMap, removeSet);
+            Map<String, String> lineByExt = parseExtLines(newCatalog);
+
+            Set<String> newCustom = new LinkedHashSet<String>(cur.custom);
+            newCustom.removeAll(removeSet);
+            newCustom.addAll(addMap.keySet());
+
+            // step a: selection without removed keys and WITHOUT new keys (all in old AND new catalog)
+            List<String> selA = new ArrayList<String>();
+            // step d: final selection
+            List<String> selD = new ArrayList<String>();
+            for (Map.Entry<String, String> en : lineByExt.entrySet()) {
+                if (!finalSel.contains(en.getKey())) continue;
+                selD.add(en.getValue());
+                if (!addMap.containsKey(en.getKey())) selA.add(en.getValue());
+            }
+            Map<String, String> oldSelLines = cur.selectionLinesByExt();
+            for (String o : cur.orphans()) {
+                if (finalSel.contains(o) && oldSelLines.containsKey(o)) { selA.add(oldSelLines.get(o)); selD.add(oldSelLines.get(o)); }
+            }
+
+            boolean catalogChanges = !addMap.isEmpty() || !removeSet.isEmpty();
+            File selFile = new File(configDir, SELECTION_FILE);
+            // Invariant at every instant: every key in FileExtensions.txt is in FileExtensions_All.txt
+            // (Cass7Funcs.get_thumb would otherwise see a selected-and-indexed type it can't look up).
+            if (catalogChanges) {
+                atomicWrite(selFile, join(selA, sep));                                            // a
+                atomicWrite(new File(configDir, CATALOG_FILE), join(newCatalog, sep));            // b
+                atomicWrite(new File(configDir, CUSTOM_FILE), join(new ArrayList<String>(newCustom), sep)); // c
+            }
+            atomicWrite(selFile, join(selD, sep));                                                // d
+
+            FileTypesConfig after = new FileTypesConfig(configDir);
+            after.reload();
+
+            List<String> selAdded = new ArrayList<String>(), selRemoved = new ArrayList<String>();
+            for (String e : after.selected) if (!cur.selected.contains(e)) selAdded.add(e);
+            for (String e : cur.selected) if (!after.selected.contains(e)) selRemoved.add(e);
+            after.lastDiff = new String[][] {
+                selAdded.toArray(new String[0]), selRemoved.toArray(new String[0]),
+                addMap.keySet().toArray(new String[0]), removeSet.toArray(new String[0]) };
+            LocalFuncs.pw("[FileTypes] saved by " + user + " version " + cur.version + " -> " + after.version
+                    + " selected+" + selAdded + " selected-" + selRemoved
+                    + " catalog+" + addMap.keySet() + " catalog-" + removeSet);
+            return after;
+        }
+    }
+
+    /** Set by save(): {selectedAdded, selectedRemoved, catalogAdded, catalogRemoved}. */
+    public String[][] lastDiff = null;
+
+    public JSONObject saveResultJson() {
+        JSONObject o = toJson();
+        if (lastDiff != null) {
+            String[] keys = { "selectedAdded", "selectedRemoved", "catalogAdded", "catalogRemoved" };
+            for (int i = 0; i < keys.length; i++) {
+                JSONArray a = new JSONArray();
+                for (String s : lastDiff[i]) a.add(s);
+                o.put(keys[i], a);
+            }
+        }
+        return o;
+    }
+
+    static String norm(String e) {
+        String s = e == null ? "" : e.trim().toLowerCase();
+        if (!s.isEmpty() && !s.startsWith(".")) s = "." + s;
+        return s;
+    }
+
+    /** The catalog's raw lines (verbatim, comments kept) with additions inserted and removals dropped. */
+    List<String> catalogLinesWith(Map<String, NewType> addMap, Set<String> removeSet) throws Exception {
+        List<String> in = readLines(new File(configDir, CATALOG_FILE));
+        while (!in.isEmpty() && in.get(in.size() - 1).trim().isEmpty()) in.remove(in.size() - 1);
+        // group id -> index of the last line belonging to that group's section
+        List<String> out = new ArrayList<String>();
+        Map<String, Integer> lastIdx = new LinkedHashMap<String, Integer>();
+        String curGroup = null;
+        for (String raw : in) {
+            String line = stripBom(raw).trim();
+            if (line.startsWith("@,")) {
+                String[] f = line.split(",", 3);
+                curGroup = f.length > 2 ? f[2].trim().toLowerCase() : null;
+                out.add(raw);
+                if (curGroup != null) lastIdx.put(curGroup, out.size() - 1);
+                continue;
+            }
+            int c = line.indexOf(',');
+            String ext = (c >= 0 ? line.substring(0, c) : line).trim().toLowerCase();
+            if (removeSet.contains(ext)) continue;
+            out.add(raw);
+            if (curGroup != null && !line.isEmpty()) lastIdx.put(curGroup, out.size() - 1);
+        }
+        // insert additions at the end of their group's section (later inserts shift earlier indexes, so go
+        // group by group from the bottom of the file up)
+        List<Map.Entry<String, Integer>> sections = new ArrayList<Map.Entry<String, Integer>>(lastIdx.entrySet());
+        java.util.Collections.sort(sections, new java.util.Comparator<Map.Entry<String, Integer>>() {
+            public int compare(Map.Entry<String, Integer> a, Map.Entry<String, Integer> b) { return b.getValue() - a.getValue(); }
+        });
+        for (Map.Entry<String, Integer> sec : sections) {
+            List<String> ins = new ArrayList<String>();
+            for (NewType t : addMap.values()) {
+                if (t.groupId.equals(sec.getKey())) ins.add(t.ext + "," + t.description + "," + defaultIcon(t.groupId));
+            }
+            out.addAll(sec.getValue() + 1, ins);
+        }
+        return out;
+    }
+
+    /** The legacy glyph for a group, borrowed from the first type in that group (uiv5 ignores it). */
+    String defaultIcon(String groupId) {
+        for (Group g : groups) if (g.id.equals(groupId) && !g.types.isEmpty()) return g.types.get(0).icon;
+        return "";
+    }
+
+    Map<String, String> selectionLinesByExt() throws Exception {
+        Map<String, String> m = new LinkedHashMap<String, String>();
+        File f = new File(configDir, SELECTION_FILE);
+        if (!f.isFile()) return m;
+        for (String raw : readLines(f)) {
+            String line = stripBom(raw).trim();
+            if (line.isEmpty() || line.startsWith("@") || line.startsWith("#")) continue;
+            int c = line.indexOf(',');
+            m.put((c >= 0 ? line.substring(0, c) : line).trim().toLowerCase(), line);
+        }
+        return m;
+    }
+
+    static Map<String, String> parseExtLines(List<String> lines) {
+        Map<String, String> m = new LinkedHashMap<String, String>();
+        for (String raw : lines) {
+            String line = stripBom(raw).trim();
+            if (line.isEmpty() || line.startsWith("@") || line.startsWith("#")) continue;
+            int c = line.indexOf(',');
+            String ext = (c >= 0 ? line.substring(0, c) : line).trim().toLowerCase();
+            if (ext.startsWith(".") && !m.containsKey(ext)) m.put(ext, line);
+        }
+        return m;
+    }
+
+    static String detectSeparator(File f) {
+        try {
+            byte[] b = Files.readAllBytes(f.toPath());
+            for (int i = 0; i < b.length; i++) if (b[i] == '\n') return (i > 0 && b[i - 1] == '\r') ? "\r\n" : "\n";
+        } catch (Exception ignore) {}
+        return System.getProperty("line.separator");
+    }
+
+    static String join(List<String> lines, String sep) {
+        StringBuilder sb = new StringBuilder();
+        for (String l : lines) sb.append(l).append(sep);
+        return sb.toString();
+    }
+
+    /** tmp + fsync + ATOMIC_MOVE (fallback: plain replace), as UserCollection.saveUserCollection. */
+    static void atomicWrite(File target, String content) throws Exception {
+        File tmp = new File(target.getParentFile(), target.getName() + ".tmp");
+        java.io.FileOutputStream fos = new java.io.FileOutputStream(tmp, false);
+        try {
+            fos.write(content.getBytes(StandardCharsets.UTF_8));
+            fos.flush();
+            fos.getFD().sync();
+        } finally {
+            fos.close();
+        }
+        try {
+            Files.move(tmp.toPath(), target.toPath(),
+                    java.nio.file.StandardCopyOption.REPLACE_EXISTING, java.nio.file.StandardCopyOption.ATOMIC_MOVE);
+        } catch (java.nio.file.AtomicMoveNotSupportedException e) {
+            Files.move(tmp.toPath(), target.toPath(), java.nio.file.StandardCopyOption.REPLACE_EXISTING);
+        }
+    }
+
     static List<String> readLines(File f) throws Exception {
         FileInputStream in = new FileInputStream(f);
         try {

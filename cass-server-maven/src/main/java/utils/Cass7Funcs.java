@@ -7835,17 +7835,28 @@ public boolean syncObject(final String _key, final String superColumnName, Strin
     }
     
     String get_thumb(String _fileName) {
-            String fileExtension = (String) mapFileExtensions.get((_fileName.substring(_fileName.lastIndexOf("."), _fileName.length())).toLowerCase());
-            String sPic = fileExtension.substring(fileExtension.lastIndexOf(",") + 1, fileExtension.length());
+            // Null-safe (#3272, M5.4 of PROJECT_TAB_ADMIN_FILETYPES): an indexed file whose extension is not in
+            // FileExtensions_All.txt (removed by an admin, hand-edited selection, no extension) used to throw an
+            // NPE / StringIndexOutOfBounds here and break result rendering. Blank glyph instead.
+            String fileExtension = lookupExtension(_fileName);
+            if (fileExtension == null) return "";
+            return fileExtension.substring(fileExtension.lastIndexOf(",") + 1, fileExtension.length());
+    }
 
-            return sPic;
+    /** mapFileExtensions value ("desc,icon") for a file name, or null if it has no extension / isn't in the catalog. */
+    String lookupExtension(String _fileName) {
+            if (_fileName == null) return null;
+            int dot = _fileName.lastIndexOf(".");
+            if (dot < 0) return null;
+            return (String) mapFileExtensions.get(_fileName.substring(dot).toLowerCase());
     }
             
     public String get_vector(String _fileName, String _fontsize) {
         try {
             String sVector = "";
             if (_fileName != null && _fileName.length() > 0) {                
-                String fileExtension = (String) mapFileExtensions.get((_fileName.substring(_fileName.lastIndexOf("."), _fileName.length())).toLowerCase());
+                String fileExtension = lookupExtension(_fileName);
+                if (fileExtension == null) return "";   // not in the catalog (see get_thumb) — no glyph, no error log
                 String sPic = fileExtension.substring(fileExtension.lastIndexOf(",") + 1, fileExtension.length());            
                 sVector = "<font class='jquerycursorpointer'  style=\"display:table-cell; vertical-align:middle; font-family: 'My Font'; font-size:" + _fontsize + "px\">" + sPic + "</font>";              
             }

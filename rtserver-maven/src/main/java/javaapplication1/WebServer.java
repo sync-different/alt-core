@@ -1694,6 +1694,7 @@ class Worker extends WebServer implements HttpConstants, Runnable {
         boolean bWindows = false;
         boolean bLinux = false;
         boolean bMobile = false;
+        boolean bAltRequestHeader = false;   // "X-Alt-Request: 1" — CSRF guard for state-changing uiv5 GETs (setfiletypes-json.fn)
         boolean bIpad = false;
         boolean bIphone = false;
         boolean bAndroid = false;
@@ -1862,6 +1863,10 @@ class Worker extends WebServer implements HttpConstants, Runnable {
                         p("Full Range detected: '" + text3 + "'");
                     }
 
+                }
+
+                if (text2.regionMatches(true, 0, "X-Alt-Request:", 0, 14) && text2.substring(14).trim().equals("1")) {
+                    bAltRequestHeader = true;
                 }
 
                 if (text2.contains("User-Agent:")) {
@@ -2223,6 +2228,8 @@ class Worker extends WebServer implements HttpConstants, Runnable {
                 String sIntegrityCheck="";   // integritycheck.fn: which check (paths|coverage|downloadbtn|streaming)
                 String sIntegrityAction="";  // integritycheck.fn: start|status|result
                 String sIntegrityJob="";     // integritycheck.fn: job id (for status/result)
+                String sFileTypesPayload=""; // setfiletypes-json.fn: URL-encoded JSON {selected, add, remove, version}
+                String sFileTypesRawToken="";
                 String sBlacklist="";
                 String sPermissions="";
 
@@ -2480,6 +2487,10 @@ class Worker extends WebServer implements HttpConstants, Runnable {
                         p("mode: " + sMode);
                     }
 
+                    if (w.startsWith("ftpayload=")) {
+                        sFileTypesRawToken = w;
+                        sFileTypesPayload = URLDecoder.decode(w.substring(10), "UTF-8");
+                    }
                     if (w.startsWith("sFolder=")) {
                         String sTmp = w.substring(8,w.length());
                         sFolder = URLDecoder.decode(sTmp, "UTF-8");
@@ -3105,6 +3116,12 @@ class Worker extends WebServer implements HttpConstants, Runnable {
                     }
 
 
+                }
+                // setfiletypes-json.fn: drop the payload from fname now that it is parsed. Every handler below
+                // dispatches on fname.contains("<name>") over the RAW URL, so user-supplied text must not be able
+                // to spell another endpoint's name (plan internal/PROJECT_TAB_ADMIN_FILETYPES.md, §2).
+                if (!sFileTypesRawToken.isEmpty()) {
+                    fname = fname.replace(sFileTypesRawToken, "");
                 }
                 //p("----end URL tokens ----");
                 //p("sPathDec: '" + sPathDec + "'");
@@ -4604,25 +4621,83 @@ class Worker extends WebServer implements HttpConstants, Runnable {
                         outFile.close();
                     }
 
+// setfiletypes-json.fn - uiv5 Admin "File types" tab: save selection + add/remove admin-added types (admin only)
+// GET (the 8081 POST path is the legacy upload handler) + required "X-Alt-Request: 1" header as the CSRF guard:
+// a cross-site page cannot send a custom header without a CORS preflight, and the header is not allowed.
+                    if (fname.contains("setfiletypes-json.fn")) {
+                        String ftResultMsg;
+                        net.minidev.json.JSONObject ftRes = new net.minidev.json.JSONObject();
+                        if (!isRequestAdmin(sAuthUUID, bUserAuthenticated)) {
+                            ftRes.put("success", false);
+                            ftRes.put("error", "Permission denied. Admin role required.");
+                            p("setfiletypes-json.fn: permission denied - not admin");
+                        } else if (!bAltRequestHeader) {
+                            ftRes.put("success", false);
+                            ftRes.put("error", "missing X-Alt-Request header");
+                            pw("setfiletypes-json.fn: rejected - missing X-Alt-Request header (possible CSRF)");
+                        } else {
+                            try {
+                                Object ftParsed = net.minidev.json.JSONValue.parse(sFileTypesPayload);
+                                if (!(ftParsed instanceof net.minidev.json.JSONObject)) {
+                                    throw new utils.FileTypesConfig.SaveException(400, "missing or invalid ftpayload", null);
+                                }
+                                net.minidev.json.JSONObject ftReq = (net.minidev.json.JSONObject) ftParsed;
+                                java.util.List<String> ftSel = new java.util.ArrayList<String>();
+                                java.util.List<String> ftRem = new java.util.ArrayList<String>();
+                                java.util.List<utils.FileTypesConfig.NewType> ftAdd = new java.util.ArrayList<utils.FileTypesConfig.NewType>();
+                                if (ftReq.get("selected") instanceof java.util.List) for (Object ftO : (java.util.List<?>) ftReq.get("selected")) ftSel.add(String.valueOf(ftO));
+                                if (ftReq.get("remove") instanceof java.util.List) for (Object ftO : (java.util.List<?>) ftReq.get("remove")) ftRem.add(String.valueOf(ftO));
+                                if (ftReq.get("add") instanceof java.util.List) {
+                                    for (Object ftO : (java.util.List<?>) ftReq.get("add")) {
+                                        if (!(ftO instanceof java.util.Map)) throw new utils.FileTypesConfig.SaveException(400, "invalid add entry", null);
+                                        java.util.Map<?,?> ftM = (java.util.Map<?,?>) ftO;
+                                        ftAdd.add(new utils.FileTypesConfig.NewType(String.valueOf(ftM.get("ext")),
+                                                ftM.get("description") == null ? "" : String.valueOf(ftM.get("description")),
+                                                ftM.get("group") == null ? "others" : String.valueOf(ftM.get("group"))));
+                                    }
+                                }
+                                String ftVer = ftReq.get("version") == null ? null : String.valueOf(ftReq.get("version"));
+                                UserSession ftUs = uuidmap.get(sAuthUUID);
+                                utils.FileTypesConfig ftAfter = utils.FileTypesConfig.save(utils.FileTypesConfig.defaultConfigDir(),
+                                        ftSel, ftAdd, ftRem, ftVer, ftUs == null ? "?" : ftUs.getUsername());
+                                ftRes = ftAfter.saveResultJson();
+                            } catch (utils.FileTypesConfig.SaveException ftEx) {
+                                ftRes.put("success", false);
+                                ftRes.put("status", ftEx.status);
+                                ftRes.put("error", ftEx.getMessage());
+                                if (ftEx.currentVersion != null) ftRes.put("version", ftEx.currentVersion);
+                                p("setfiletypes-json.fn: rejected " + ftEx.status + " " + ftEx.getMessage());
+                            } catch (Exception ftEx) {
+                                pw("setfiletypes-json.fn error: " + ftEx);
+                                ftRes.put("success", false);
+                                ftRes.put("status", 500);
+                                ftRes.put("error", String.valueOf(ftEx.getMessage()));
+                            }
+                        }
+                        ftResultMsg = ftRes.toJSONString();
+                        outFile.write(ftResultMsg.getBytes("UTF-8"));
+                        outFile.close();
+                    }
+
 // getfiletypes-json.fn - uiv5 Admin "File types" tab: catalog + selection (admin only)
 // See internal/PROJECT_TAB_ADMIN_FILETYPES.md and utils.FileTypesConfig.
                     if (fname.contains("getfiletypes-json.fn")) {
-                        String resultMsg;
+                        String ftResultMsg;
                         if (!isRequestAdmin(sAuthUUID, bUserAuthenticated)) {
-                            resultMsg = "{\"success\":false,\"error\":\"Permission denied. Admin role required.\"}";
+                            ftResultMsg = "{\"success\":false,\"error\":\"Permission denied. Admin role required.\"}";
                             p("getfiletypes-json.fn: permission denied - not admin");
                         } else {
                             try {
-                                resultMsg = utils.FileTypesConfig.load().toJson().toJSONString();
-                            } catch (Exception e) {
-                                pw("getfiletypes-json.fn error: " + e.getMessage());
-                                net.minidev.json.JSONObject err = new net.minidev.json.JSONObject();
-                                err.put("success", false);
-                                err.put("error", String.valueOf(e.getMessage()));
-                                resultMsg = err.toJSONString();
+                                ftResultMsg = utils.FileTypesConfig.load().toJson().toJSONString();
+                            } catch (Exception ftEx) {
+                                pw("getfiletypes-json.fn error: " + ftEx.getMessage());
+                                net.minidev.json.JSONObject ftErr = new net.minidev.json.JSONObject();
+                                ftErr.put("success", false);
+                                ftErr.put("error", String.valueOf(ftEx.getMessage()));
+                                ftResultMsg = ftErr.toJSONString();
                             }
                         }
-                        outFile.write(resultMsg.getBytes("UTF-8"));
+                        outFile.write(ftResultMsg.getBytes("UTF-8"));
                         outFile.close();
                     }
 
