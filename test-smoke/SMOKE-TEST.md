@@ -1,6 +1,6 @@
 # Smoke Test — alt-core API Regression Suite
 
-Automated regression suite for alt-core's HTTP API. Run after any code change to confirm nothing is broken. 13 phases, 191 tests, ~4 minutes end-to-end on DEV. Runs on macOS and on Windows (Git Bash) — see [Running on Windows](#running-on-windows).
+Automated regression suite for alt-core's HTTP API. Run after any code change to confirm nothing is broken. 15 phases, 219 tests, ~5 minutes end-to-end on DEV. Runs on macOS and on Windows (Git Bash) — see [Running on Windows](#running-on-windows).
 
 **Location:** all scripts live in `test-smoke/`. The examples below assume you run them from inside that directory. From the repo root, prefix with `test-smoke/` (e.g. `./test-smoke/smoke-test.sh`).
 
@@ -24,7 +24,7 @@ cd test-smoke
 ## Usage
 
 ```bash
-# Run all 191 tests across 13 phases
+# Run all 219 tests across 15 phases
 ./smoke-test.sh
 
 # Individual phases (counts shown match what each script contains)
@@ -41,6 +41,8 @@ cd test-smoke
 ./smoke-test-phase11.sh      # DoS resistance (7 tests)
 ./smoke-test-phase12.sh      # Scanner regression corpus (10 tests)
 ./smoke-test-phase13.sh      # Admin user management CRUD (19 tests)
+./smoke-test-phase15.sh      # Admin file types endpoints (18 tests)
+./smoke-test-phase16.sh      # File types end to end: scan/index/transcode/stream (10 tests)
 
 # Flags (work with all scripts)
 ./smoke-test-phase1.sh --verbose    # Show response body snippets
@@ -77,7 +79,9 @@ PHASE9_SKIP_RATELIMIT=1 ./smoke-test.sh
 | 11 | 7 | DoS resistance — concurrent load, parser DoS, orphan cleanup, unbounded result sets | ~45s |
 | 12 | 10 | Scanner regression corpus — replay real-world attack payloads | ~5s |
 | 13 | 19 | Admin user management — list/create/delete users, edit email/password, admin gating, session invalidation on password change | ~10s |
-| **Total** | **191** | | **~4 min** |
+| 15 | 18 | Admin file types endpoints — getfiletypes/setfiletypes admin gating, X-Alt-Request CSRF header, 409/400 validation, exact keys (docx ≠ doc), add/remove admin-added types, byte-exact round trip; snapshots + restores FileExtensions config | ~5s |
+| 16 | 10 | File types end to end — generated avi/webm/wmv/mxf(10-bit 4:2:2)/braw dropped in a scan root: indexed, grouped as video, transcoded to 4:2:0 HLS, MXF streams; .braw index-only; folder video flags; removed type stops indexing new files. Needs ffmpeg (`$REPO_ROOT/ffmpeg` or PATH) | ~1-2 min |
+| **Total** | **219** | | **~5 min** |
 | 14 *(manual)* | 2 | ffmpeg filename command-injection RCE (RCE-FINDINGS Finding 3) — 14.1 control transcode reaches the ffmpeg sink; 14.2 uploads a quote-injecting filename and polls ~50s for a `touch <sentinel>` (sentinel = vulnerable). LOCAL instance only | ~1 min |
 
 Phase 11 shows 7 (not 8) because test 11.7 was removed 2026-04-17 after being superseded by 9.14.
@@ -86,7 +90,7 @@ Phase 11 shows 7 (not 8) because test 11.7 was removed 2026-04-17 after being su
 
 | File | Purpose |
 |------|---------|
-| `smoke-test.sh` | Master runner — sequences phases 1-8, 10, 11, 12, 13, 9 (Phase 9 runs last) |
+| `smoke-test.sh` | Master runner — sequences phases 1-8, 10, 11, 12, 13, 15, 16, 9 (Phase 9 runs last; phase 14 is manual) |
 | `smoke-common.sh` | Shared helpers: auth, env detection (DEV/PROD/REMOTE), WAF awareness, colored output |
 | `smoke-test-phase<N>.sh` | One script per phase, runnable standalone |
 | `CreateDeleteNotification.java` | Phase 7 helper — writes a `.D_` deletion record into `incoming/` (compiled on first run into `test-files/`, gitignored) |
@@ -209,6 +213,7 @@ Phases 8-12 were added 2026-04-12 through 2026-04-17 in response to a demo-serve
 
 | Environment | Date | Result | Notes |
 |-------------|------|--------|-------|
+| DEV (localhost, `main` e7ab01c) | 2026-10-07 | 218/219 → phase 16 fixed, 10/10 ×2 | 15 phases in 5m08s; 16.9 race (scan pass in flight during the save) fixed in e7ab01c |
 | PROD (Windows 11, MSI 2026100600) | 2026-10-06 | 191/191 PASS | 13 phases, 5m 51s, after the tray update from 2026093000 (POWER25) |
 | DEV (localhost, `main` eec85d3) | 2026-10-06 | 191/191 PASS + phase 14 PASS | 13 phases in 3m 57s; same build passed `test-security/security-gate.sh` (d0 re-runs phases 2/3/9/10 through the tunnel proxy) |
 | PROD (Windows 11, MSI 2026093000) | 2026-09-30 | 191/191 PASS | 13 phases; first Windows run (phases 4/6/7/8 rerun after the TMPDIR fix) |

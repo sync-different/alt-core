@@ -12,7 +12,7 @@
 8. ✅ `downloadmulti.fn` - Download multiple files
 9. ❌ `fbpublish.fn` - Publish to Facebook
 10. ❌ `getbackupconfig.fn` - Get backup configuration
-11. ❌ `getextensions.fn` - Get file extensions
+11. ❌ `getextensions.fn` - Get file extensions *(legacy uiv2-4 backup-rules picker; uiv3 is discontinued. uiv5 uses the admin-only `getfiletypes-json.fn` / `setfiletypes-json.fn` — Admin → File types, PROJECT_TAB_ADMIN_FILETYPES)*
 12. ✅ `getfile.fn` - Get/download file
 13. ❌ `getmulticlusters.fn` - Get remote clusters list
 14. ❌ `getremoteeula.fn` - Get remote EULA
@@ -71,7 +71,9 @@
 - ❌ `serverproperty.fn` - Get server property value
 - ❌ `serverupdateproperty.fn` - Update server property
 - ❌ `getbackupconfig.fn` - Get backup configuration
-- ❌ `getextensions.fn` - Get configured file extensions
+- ❌ `getextensions.fn` - Get configured file extensions (legacy — see `getfiletypes-json.fn`)
+- ✅ `getfiletypes-json.fn` - Admin: file-type catalog (groups/types) + which types the Scrubber indexes (uiv5 Admin → File types)
+- ✅ `setfiletypes-json.fn` - Admin: save selection + add/remove admin-added types; requires `X-Alt-Request: 1` header (CSRF guard), `ftpayload=` JSON
 
 ### Social Features
 - ❌ `fbpublish.fn` - Publish file to Facebook
