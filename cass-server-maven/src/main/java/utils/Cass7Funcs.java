@@ -3482,8 +3482,10 @@ public class Cass7Funcs {
                     res.append("\"file_group\": \"" + sFileGroup + "\",\n");                    
                     
                     //if video
-                    if(ext.equalsIgnoreCase("mov") || ext.equalsIgnoreCase("mpg") || ext.equalsIgnoreCase("mmv")
-                            || ext.equalsIgnoreCase("mp4")){ 
+                    // PROJECT_TAB_ADMIN_FILETYPES M4.4: same "is video" verdict as file_group (catalog Video Files group,
+                    // minus .braw). This was a 5th hardcoded list (mov/mpg/mmv/mp4): an admin-added .mxf got
+                    // file_group "movie" but no video_url_webapp, so uiv5 fed the raw file to HLS.js.
+                    if (is_movie("." + ext)) {
                         String videolink = lf.getMediaURL(sNamer, "video", _awshosted);
                         if(videolink != null){
                             res.append("\"video_url\": \"" +  videolink + "\",\n");
@@ -5253,6 +5255,9 @@ public class Cass7Funcs {
     }
 
     public static boolean is_video(String _string) {
+        // PROJECT_TAB_ADMIN_FILETYPES M4.4: video thumbnails (rtserver/streaming/<md5>/thumbnail.jpg) for any type in
+        // the catalog's Video Files group — the transcoder makes one for each.
+        if (_string != null && !FileTypesConfig.isNonTranscodable(_string) && FileTypesConfig.isCatalogVideo(_string)) return true;
         if (
                 _string.toLowerCase().contains(".mov") ||
                 _string.toLowerCase().contains(".mp4")

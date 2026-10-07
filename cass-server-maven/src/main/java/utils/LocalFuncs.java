@@ -5331,8 +5331,7 @@ public class LocalFuncs {
                     String ext =  sName.substring(sName.lastIndexOf(".")+1, sName.length()).toLowerCase();
                     res.append("\"file_ext\": \"" + ext + "\",\n");      
                     
-                    if(ext.equalsIgnoreCase("mov") || ext.equalsIgnoreCase("mpg") || ext.equalsIgnoreCase("mmv")
-                            || ext.equalsIgnoreCase("mp4")){ //if video
+                    if (Cass7Funcs.is_movie("." + ext)) { //if video (PROJECT_TAB_ADMIN_FILETYPES M4.4: catalog Video Files group)
                         String videolink = getMediaURL(sNamer, "video", _awshosted);
                         if(videolink != null){
                             res.append("\"video_url\": \"" +  videolink + "\",\n");
