@@ -381,6 +381,35 @@ public class FileTypesConfig {
         }
     }
 
+    /**
+     * One-time fixes to an install's file-type config, run at startup (M5, plan Q6). Installs never get their
+     * config rewritten by an update, so a fix to the shipped files alone would never reach them.
+     *  - ".mmv" (a typo; "Windows Media Video" is .wmv) -> ".wmv" in the catalog, selection and custom list,
+     *    unless that file already has a .wmv line. Only the key changes; the rest of the line, every other line
+     *    and the line endings are kept byte-for-byte.
+     * Idempotent, atomic (tmp + ATOMIC_MOVE), serialised with save(). Never throws: a failed migration must
+     * not stop the server.
+     */
+    public static void migrateLegacyKeys() {
+        synchronized (SAVE_LOCK) {
+            File dir = defaultConfigDir();
+            java.util.regex.Pattern hasWmv = java.util.regex.Pattern.compile("(?m)^\\.wmv(,|\\r?$)");
+            java.util.regex.Pattern mmv = java.util.regex.Pattern.compile("(?m)^\\.mmv(?=,|\\r?$)");
+            for (String name : new String[] { CATALOG_FILE, SELECTION_FILE, CUSTOM_FILE }) {
+                try {
+                    File f = new File(dir, name);
+                    if (!f.isFile()) continue;
+                    String content = new String(Files.readAllBytes(f.toPath()), StandardCharsets.UTF_8);
+                    if (!mmv.matcher(content).find() || hasWmv.matcher(content).find()) continue;
+                    atomicWrite(f, mmv.matcher(content).replaceAll(".wmv"));
+                    LocalFuncs.pw("[FileTypes] migrated .mmv -> .wmv in " + f.getPath());
+                } catch (Exception e) {
+                    LocalFuncs.pw("[FileTypes] migration of " + name + " failed: " + e);
+                }
+            }
+        }
+    }
+
     /** Set by save(): {selectedAdded, selectedRemoved, catalogAdded, catalogRemoved}. */
     public String[][] lastDiff = null;
 

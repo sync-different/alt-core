@@ -878,7 +878,8 @@ public class FileUtils {
         if (
                 _string.toLowerCase().contains("mov") ||
                 _string.toLowerCase().contains("mp4") ||
-                _string.toLowerCase().contains("mmv") ||
+                _string.toLowerCase().contains("mmv") ||   // legacy typo for wmv; kept harmlessly
+                _string.toLowerCase().contains("wmv") ||
                 _string.toLowerCase().contains("mpg") 
             )
                 return true;

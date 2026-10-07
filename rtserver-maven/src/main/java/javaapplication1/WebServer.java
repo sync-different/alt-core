@@ -1432,6 +1432,8 @@ public class WebServer extends AbstractService {
         loadPropsMailer();
         loadPropsAnalytics();
         loadPropsCloud();
+        // One-time file-type config fixes for existing installs (.mmv typo -> .wmv). PROJECT_TAB_ADMIN_FILETYPES M5.
+        utils.FileTypesConfig.migrateLegacyKeys();
         printProps();
 
         if(nettyport == 0){//set nettyport 8084 by default
