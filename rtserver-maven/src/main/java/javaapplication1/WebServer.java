@@ -4604,6 +4604,28 @@ class Worker extends WebServer implements HttpConstants, Runnable {
                         outFile.close();
                     }
 
+// getfiletypes-json.fn - uiv5 Admin "File types" tab: catalog + selection (admin only)
+// See internal/PROJECT_TAB_ADMIN_FILETYPES.md and utils.FileTypesConfig.
+                    if (fname.contains("getfiletypes-json.fn")) {
+                        String resultMsg;
+                        if (!isRequestAdmin(sAuthUUID, bUserAuthenticated)) {
+                            resultMsg = "{\"success\":false,\"error\":\"Permission denied. Admin role required.\"}";
+                            p("getfiletypes-json.fn: permission denied - not admin");
+                        } else {
+                            try {
+                                resultMsg = utils.FileTypesConfig.load().toJson().toJSONString();
+                            } catch (Exception e) {
+                                pw("getfiletypes-json.fn error: " + e.getMessage());
+                                net.minidev.json.JSONObject err = new net.minidev.json.JSONObject();
+                                err.put("success", false);
+                                err.put("error", String.valueOf(e.getMessage()));
+                                resultMsg = err.toJSONString();
+                            }
+                        }
+                        outFile.write(resultMsg.getBytes("UTF-8"));
+                        outFile.close();
+                    }
+
                     if (fname.contains("getfolders.fn")) {
                         if (bUserAuthenticated) {
                         p("   ***   -----getfolders.fn - sFolder: '" + sFolder+ "'");
