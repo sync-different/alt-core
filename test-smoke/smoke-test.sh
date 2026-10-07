@@ -23,6 +23,7 @@
 #   ./smoke-test-phase11.sh      # DoS resistance & rate limiting (8 tests)
 #   ./smoke-test-phase12.sh      # Scanner regression corpus (10 tests)
 #   ./smoke-test-phase13.sh      # Admin user management CRUD (19 tests)
+#   ./smoke-test-phase15.sh      # Admin file types (18 tests)
 #
 
 set -euo pipefail
@@ -100,6 +101,7 @@ run_phase "smoke-test-phase10.sh" "Phase 10"
 run_phase "smoke-test-phase11.sh" "Phase 11"
 run_phase "smoke-test-phase12.sh" "Phase 12"
 run_phase "smoke-test-phase13.sh" "Phase 13"
+run_phase "smoke-test-phase15.sh" "Phase 15"
 run_phase "smoke-test-phase9.sh" "Phase 9"
 
 # Final summary — aggregate from the totals file each phase wrote to.
