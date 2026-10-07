@@ -224,23 +224,29 @@ else
 fi
 
 # ─── 16.9 a NEW file of the removed type is not indexed ───
+# A scan pass that STARTED before the save still holds the old type list (changes apply from the next pass),
+# so first let any in-flight pass finish: control A indexed => the pass that saw the old list is done. Only
+# then drop the new file + control B; the pass that indexes B was constructed after the save.
 test_start "16.9 removed type: new files are no longer indexed"
-NEWF="$DROP/${TAG}b$CUSTOM_EXT"
-printf 'phase16 after removal\n' > "$NEWF" && CREATED+=("$NEWF")
-# a control file of a still-selected type proves a scan pass completed
-CTRL="$DROP/${TAG}ctrl.wmv"
-gen "$CTRL" -c:v wmv2 -c:a wmav2
-if wait_indexed "${TAG}ctrl.wmv"; then
-    sleep 3
-    if [ -z "$(query_file "${TAG}b$CUSTOM_EXT")" ]; then
-        pass "16.9 control .wmv indexed (${WAIT_SECS}s) but the new $CUSTOM_EXT file was not"
+CTRLA="$DROP/${TAG}ctrla.wmv"; gen "$CTRLA" -c:v wmv2 -c:a wmav2
+if wait_indexed "${TAG}ctrla.wmv"; then
+    NEWF="$DROP/${TAG}b$CUSTOM_EXT"
+    printf 'phase16 after removal\n' > "$NEWF" && CREATED+=("$NEWF")
+    CTRLB="$DROP/${TAG}ctrlb.wmv"; gen "$CTRLB" -c:v wmv2 -c:a wmav2
+    if wait_indexed "${TAG}ctrlb.wmv"; then
+        sleep 3
+        if [ -z "$(query_file "${TAG}b$CUSTOM_EXT")" ]; then
+            pass "16.9 a post-save scan pass indexed control .wmv (${WAIT_SECS}s) but not the new $CUSTOM_EXT file"
+        else
+            fail "16.9 removed type" "new $CUSTOM_EXT file was indexed by a pass that started after its type was removed"
+        fi
     else
-        fail "16.9 removed type" "new $CUSTOM_EXT file was indexed after its type was removed"
+        fail "16.9 removed type" "control B never indexed — can't tell"
     fi
 else
-    fail "16.9 removed type" "control file never indexed — can't tell"
+    fail "16.9 removed type" "control A never indexed — can't tell"
 fi
-MD5S+=("$(jget "$(query_file "${TAG}ctrl.wmv")" 'd.get("nickname","")')")
+MD5S+=("$(jget "$(query_file "${TAG}ctrla.wmv")" 'd.get("nickname","")')" "$(jget "$(query_file "${TAG}ctrlb.wmv")" 'd.get("nickname","")')")
 
 # ─── 16.10 config restored ───
 test_start "16.10 restore file-type config"
