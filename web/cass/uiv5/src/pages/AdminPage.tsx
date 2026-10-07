@@ -11,6 +11,7 @@ import { selectIsAdmin } from '../store/slices/authSlice';
 import { CurrentLoginsTab } from '../components/admin/CurrentLoginsTab';
 import { UsersTab } from '../components/admin/UsersTab';
 import { DataIntegrityTab } from '../components/admin/DataIntegrityTab';
+import { FileTypesTab } from '../components/admin/FileTypesTab';
 
 export function AdminPage() {
   const isAdmin = useSelector(selectIsAdmin);
@@ -38,6 +39,7 @@ export function AdminPage() {
           <Tab label="Current Logins" />
           <Tab label="Users" />
           <Tab label="Data Integrity" />
+          <Tab label="File types" />
         </Tabs>
       </Box>
 
@@ -46,6 +48,7 @@ export function AdminPage() {
         {activeTab === 0 && <CurrentLoginsTab />}
         {activeTab === 1 && <UsersTab />}
         {activeTab === 2 && <DataIntegrityTab />}
+        {activeTab === 3 && <FileTypesTab />}
       </Box>
     </Box>
   );
