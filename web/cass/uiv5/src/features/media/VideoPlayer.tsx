@@ -5,7 +5,7 @@
 
 import { useState, useRef, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { Paper, Box, IconButton, Typography, Chip, Stack } from '@mui/material';
+import { Paper, Box, IconButton, Typography, Chip, Stack, Button } from '@mui/material';
 import { useDownloadManager } from '../../contexts/DownloadManagerContext';
 import {
   Close as CloseIcon,
@@ -35,6 +35,9 @@ export function VideoPlayer({ open, onClose, file }: VideoPlayerProps) {
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  // No playable stream: not transcoded (yet), a format ffmpeg can't decode (e.g. .braw), or a failed
+  // transcode. Show a "download instead" panel rather than retrying forever (PROJECT_TAB_ADMIN_FILETYPES M4.4).
+  const [noPreview, setNoPreview] = useState(false);
 
   // Download manager
   const { addToQueue } = useDownloadManager();
@@ -149,6 +152,8 @@ export function VideoPlayer({ open, onClose, file }: VideoPlayerProps) {
 
       const video = videoRef.current;
 
+      setNoPreview(false);
+
       // Clean up previous HLS instance
       if (hlsRef.current) {
         hlsRef.current.destroy();
@@ -183,9 +188,21 @@ export function VideoPlayer({ open, onClose, file }: VideoPlayerProps) {
           });
         });
 
+        let networkRetries = 0;
         hls.on(Hls.Events.ERROR, (_event, data) => {
           console.error('❌ HLS error:', data);
           if (data.fatal) {
+            // An empty/missing manifest means there is no stream for this file: retrying can't help.
+            const noStream = data.details === Hls.ErrorDetails.MANIFEST_LOAD_ERROR
+              || data.details === Hls.ErrorDetails.MANIFEST_PARSING_ERROR
+              || data.details === Hls.ErrorDetails.LEVEL_EMPTY_ERROR;
+            if (noStream || (data.type === Hls.ErrorTypes.NETWORK_ERROR && ++networkRetries > 2)) {
+              console.error('No playable stream for this file');
+              hls.destroy();
+              hlsRef.current = null;
+              setNoPreview(true);
+              return;
+            }
             switch (data.type) {
               case Hls.ErrorTypes.NETWORK_ERROR:
                 console.error('Fatal network error, trying to recover');
@@ -330,6 +347,15 @@ export function VideoPlayer({ open, onClose, file }: VideoPlayerProps) {
           zIndex: 0,
         }}
       >
+        {noPreview && (
+          <Box sx={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 2, zIndex: 1, color: 'white', textAlign: 'center', px: 3 }}>
+            <Typography variant="h6">No preview available</Typography>
+            <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.7)', maxWidth: 420 }}>
+              This video hasn&apos;t been converted for streaming yet, or its format can&apos;t be previewed. You can still download it.
+            </Typography>
+            <Button variant="contained" onClick={handleDownload}>Download</Button>
+          </Box>
+        )}
         <video
           ref={videoRef}
           controls

@@ -44,6 +44,7 @@ export interface Folder {
   type?: 'file' | 'folder';
   md5?: string;
   size?: number; // BE1: file size in bytes (files only; from getfolders-json.fn). 0/undefined for folders.
+  video?: boolean; // server's "is video" (catalog Video Files group, minus non-transcodable types like .braw)
 }
 
 /**

@@ -179,7 +179,7 @@ export function FoldersPage() {
       setFolders([...allowedFolders, ...filesOnly]);
 
       // Extract image files for the viewer
-      const images = data.filter(f => f.type === 'file' && getFileGroup(f.name) === 'photo').map(f => ({
+      const images = data.filter(f => f.type === 'file' && getFileGroup(f.name, f.video) === 'photo').map(f => ({
         nickname: f.md5!,
         name: decodeFolderName(f.name),
         file_ext: f.name.substring(f.name.lastIndexOf('.')),
@@ -235,7 +235,7 @@ export function FoldersPage() {
   // useMemo below calls this during the first render.
   function folderToFile(folder: Folder): File | null {
     if (folder.type !== 'file' || !folder.md5) return null;
-    const fileGroup = getFileGroup(folder.name);
+    const fileGroup = getFileGroup(folder.name, folder.video);
     const filePath = `/cass/getfile.fn?sNamer=${folder.md5}`;
     const videoUrl = fileGroup === 'movie' ? `getvideo.m3u8?md5=${folder.md5}` : undefined;
     return {
@@ -428,11 +428,14 @@ export function FoldersPage() {
     }
   };
 
-  function getFileGroup(fileName: string): string {
+  // `video` is the server's verdict (getfolders-json.fn, from the catalog's Video Files group). It wins
+  // when present, so a type an admin adds to Video Files plays here too, and .braw never opens a player.
+  function getFileGroup(fileName: string, video?: boolean): string {
     const ext = fileName.substring(fileName.lastIndexOf('.')).toLowerCase();
+    if (video === true) return 'movie';
 
     const imageExts = ['.jpg', '.jpeg', '.png', '.gif', '.bmp', '.webp'];
-    const videoExts = ['.mp4', '.avi', '.mkv', '.mov', '.wmv', '.flv', '.webm'];
+    const videoExts = video === false ? [] : ['.mp4', '.avi', '.mkv', '.mov', '.wmv', '.flv', '.webm'];
     const audioExts = ['.mp3', '.wav', '.flac', '.aac', '.ogg', '.m4a'];
     const docExts = ['.doc', '.docx', '.txt', '.rtf', '.odt'];
 

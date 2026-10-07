@@ -218,6 +218,7 @@ public class FfmpegExecutor {
 
                     p = new ProcessBuilder(scriptName).start();
                     p(outputm3u8File.getCanonicalPath());
+                    final Process ffProc = p;
 
                     stdError = new BufferedReader(new InputStreamReader(p.getErrorStream()));
                     s = null;
@@ -233,7 +234,21 @@ public class FfmpegExecutor {
                         p("[O]" + s);
                         logwriter.write("[O]" + s + "\n");
                     }
-                    
+
+                    // PROJECT_TAB_ADMIN_FILETYPES M4.4: the streaming folder exists from the start (mkdirs above),
+                    // so the scanner never retries — record a failed transcode instead of leaving an empty folder
+                    // that looks like "in progress" forever. getvideo.m3u8 already answers FAIL-NOTFOUND for it
+                    // and uiv5 falls back to "No preview".
+                    int rc = -1;
+                    try { rc = ffProc.waitFor(); } catch (InterruptedException ie) { Thread.currentThread().interrupt(); }
+                    if (!outputm3u8File.isFile() || outputm3u8File.length() == 0) {
+                        File marker = new File(destinationPathFile, "transcode.failed");
+                        FileWriter mw = new FileWriter(marker, false);
+                        mw.write("exit=" + rc + " input=" + _input.getName() + "\n");
+                        mw.close();
+                        logwriter.write("[TRANSCODE-FAILED] exit=" + rc + " no playable OUTPUT.m3u8\n");
+                        p("[TRANSCODE-FAILED] md5=" + _md5 + " exit=" + rc + " input=" + _input.getName());
+                    }
                 }
             } catch (IOException ex) {
                 Logger.getLogger(FfmpegExecutor.class.getName()).log(Level.SEVERE, null, ex);
@@ -259,6 +274,31 @@ public class FfmpegExecutor {
      * REPLACEMENT string, so we build the command with explicit replace() of literal tokens and
      * quoteReplacement-guarded values to avoid a second injection via the replacement mechanics.
      */
+    /**
+     * PROJECT_TAB_ADMIN_FILETYPES M4.4: fix up whatever ffmpeg template an install has. Templates are copied
+     * to the install once (install_mac.sh / install_win.bat) and never refreshed by updates, and Windows uses
+     * separate ffmpeg_win*.txt files, so the fix lives here rather than in every template copy.
+     *  - Force 8-bit 4:2:0 output. Pro camera footage (e.g. Canon XF-AVC MXF: H.264 High 4:2:2 10-bit) otherwise
+     *    stays 4:2:2 10-bit through libx264, which browsers/HLS cannot play.
+     *  - Map the first VIDEO and first AUDIO stream by type, not stream 0/1 by position (camera MXF can put a
+     *    data/timecode stream first, and carries several mono audio tracks).
+     * Idempotent: a template that already has -pix_fmt / the typed maps is left alone.
+     */
+    static String normalizeTemplate(String t) {
+        StringBuilder out = new StringBuilder();
+        for (String line : t.split("\n", -1)) {
+            String l = line;
+            if (l.contains("libx264") && !l.contains("-pix_fmt")) {
+                l = l.replace("-codec:v libx264", "-codec:v libx264 -pix_fmt yuv420p")
+                     .replace("-c:v libx264", "-c:v libx264 -pix_fmt yuv420p");
+            }
+            l = l.replace("-map 0:0 -map 0:1?", "-map 0:v:0 -map 0:a:0?");
+            if (out.length() > 0) out.append('\n');
+            out.append(l);
+        }
+        return out.toString();
+    }
+
     private static String shq(String s) {
         if (s == null) return "''";
         return "'" + s.replace("'", "'\\''") + "'";
@@ -268,7 +308,7 @@ public class FfmpegExecutor {
         String ffmpegtxtPath = _projectsFolderPath + "/ffmpeg.txt";
         File ffmpegtxtFile = new File(ffmpegtxtPath);
         byte[] encoded = Files.readAllBytes(Paths.get(ffmpegtxtFile.getCanonicalPath()));
-        String commandFile = new String(encoded, "UTF-8");
+        String commandFile = normalizeTemplate(new String(encoded, "UTF-8"));
         String command = "nice -n 20 " + commandFile.trim();
         // SECURITY: every interpolated value is POSIX-single-quote-escaped via shq() so a quote/
         // metachar in any path (esp. the uploaded filename in _input) cannot break out of the
@@ -297,7 +337,7 @@ public class FfmpegExecutor {
         String ffmpegtxtPath = _projectsFolderPath + _ffmpegFile;
         File ffmpegtxtFile = new File(ffmpegtxtPath);
         byte[] encoded = Files.readAllBytes(Paths.get(ffmpegtxtFile.getCanonicalPath()));
-        String commandFile = new String(encoded, "UTF-8");
+        String commandFile = normalizeTemplate(new String(encoded, "UTF-8"));
         String command = "cmd /C start /B /low " + commandFile.trim();
         List<String> finalarg = new ArrayList<String>();
         String[] args = command.split(" ");

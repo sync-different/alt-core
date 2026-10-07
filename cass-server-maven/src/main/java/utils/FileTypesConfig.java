@@ -191,6 +191,68 @@ public class FileTypesConfig {
     }
 
     // =====================================================================================
+    // Video types (M4.4): the catalog's "video" group is the single source of truth for
+    // "is this a video" — transcode (FileUtils.is_video), search grouping + Videos filter
+    // (Cass7Funcs.is_movie) and the folder listing's video flag all read it from here.
+    // =====================================================================================
+
+    /** Video containers stock ffmpeg cannot decode: indexed and downloadable, never transcoded or shown
+     *  as video. BRAW needs Blackmagic's proprietary SDK (plan Q7). */
+    public static final Set<String> NON_TRANSCODABLE =
+            new java.util.HashSet<String>(java.util.Arrays.asList(".braw"));
+
+    static final String VIDEO_GROUP = "video";
+    private static volatile Set<String> videoCache = java.util.Collections.emptySet();
+    private static long videoMtime = Long.MIN_VALUE;
+    private static long videoChecked = 0;
+
+    /** Extensions in the catalog's video group. is_movie() runs per search result, so the catalog
+     *  is re-stat'ed at most every 2s and re-parsed only when its mtime changes. */
+    public static Set<String> catalogVideoExtensions() {
+        long now = System.currentTimeMillis();
+        synchronized (FileTypesConfig.class) {
+            if (now - videoChecked < 2000) return videoCache;
+            videoChecked = now;
+            try {
+                File f = new File(defaultConfigDir(), CATALOG_FILE);
+                long m = f.isFile() ? f.lastModified() : -1L;
+                if (m != videoMtime) {
+                    Set<String> s = new LinkedHashSet<String>();
+                    if (m >= 0) {
+                        FileTypesConfig c = new FileTypesConfig(f.getParentFile());
+                        c.reload();
+                        for (Group g : c.groups) if (VIDEO_GROUP.equals(g.id)) for (FileType t : g.types) s.add(t.ext);
+                    }
+                    videoCache = java.util.Collections.unmodifiableSet(s);
+                    videoMtime = m;
+                }
+            } catch (Exception e) {
+                // keep the previous set: a transient read error must not flip every video to "other"
+            }
+            return videoCache;
+        }
+    }
+
+    /** ".mxf" for "/a/b/clip.MXF" (lowercased); "" when there is no extension. */
+    public static String extensionOf(String nameOrExt) {
+        if (nameOrExt == null) return "";
+        String s = nameOrExt;
+        int slash = Math.max(s.lastIndexOf('/'), s.lastIndexOf('\\'));
+        if (slash >= 0) s = s.substring(slash + 1);
+        int dot = s.lastIndexOf('.');
+        if (dot < 0) return s.isEmpty() ? "" : "." + s.toLowerCase();   // a bare "mxf" means the extension
+        return s.substring(dot).toLowerCase();
+    }
+
+    public static boolean isCatalogVideo(String nameOrExt) {
+        return catalogVideoExtensions().contains(extensionOf(nameOrExt));
+    }
+
+    public static boolean isNonTranscodable(String nameOrExt) {
+        return NON_TRANSCODABLE.contains(extensionOf(nameOrExt));
+    }
+
+    // =====================================================================================
     // Save (M2): selection + catalog add/remove, validated up front, written atomically.
     // =====================================================================================
 

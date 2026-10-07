@@ -871,6 +871,10 @@ public class FileUtils {
     }
 
     private boolean is_video(String _string) {
+        // _string is the bare extension ("mxf"). PROJECT_TAB_ADMIN_FILETYPES M4.4: transcode anything in the
+        // catalog's "Video Files" group, except containers ffmpeg can't decode (.braw).
+        if (utils.FileTypesConfig.isNonTranscodable(_string)) return false;
+        if (utils.FileTypesConfig.isCatalogVideo(_string)) return true;
         if (
                 _string.toLowerCase().contains("mov") ||
                 _string.toLowerCase().contains("mp4") ||

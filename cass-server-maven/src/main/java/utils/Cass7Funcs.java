@@ -5330,6 +5330,12 @@ public class Cass7Funcs {
         return false;
     }
     public static boolean is_movie(String _string) {
+        if (_string == null) return false;
+        // PROJECT_TAB_ADMIN_FILETYPES M4.4: a type an admin put in the catalog's "Video Files" group is a
+        // video too (Videos filter, sidebar count, file_group "movie" -> uiv5 player). Containers ffmpeg
+        // can't decode (.braw) are never "movie": they'd open a player with nothing to play.
+        if (FileTypesConfig.isNonTranscodable(_string)) return false;
+        if (FileTypesConfig.isCatalogVideo(_string)) return true;
         if (
                 _string.toLowerCase().contains(".avi") ||
                 _string.toLowerCase().contains(".mov") ||

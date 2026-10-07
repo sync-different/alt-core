@@ -4058,6 +4058,10 @@ class Worker extends WebServer implements HttpConstants, Runnable {
                                             "," +
                                             "\"" + "extension\"" + ":" + "\"" + sExtension + "\"" +
                                             "," +
+                                            // PROJECT_TAB_ADMIN_FILETYPES M4.4: server decides "is video" from the catalog's
+                                            // Video Files group (Cass7Funcs.is_movie), so uiv5's folder view agrees with search.
+                                            "\"" + "video\"" + ":" + ((sType == "file") && utils.Cass7Funcs.is_movie(f.getName())) +
+                                            "," +
                                             "\"" + "size\"" + ":" + lSize + "}";
                                     sMD5gf = ""; //clear after use
                                 }
