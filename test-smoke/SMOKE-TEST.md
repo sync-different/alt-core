@@ -51,9 +51,14 @@ SMOKE_URL=https://alt.example.com SMOKE_USER=admin SMOKE_PASS='...' ./smoke-test
 
 # Skip the test that locks out the IP for 5 minutes
 PHASE9_SKIP_RATELIMIT=1 ./smoke-test.sh
+
+# NOT run by smoke-test.sh — run manually after touching upload/scan/ffmpeg code
+./smoke-test-phase14-ffmpeg-rce.sh  # ffmpeg filename command injection (upload → scan → exec, ~50s)
 ```
 
-**Phase 9 runs last.** Test 9.14 exercises the login rate limiter which per-IP-locks the host for 5 minutes after N failed attempts. Running Phase 9 last means earlier phases get fresh auth; restart the server after the suite completes to clear the lockout.
+**Credentials.** `smoke-common.sh` reads `SMOKE_PASS` from the gitignored `test-smoke/.smoke-creds.local` (a one-line `SMOKE_PASS='...'`) when the env var is unset; env vars always win. Without it the scripts fall back to `admin`/`valid`. On a box whose admin password isn't `valid`, every phase then ABORTs at login, and the failed attempts (~13 for a full run) trip the login rate limiter. Never commit the creds file.
+
+**Phase 9 runs last.** Test 9.14 exercises the login rate limiter, which locks the client out for 5 minutes after 5 failed attempts. Running Phase 9 last means earlier phases get fresh auth. The limiter is in-memory, so **restarting the server clears the lockout** — do that after a full run, or you (and the uiv5 login) will be locked out of DEV. Behind the Cloudflare tunnel the limiter keys on `CF-Connecting-IP` (#3127), so in PROD only the test client is locked out, not every user.
 
 ## Phase Inventory
 
@@ -73,6 +78,7 @@ PHASE9_SKIP_RATELIMIT=1 ./smoke-test.sh
 | 12 | 10 | Scanner regression corpus — replay real-world attack payloads | ~5s |
 | 13 | 19 | Admin user management — list/create/delete users, edit email/password, admin gating, session invalidation on password change | ~10s |
 | **Total** | **191** | | **~4 min** |
+| 14 *(manual)* | 2 | ffmpeg filename command-injection RCE (RCE-FINDINGS Finding 3) — 14.1 control transcode reaches the ffmpeg sink; 14.2 uploads a quote-injecting filename and polls ~50s for a `touch <sentinel>` (sentinel = vulnerable). LOCAL instance only | ~1 min |
 
 Phase 11 shows 7 (not 8) because test 11.7 was removed 2026-04-17 after being superseded by 9.14.
 
@@ -93,7 +99,7 @@ Runtime is configured via env vars — nothing hardcoded beyond sensible default
 |-----|---------|--------|
 | `SMOKE_URL` | `http://localhost:8081` | Target server. Non-localhost URL enables REMOTE mode |
 | `SMOKE_USER` | `admin` | Admin username |
-| `SMOKE_PASS` | `valid` | Admin password |
+| `SMOKE_PASS` | `valid` (or `.smoke-creds.local`) | Admin password. Sourced from `test-smoke/.smoke-creds.local` when unset (since eec85d3) |
 | `SMOKE_NONADMIN_USER` | `user1` | Non-admin user for test 9.12 (role-check) |
 | `SMOKE_KNOWN_MD5` | — | Pin a specific file MD5 for test 11.5 instead of discovering via `query.fn` |
 | `PHASE9_SKIP_RATELIMIT` | `0` | Skip test 9.14 so running the suite doesn't lock the IP for 5 min |
@@ -203,6 +209,8 @@ Phases 8-12 were added 2026-04-12 through 2026-04-17 in response to a demo-serve
 
 | Environment | Date | Result | Notes |
 |-------------|------|--------|-------|
+| PROD (Windows 11, MSI 2026100600) | 2026-10-06 | 191/191 PASS | 13 phases, 5m 51s, after the tray update from 2026093000 (POWER25) |
+| DEV (localhost, `main` eec85d3) | 2026-10-06 | 191/191 PASS + phase 14 PASS | 13 phases in 3m 57s; same build passed `test-security/security-gate.sh` (d0 re-runs phases 2/3/9/10 through the tunnel proxy) |
 | PROD (Windows 11, MSI 2026093000) | 2026-09-30 | 191/191 PASS | 13 phases; first Windows run (phases 4/6/7/8 rerun after the TMPDIR fix) |
 | DEV (localhost) | 2026-04-17 | 168/168 PASS | 12 phases, full suite, REMOTE-mode aware |
 | DEV (localhost) | 2026-03-28 | 116/116 PASS | 7 phases, pre-security-expansion baseline |
@@ -220,7 +228,7 @@ Phases 8-12 were added 2026-04-12 through 2026-04-17 in response to a demo-serve
 - Server running on `localhost:8081` (or `SMOKE_URL`)
 - Upload server on port `8087` (DEV only — skipped in REMOTE mode)
 - `alt-core-cli` built (`alt-core-cli/target/alt-core-cli.jar`)
-- Default credentials: `admin` / `valid`
+- Admin credentials: `SMOKE_USER`/`SMOKE_PASS`, or `test-smoke/.smoke-creds.local`; falls back to `admin` / `valid`
 - `curl`, `java`, `perl`, `python3` in PATH (plus `lsof` on macOS/Linux; Windows uses `netstat`)
 
 ## When to Run
